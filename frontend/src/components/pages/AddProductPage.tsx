@@ -45,6 +45,7 @@ export default function AddProductPage() {
     discount: '0',
     rating: '4.5',
     reviews: '0',
+    stock: '0',
     description: '',
     benefits: '',
     care: '',
@@ -195,6 +196,7 @@ export default function AddProductPage() {
         discount: discount > 0 ? discount : undefined,
         rating: parseFloat(formData.rating),
         reviews: parseInt(formData.reviews),
+        stock: parseInt(formData.stock),
         description: formData.description || undefined,
         benefits: formData.benefits
           .split('\n')
@@ -388,6 +390,23 @@ export default function AddProductPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
                 placeholder="0"
               />
+            </div>
+          </div>
+
+          {/* Stock */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Stock Quantity</label>
+              <input
+                type="number"
+                name="stock"
+                value={formData.stock}
+                onChange={handleChange}
+                min="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
+                placeholder="0"
+              />
+              <p className="text-xs text-gray-500 mt-1">Can be updated manually later</p>
             </div>
           </div>
 
