@@ -47,7 +47,7 @@ export default function AddProductPage() {
     reviews: '0',
     description: '',
     status: 'active',
-    images: ['', '', '', ''],
+    images: [],
     sizeVariants: [
       { id: 1, name: '', price: '' },
       { id: 2, name: '', price: '' },
@@ -59,6 +59,8 @@ export default function AddProductPage() {
       { id: 3, name: '', price: '' }
     ]
   });
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -81,10 +83,55 @@ export default function AddProductPage() {
     }
   };
 
-  const handleImageChange = (index: number, value: string) => {
-    const newImages = [...formData.images];
-    newImages[index] = value;
-    setFormData(prev => ({ ...prev, images: newImages }));
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newFiles = Array.from(files);
+    setImageFiles(prev => [...prev, ...newFiles]);
+
+    // Create preview URLs
+    const previews = newFiles.map(file => URL.createObjectURL(file));
+    setImagePreviewUrls(prev => [...prev, ...previews]);
+  };
+
+  const removeImage = (index: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImagePreviewUrls(prev => {
+      URL.revokeObjectURL(prev[index]);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const uploadImagesToS3 = async (): Promise<string[]> => {
+    if (imageFiles.length === 0) return [];
+
+    const uploadedUrls: string[] = [];
+
+    for (const file of imageFiles) {
+      const formDataS3 = new FormData();
+      formDataS3.append('file', file);
+      formDataS3.append('type', 'product');
+
+      try {
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formDataS3
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to upload image');
+        }
+
+        const data = await response.json();
+        uploadedUrls.push(data.url);
+      } catch (err) {
+        console.error('Image upload error:', err);
+        throw err;
+      }
+    }
+
+    return uploadedUrls;
   };
 
   const handleSizeChange = (index: number, field: string, value: string) => {
@@ -106,17 +153,20 @@ export default function AddProductPage() {
     setSuccess(false);
 
     try {
-      const originalPrice = parseFloat(formData.originalPrice);
-      const discount = parseFloat(formData.discount);
-      const finalPrice = Math.round(originalPrice - (originalPrice * discount) / 100);
-
-      const images = formData.images.filter(img => img.trim().length > 0);
-
-      if (images.length === 0) {
-        setError('At least one image URL is required');
+      // Upload images first
+      if (imageFiles.length === 0) {
+        setError('At least one image is required');
         setIsLoading(false);
         return;
       }
+
+      setError('Uploading images...');
+      const uploadedImageUrls = await uploadImagesToS3();
+      setError(null);
+
+      const originalPrice = parseFloat(formData.originalPrice);
+      const discount = parseFloat(formData.discount);
+      const finalPrice = Math.round(originalPrice - (originalPrice * discount) / 100);
 
       const sizeVariants = formData.sizeVariants
         .filter(v => v.name && v.price)
@@ -144,7 +194,7 @@ export default function AddProductPage() {
         rating: parseFloat(formData.rating),
         reviews: parseInt(formData.reviews),
         description: formData.description || undefined,
-        images,
+        images: uploadedImageUrls,
         sizeVariants,
         potVariants,
         status: formData.status
@@ -346,18 +396,56 @@ export default function AddProductPage() {
 
           {/* Images */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Image URLs (AWS S3) *</label>
-            <div className="space-y-2">
-              {formData.images.map((img, idx) => (
+            <label className="block text-sm font-medium text-gray-700 mb-2">Product Images *</label>
+            <div className="space-y-4">
+              {/* File Upload */}
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                 <input
-                  key={idx}
-                  type="url"
-                  value={img}
-                  onChange={(e) => handleImageChange(idx, e.target.value)}
-                  placeholder={`Image URL ${idx + 1}`}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-sm"
+                  type="file"
+                  id="image-upload"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
                 />
-              ))}
+                <label
+                  htmlFor="image-upload"
+                  className="cursor-pointer flex flex-col items-center gap-2"
+                >
+                  <div className="text-4xl">📸</div>
+                  <span className="text-sm font-medium text-gray-700">Click to upload images</span>
+                  <span className="text-xs text-gray-500">or drag and drop</span>
+                </label>
+              </div>
+
+              {/* Image Previews */}
+              {imagePreviewUrls.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {imagePreviewUrls.map((preview, idx) => (
+                    <div key={idx} className="relative group">
+                      <img
+                        src={preview}
+                        alt={`Preview ${idx + 1}`}
+                        className="w-full h-24 object-cover rounded-lg border border-gray-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(idx)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                      >
+                        ×
+                      </button>
+                      <span className="text-xs text-gray-500 mt-1 block">
+                        {imageFiles[idx]?.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {imagePreviewUrls.length === 0 && (
+                <p className="text-sm text-gray-500 text-center">No images selected</p>
+              )}
             </div>
           </div>
 
