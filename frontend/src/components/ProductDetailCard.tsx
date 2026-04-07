@@ -8,6 +8,7 @@ import { ProductInfo } from '@/components/productinfo';
 import { DeliveryChecker } from '@/components/deliveryChecker';
 import { GiftOptions } from '@/components/GiftOptions';
 import ActionButtons from '@/components/ActionButtons';
+import ProductDetails from '@/components/ProductDetails';
 
 interface BreadcrumbItem {
   label: string;
@@ -32,6 +33,9 @@ interface ProductDetailCardProps {
     originalPrice: number;
     finalPrice: number;
     discount: number;
+    description?: string;
+    benefits?: string[];
+    care?: string[];
   };
   breadcrumbs?: BreadcrumbItem[];
   sizeVariants?: Variant[];
@@ -144,6 +148,17 @@ export default function ProductDetailCard({
               onAddToCart={handleAddToCart}
               onBuyNow={handleBuyNow}
             />
+
+            {/* Product Details - Below Buttons */}
+            {(product.description || product.benefits || product.care) && (
+              <div className="mt-8 pt-8 border-t border-gray-200">
+                <ProductDetails 
+                  description={product.description}
+                  benefits={product.benefits}
+                  care={product.care}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

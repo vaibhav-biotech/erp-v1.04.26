@@ -73,6 +73,14 @@ const productSchema = new Schema(
       type: String,
       default: null
     },
+    benefits: {
+      type: [String],
+      default: []
+    },
+    care: {
+      type: [String],
+      default: []
+    },
     sizeVariants: {
       type: [variantSchema],
       default: []

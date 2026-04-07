@@ -46,6 +46,8 @@ export default function AddProductPage() {
     rating: '4.5',
     reviews: '0',
     description: '',
+    benefits: '',
+    care: '',
     status: 'active',
     images: [],
     sizeVariants: [
@@ -194,6 +196,14 @@ export default function AddProductPage() {
         rating: parseFloat(formData.rating),
         reviews: parseInt(formData.reviews),
         description: formData.description || undefined,
+        benefits: formData.benefits
+          .split('\n')
+          .map(b => b.trim())
+          .filter(b => b.length > 0),
+        care: formData.care
+          .split('\n')
+          .map(c => c.trim())
+          .filter(c => c.length > 0),
         images: uploadedImageUrls,
         sizeVariants,
         potVariants,
@@ -392,6 +402,34 @@ export default function AddProductPage() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
               placeholder="Product description..."
             />
+          </div>
+
+          {/* Benefits */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Benefits (One per line)</label>
+            <textarea
+              name="benefits"
+              value={formData.benefits}
+              onChange={handleChange}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
+              placeholder="Enter benefits, one per line&#10;Example:&#10;100% organic&#10;Fresh from farm&#10;No pesticides"
+            />
+            <p className="text-xs text-gray-500 mt-1">Each line will be treated as a separate benefit</p>
+          </div>
+
+          {/* Care Instructions */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Care Instructions (One per line)</label>
+            <textarea
+              name="care"
+              value={formData.care}
+              onChange={handleChange}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
+              placeholder="Enter care instructions, one per line&#10;Example:&#10;Water once daily&#10;Place in sunlight&#10;Trim dead leaves"
+            />
+            <p className="text-xs text-gray-500 mt-1">Each line will be treated as a separate care instruction</p>
           </div>
 
           {/* Images */}
