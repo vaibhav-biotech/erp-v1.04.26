@@ -59,6 +59,12 @@ const productSchema = new Schema(
       min: [0, 'Reviews cannot be negative'],
       default: 0
     },
+    stock: {
+      type: Number,
+      required: [true, 'Stock is required'],
+      min: [0, 'Stock cannot be negative'],
+      default: 0
+    },
     images: {
       type: [String],
       required: [true, 'At least one image is required'],

@@ -20,6 +20,30 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// File upload middleware (memory storage so we can forward buffer to S3)
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+
+// Upload endpoint used by frontend AddProduct form to upload images to S3
+app.post('/api/upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, error: 'No file uploaded' });
+
+    const { uploadImageToS3 } = require('./services/s3.service');
+    const fileBuffer = req.file.buffer;
+    const originalName = req.file.originalname || `upload-${Date.now()}`;
+    const contentType = req.file.mimetype || 'image/jpeg';
+
+    const result = await uploadImageToS3(fileBuffer, originalName, contentType);
+    if (!result.success) return res.status(500).json({ success: false, error: result.error });
+
+    return res.status(200).json({ success: true, url: result.url });
+  } catch (error) {
+    console.error('Upload error:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Upload failed' });
+  }
+});
+
 // MongoDB Connection
 const connectDB = async () => {
   try {

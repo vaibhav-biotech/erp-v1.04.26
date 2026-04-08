@@ -45,6 +45,31 @@ router.post('/bulk-upload', async (req, res) => {
 });
 
 /**
+ * POST /api/products
+ * Create a single product (used by frontend Add Product form)
+ */
+router.post('/', async (req, res) => {
+  try {
+    const product = req.body;
+
+    const { validateProduct } = require('../services/validation.service');
+    const validation = validateProduct(product);
+    if (!validation.isValid) {
+      return res.status(400).json({ success: false, errors: validation.errors });
+    }
+
+    const Product = require('../models/Product');
+    const newProduct = new Product(product);
+    const saved = await newProduct.save();
+
+    return res.status(201).json({ success: true, data: saved });
+  } catch (error) {
+    console.error('Create product error:', error);
+    return res.status(500).json({ success: false, error: error.message || 'Failed to create product' });
+  }
+});
+
+/**
  * GET /api/products
  * Get all products with optional filters
  * Query params: category, status, limit, skip

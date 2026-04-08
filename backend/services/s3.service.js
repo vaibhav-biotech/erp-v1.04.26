@@ -19,8 +19,7 @@ const uploadImageToS3 = async (fileBuffer, fileName, contentType = 'image/jpeg')
       Bucket: process.env.AWS_S3_BUCKET_NAME || '',
       Key: uniqueFileName,
       Body: fileBuffer,
-      ContentType: contentType,
-      ACL: 'public-read'
+      ContentType: contentType
     };
 
     const result = await s3.upload(params).promise();
