@@ -15,11 +15,7 @@ export default function VariantCard({ variant, active, onClick }: VariantCardPro
   return (
     <div
       onClick={onClick}
-      className={`relative cursor-pointer rounded-xl px-3 py-2 min-w-[100px] transition-all border ${
-        active
-          ? 'border-amber-400  shadow-sm border-2'
-          : 'border-gray-200 hover:border-gray-400'
-      }`}
+      className={`relative cursor-pointer rounded-xl px-3 py-2 min-w-[100px] transition-all border border-gray-300`}
     >
       {/* Check Badge */}
       {active && (
@@ -35,8 +31,8 @@ export default function VariantCard({ variant, active, onClick }: VariantCardPro
         </div>
       )}
 
-      <p className="font-medium text-sm text-green-700">{variant.name}</p>
-      <p className="text-base font-semibold text-green-700">
+      <p className="font-normal text-sm text-green-700">{variant.name}</p>
+      <p className="text-base font-normal text-green-700">
         ₹{variant.price}
       </p>
     </div>

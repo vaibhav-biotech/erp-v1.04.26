@@ -24,38 +24,41 @@ export default function ActionButtons({
   };
 
   return (
-    <div className="flex gap-3 items-center w-full">
-      {/* Quantity Tracker */}
-      <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-3 bg-white">
+    <div className="space-y-4">
+      {/* Quantity and Buttons Row */}
+      <div className="flex gap-3 items-stretch w-full">
+        {/* Quantity Tracker */}
+        <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-3 bg-white">
+          <button
+            onClick={handleDecrease}
+            className="text-gray-600 hover:text-gray-900 transition-all"
+          >
+            <FiMinus size={18} />
+          </button>
+          <span className="w-8 text-center font-semibold text-gray-900">{quantity}</span>
+          <button
+            onClick={handleIncrease}
+            className="text-gray-600 hover:text-gray-900 transition-all"
+          >
+            <FiPlus size={18} />
+          </button>
+        </div>
+
+        {/* Add to Cart Button */}
         <button
-          onClick={handleDecrease}
-          className="text-gray-600 hover:text-gray-900 transition-all"
+          onClick={onAddToCart}
+          disabled={isLoading}
+          className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-all disabled:opacity-50"
         >
-          <FiMinus size={18} />
-        </button>
-        <span className="w-8 text-center font-semibold text-gray-900">{quantity}</span>
-        <button
-          onClick={handleIncrease}
-          className="text-gray-600 hover:text-gray-900 transition-all"
-        >
-          <FiPlus size={18} />
+          Add to Cart
         </button>
       </div>
 
-      {/* Add to Cart Button */}
-      <button
-        onClick={onAddToCart}
-        disabled={isLoading}
-        className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-all disabled:opacity-50"
-      >
-        Add to Cart
-      </button>
-
-      {/* Buy Now Button */}
+      {/* Buy Now Button - Full Width */}
       <button
         onClick={onBuyNow}
         disabled={isLoading}
-        className="flex-1 bg-white border-2 border-green-600 hover:bg-green-50 text-green-600 font-semibold py-3 px-4 rounded-lg transition-all disabled:opacity-50"
+        className="w-full bg-white border-2 border-green-600 hover:bg-green-50 text-green-600 font-semibold py-3 px-4 rounded-lg transition-all disabled:opacity-50"
       >
         Buy Now
       </button>

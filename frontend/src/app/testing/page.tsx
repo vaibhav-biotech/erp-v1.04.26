@@ -2,7 +2,6 @@
 
 import PublicLayout from '@/components/PublicLayout';
 import ProductDetailCard from '@/components/ProductDetailCard';
-import AddProductForm from '@/components/AddProductForm';
 
 export default function TestingPage() {
   const product = {
@@ -15,7 +14,13 @@ export default function TestingPage() {
     originalPrice: 1599,
     finalPrice: 1199,
     discount: 25,
-    description: 'Beautiful and easy-to-care monstera plant with large, vibrant green leaves. Perfect for any indoor space to add a touch of nature.',
+    images: [
+      'https://images.unsplash.com/photo-1599599810694-b3b4efb9d6a0?w=800&h=800&fit=crop',
+      'https://images.unsplash.com/photo-1624763216266-4fa8dbd5f221?w=800&h=800&fit=crop',
+      'https://images.unsplash.com/photo-1648903519362-7d1d7d4b6f7f?w=800&h=800&fit=crop',
+      'https://images.unsplash.com/photo-1657826203914-3da0c7b2b6bb?w=800&h=800&fit=crop'
+    ],
+    description: 'Beautiful and easy-to-care monstera plant with large, vibrant green leaves. Perfect for any indoor space to add a touch of nature. The Monstera Deliciosa is native to Mexico and is famous for its large fenestrated (split) leaves. This tropical beauty thrives in bright, indirect light and is extremely forgiving, making it perfect for both beginners and experienced plant parents. With proper care, your Monstera can grow to impressive heights and become a stunning focal point in any room.',
     benefits: [
       '100% organic and pesticide-free',
       'Improves air quality by filtering toxins',
@@ -30,6 +35,16 @@ export default function TestingPage() {
       'Wipe leaves with damp cloth monthly',
       'Rotate plant every 2 weeks for even growth',
       'Trim brown or yellowing leaves regularly'
+    ],
+    sizeVariants: [
+      { id: 1, name: 'Small (6")', price: 0 },
+      { id: 2, name: 'Medium (8")', price: 300 },
+      { id: 3, name: 'Large (10")', price: 600 }
+    ],
+    potVariants: [
+      { id: 1, name: 'Without Pot', price: 0 },
+      { id: 2, name: 'Ceramic Pot', price: 500 },
+      { id: 3, name: 'Premium Planter', price: 1000 }
     ]
   };
 
@@ -45,19 +60,12 @@ export default function TestingPage() {
 
   return (
     <PublicLayout>
-      <ProductDetailCard
-        product={product}
-        onAddToCart={handleAddToCart}
-        onBuyNow={handleBuyNow}
-      />
-      
-      {/* Add Product Form */}
-      <div className="px-4 sm:px-8 lg:px-16 py-12 sm:py-16">
-        <AddProductForm 
-          onSubmit={(data) => {
-            console.log('Product submitted:', data);
-            alert('Product data logged! Check console.');
-          }}
+      {/* Old UI - Original ProductDetailCard */}
+      <div className="border-b-4 border-gray-300 bg-gray-50 py-8 px-4 sm:px-6 lg:px-12">
+        <ProductDetailCard
+          product={product}
+          onAddToCart={handleAddToCart}
+          onBuyNow={handleBuyNow}
         />
       </div>
     </PublicLayout>

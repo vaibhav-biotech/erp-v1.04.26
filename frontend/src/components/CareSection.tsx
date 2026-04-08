@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { FiChevronDown } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiChevronDown, FiActivity } from 'react-icons/fi';
 
 interface CareSectionProps {
   care?: string[];
@@ -13,28 +14,49 @@ export default function CareSection({ care }: CareSectionProps) {
   if (!care || care.length === 0) return null;
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
+    <div className="border-b border-gray-200 py-6">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition"
+        className="w-full flex items-center justify-between hover:text-green-600 transition-colors group"
       >
-        <h3 className="text-lg font-semibold text-gray-900">Care Instructions</h3>
-        <FiChevronDown
-          size={20}
-          className={`text-gray-600 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-        />
+        <div className="flex items-center gap-3">
+          <FiActivity className="text-xl text-gray-400 group-hover:text-green-600 transition-colors" />
+          <h3 className="text-base font-montserrat font-normal text-gray-900 uppercase tracking-wide">Care Instructions</h3>
+        </div>
+        <motion.div
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <FiChevronDown className="text-xl text-gray-400 group-hover:text-green-600 transition-colors" />
+        </motion.div>
       </button>
 
-      {isOpen && (
-        <div className="p-4 bg-white space-y-3 border-t border-gray-200">
-          {care.map((instruction, idx) => (
-            <div key={idx} className="flex items-start gap-3">
-              <span className="text-blue-600 font-semibold min-w-fit">{idx + 1}.</span>
-              <span className="text-gray-700">{instruction}</span>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="overflow-hidden"
+          >
+            <div className="pt-4 pl-8 pr-4 space-y-4">
+              {care.map((instruction, idx) => (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="flex items-start gap-3"
+                >
+                  <span className="text-green-600 font-normal flex-shrink-0 text-sm">{idx + 1}.</span>
+                  <span className="text-gray-700 font-montserrat font-light text-sm">{instruction}</span>
+                </motion.div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

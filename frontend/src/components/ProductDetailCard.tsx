@@ -78,22 +78,22 @@ export default function ProductDetailCard({
   };
 
   return (
-    <div className="bg-white min-h-screen w-full">
+    <div className="min-h-screen bg-transparent">
       {/* Breadcrumb */}
-      <div className="px-4 sm:px-8 lg:px-16 py-1 sm:py-1.5">
+      <div className="py-1 sm:py-1.5 px-4 sm:px-6 lg:px-8">
         <Breadcrumb items={breadcrumbs} />
       </div>
 
       {/* Main Product Section - Responsive Grid */}
-      <div className="px-4 sm:px-8 lg:px-16 py-4 sm:py-6 lg:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-          {/* Left - Image Gallery (Responsive) */}
-          <div className="w-full lg:sticky lg:top-0 lg:h-fit">
+      <div className="py-4 sm:py-6 lg:py-8 px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-11 gap-8 lg:gap-12">
+          {/* Left - Image Gallery (55% - 6 cols out of 11) */}
+          <div className="w-full lg:col-span-6 lg:sticky lg:top-0 lg:h-fit">
             <ProductGallery />
           </div>
 
-          {/* Right - Product Details (Responsive) */}
-          <div className="space-y-6 w-full">
+          {/* Right - Product Details (45% - 5 cols out of 11) */}
+          <div className="space-y-6 w-full lg:col-span-5">
             {/* Product Info */}
             <ProductInfo
               title={product.name}
@@ -105,7 +105,7 @@ export default function ProductDetailCard({
 
             {/* Size Variants */}
             <div>
-              <h3 className="text-sm font-semibold text-gray-900 uppercase mb-3">
+              <h3 className="text-sm font-normal text-gray-900 uppercase mb-3">
                 Select Size
               </h3>
               <div className="flex gap-3 flex-wrap">
@@ -122,7 +122,7 @@ export default function ProductDetailCard({
 
             {/* Planter Variants */}
             <div>
-              <h3 className="text-sm font-semibold text-gray-900 uppercase mb-3">
+              <h3 className="text-sm font-normal text-gray-900 uppercase mb-3">
                 Select Planter
               </h3>
               <div className="flex gap-3 flex-wrap">
@@ -143,15 +143,25 @@ export default function ProductDetailCard({
             {/* Gift Options */}
             <GiftOptions />
 
-            {/* Action Buttons */}
-            <ActionButtons
-              onAddToCart={handleAddToCart}
-              onBuyNow={handleBuyNow}
-            />
+            {/* Action Buttons - Stacked */}
+            <div className="space-y-4">
+              <button
+                onClick={handleAddToCart}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-normal py-3 px-4 rounded-lg transition-all"
+              >
+                Add to Cart
+              </button>
+              <button
+                onClick={handleBuyNow}
+                className="w-full bg-white border-2 border-green-600 hover:bg-green-50 text-green-600 font-normal py-3 px-4 rounded-lg transition-all"
+              >
+                Buy Now
+              </button>
+            </div>
 
             {/* Product Details - Below Buttons */}
             {(product.description || product.benefits || product.care) && (
-              <div className="mt-8 pt-8 border-t border-gray-200">
+              <div className="mt-8">
                 <ProductDetails 
                   description={product.description}
                   benefits={product.benefits}
