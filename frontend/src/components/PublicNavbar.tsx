@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { RiShoppingBagLine } from 'react-icons/ri';
 import { FiMenu, FiX, FiChevronDown } from 'react-icons/fi';
+import CartBadge from '@/components/CartBadge';
 
 interface Subcategory {
   name: string;
@@ -87,9 +88,12 @@ export default function PublicNavbar() {
             ) : (
               categories.map((category) => (
                 <div key={category._id} className="relative group">
-                  <button className="text-black font-medium hover:text-gray-700 transition-colors py-2 text-sm xl:text-base">
+                  <Link 
+                    href={`/products/${category.name.toLowerCase().replace(/\s+/g, '-')}`}
+                    className="text-black font-medium hover:text-gray-700 transition-colors py-2 text-sm xl:text-base"
+                  >
                     {category.name}
-                  </button>
+                  </Link>
 
                   {/* Dropdown */}
                   <div className="absolute left-0 mt-0 w-56 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
@@ -118,9 +122,7 @@ export default function PublicNavbar() {
 
           {/* Auth Button & Cart - Desktop */}
           <div className="hidden lg:flex items-center gap-4">
-            <Link href="/cart" className="text-black text-2xl hover:opacity-70 transition-opacity">
-              <RiShoppingBagLine />
-            </Link>
+            <CartBadge />
             {!isLoggedIn ? (
               <Link
                 href="/login"
@@ -141,9 +143,7 @@ export default function PublicNavbar() {
 
           {/* Mobile Menu - Cart & Hamburger */}
           <div className="lg:hidden flex items-center gap-4">
-            <Link href="/cart" className="text-black text-2xl hover:opacity-70 transition-opacity">
-              <RiShoppingBagLine />
-            </Link>
+            <CartBadge />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="text-black text-2xl"

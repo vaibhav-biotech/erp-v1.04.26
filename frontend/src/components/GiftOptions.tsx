@@ -4,13 +4,13 @@ import VariantCard from "./VariantCard";
 
 export function GiftOptions() {
   const [isGift, setIsGift] = useState(false);
-  const [selectedGift, setSelectedGift] = useState(null);
+  const [selectedGift, setSelectedGift] = useState<number | null>(null);
 
   const giftOptions = [
-    { id: 1, label: "None", price: 0 },
-    { id: 2, label: "Gift Wrap", price: 50 },
-    { id: 3, label: "Gift Wrap + Card", price: 100 },
-    { id: 4, label: "Premium Gift Box", price: 200 },
+    { id: 1, name: "None", label: "None", price: 0 },
+    { id: 2, name: "Gift Wrap", label: "Gift Wrap", price: 50 },
+    { id: 3, name: "Gift Wrap + Card", label: "Gift Wrap + Card", price: 100 },
+    { id: 4, name: "Premium Gift Box", label: "Premium Gift Box", price: 200 },
   ];
 
   return (

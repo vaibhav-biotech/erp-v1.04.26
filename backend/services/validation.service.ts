@@ -31,13 +31,31 @@ export const validateProduct = (product: any): ValidationResult => {
     errors.push({ field: 'category', message: 'Category cannot exceed 50 characters' });
   }
 
-  // Subcategory validation
-  if (!product.subcategory || typeof product.subcategory !== 'string') {
-    errors.push({ field: 'subcategory', message: 'Subcategory is required and must be a string' });
-  } else if (product.subcategory.trim().length < 2) {
-    errors.push({ field: 'subcategory', message: 'Subcategory must be at least 2 characters' });
-  } else if (product.subcategory.length > 50) {
-    errors.push({ field: 'subcategory', message: 'Subcategory cannot exceed 50 characters' });
+  // Subcategories validation (supports both subcategory string and subcategories array for backward compatibility)
+  if (product.subcategories) {
+    // New format: array of subcategories
+    if (!Array.isArray(product.subcategories)) {
+      errors.push({ field: 'subcategories', message: 'Subcategories must be an array' });
+    } else if (product.subcategories.length === 0) {
+      errors.push({ field: 'subcategories', message: 'At least one subcategory is required' });
+    } else {
+      product.subcategories.forEach((sub: any, index: number) => {
+        if (typeof sub !== 'string' || sub.trim().length === 0) {
+          errors.push({ field: `subcategories[${index}]`, message: 'Each subcategory must be a non-empty string' });
+        }
+      });
+    }
+  } else if (product.subcategory) {
+    // Old format: single subcategory string (backward compatibility)
+    if (typeof product.subcategory !== 'string') {
+      errors.push({ field: 'subcategory', message: 'Subcategory is required and must be a string' });
+    } else if (product.subcategory.trim().length < 2) {
+      errors.push({ field: 'subcategory', message: 'Subcategory must be at least 2 characters' });
+    } else if (product.subcategory.length > 50) {
+      errors.push({ field: 'subcategory', message: 'Subcategory cannot exceed 50 characters' });
+    }
+  } else {
+    errors.push({ field: 'subcategories', message: 'At least one subcategory is required' });
   }
 
   // Original Price validation

@@ -11,6 +11,58 @@ import {
 const router = Router();
 
 /**
+ * POST /api/products
+ * Create a single product with multiple subcategories
+ * Body: { name, category, subcategories[], originalPrice, finalPrice, discount?, rating, reviews, description?, images[], sizeVariants[], potVariants[], status? }
+ */
+router.post('/', async (req: Request, res: Response) => {
+  try {
+    const { name, category, subcategories, originalPrice, finalPrice, discount, rating, reviews, description, images, sizeVariants, potVariants, status } = req.body;
+
+    // Validate required fields
+    if (!name || !category || !Array.isArray(subcategories) || subcategories.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Name, category, and at least one subcategory are required'
+      });
+    }
+
+    // Import Product model
+    const Product = require('../models/Product');
+
+    const newProduct = new Product({
+      name,
+      category,
+      subcategories,
+      originalPrice,
+      finalPrice,
+      discount,
+      rating,
+      reviews,
+      description,
+      images,
+      sizeVariants,
+      potVariants,
+      status: status || 'active'
+    });
+
+    const savedProduct = await newProduct.save();
+
+    return res.status(201).json({
+      success: true,
+      message: 'Product created successfully',
+      data: savedProduct
+    });
+  } catch (error: any) {
+    console.error('Create Product Error:', error);
+    return res.status(400).json({
+      success: false,
+      error: error.message || 'Failed to create product'
+    });
+  }
+});
+
+/**
  * POST /api/products/bulk-upload
  * Upload multiple products with images from Google Drive
  * Expects array of products with driveImageUrls (Google Drive links or IDs)

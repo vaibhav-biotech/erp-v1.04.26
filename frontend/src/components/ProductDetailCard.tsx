@@ -9,6 +9,7 @@ import { DeliveryChecker } from '@/components/deliveryChecker';
 import { GiftOptions } from '@/components/GiftOptions';
 import ActionButtons from '@/components/ActionButtons';
 import ProductDetails from '@/components/ProductDetails';
+import AddToCartButton from '@/components/AddToCartButton';
 
 interface BreadcrumbItem {
   label: string;
@@ -36,6 +37,7 @@ interface ProductDetailCardProps {
     description?: string;
     benefits?: string[];
     care?: string[];
+    images?: string[];
   };
   breadcrumbs?: BreadcrumbItem[];
   sizeVariants?: Variant[];
@@ -53,14 +55,14 @@ export default function ProductDetailCard({
     { label: product.name },
   ],
   sizeVariants = [
-    { id: 1, name: 'Small', price: 1199 },
-    { id: 2, name: 'Medium', price: 1499 },
-    { id: 3, name: 'Large', price: 1999 },
+    { id: 1, name: 'Small', price: 299 },
+    { id: 2, name: 'Medium', price: 399 },
+    { id: 3, name: 'Large', price: 599 },
   ],
   potVariants = [
     { id: 1, name: 'No Pot', price: 0 },
-    { id: 2, name: 'Ceramic', price: 299, tag: 'Most Loved' },
-    { id: 3, name: 'Wooden', price: 499 },
+    { id: 2, name: 'Standard Pot', price: 99 },
+    { id: 3, name: 'Premium Ceramic', price: 199, tag: 'Most Loved' },
   ],
   onAddToCart,
   onBuyNow,
@@ -68,6 +70,19 @@ export default function ProductDetailCard({
   const [activeSize, setActiveSize] = useState(1);
   const [activePot, setActivePot] = useState(1);
   const [isGift, setIsGift] = useState(false);
+
+  // Get selected variant details
+  const selectedSize = sizeVariants.find((v) => v.id === activeSize) || sizeVariants[0];
+  const selectedPot = potVariants.find((v) => v.id === activePot) || potVariants[0];
+
+  // Calculate prices
+  const plantPrice = selectedSize.price;
+  const potPrice = selectedPot.price;
+  const totalPrice = plantPrice + potPrice;
+
+  // For display (use product's finalPrice and originalPrice as base)
+  const displayFinalPrice = totalPrice;
+  const displayOriginalPrice = product.originalPrice + (selectedPot.price || 0);
 
   const handleAddToCart = () => {
     onAddToCart?.(1, activeSize, activePot, isGift);
@@ -89,7 +104,7 @@ export default function ProductDetailCard({
         <div className="grid grid-cols-1 lg:grid-cols-11 gap-8 lg:gap-12">
           {/* Left - Image Gallery (55% - 6 cols out of 11) */}
           <div className="w-full lg:col-span-6 lg:sticky lg:top-0 lg:h-fit">
-            <ProductGallery />
+            <ProductGallery images={product.images} />
           </div>
 
           {/* Right - Product Details (45% - 5 cols out of 11) */}
@@ -97,10 +112,12 @@ export default function ProductDetailCard({
             {/* Product Info */}
             <ProductInfo
               title={product.name}
-              price={product.finalPrice}
-              originalPrice={product.originalPrice}
+              price={displayFinalPrice}
+              originalPrice={displayOriginalPrice}
               rating={product.rating}
               reviews={product.reviews}
+              plantPrice={plantPrice}
+              potPrice={potPrice}
             />
 
             {/* Size Variants */}
@@ -145,12 +162,21 @@ export default function ProductDetailCard({
 
             {/* Action Buttons - Stacked */}
             <div className="space-y-4">
-              <button
-                onClick={handleAddToCart}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-normal py-3 px-4 rounded-lg transition-all"
-              >
-                Add to Cart
-              </button>
+              <AddToCartButton
+                productId={product.id}
+                productName={product.name}
+                productImage={product.images?.[0] || '/placeholder.jpg'}
+                sizeVariant={{
+                  id: String(activeSize),
+                  name: selectedSize.name,
+                  price: selectedSize.price,
+                }}
+                potVariant={{
+                  id: String(activePot),
+                  name: selectedPot.name,
+                  price: selectedPot.price,
+                }}
+              />
               <button
                 onClick={handleBuyNow}
                 className="w-full bg-white border-2 border-green-600 hover:bg-green-50 text-green-600 font-normal py-3 px-4 rounded-lg transition-all"

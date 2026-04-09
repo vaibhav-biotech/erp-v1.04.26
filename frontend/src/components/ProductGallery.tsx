@@ -1,15 +1,23 @@
 'use client';
 import { useState } from 'react';
 
-const images = [
-  'https://lh3.google.com/d/1JntBSa_g79LZjuC-xD50UXYGPMwApiWq=w800',
-  'https://lh3.google.com/d/1OYd1WFhG_C5aeH-jGlHkFHRd_lUJQl_S=w800',
-  'https://lh3.google.com/d/1fAgMm8_PJ7opa9nZTBRKwri7o8s1ocuZ=w800',
-  'https://lh3.google.com/d/1HWSpxNGbJXQTMpS7eEXrhGWrIC_3saOZ=w800',
-];
+interface ProductGalleryProps {
+  images?: string[];
+}
 
-export default function ProductGallery() {
-  const [selected, setSelected] = useState(images[0]);
+export default function ProductGallery({ images = [] }: ProductGalleryProps) {
+  const [selected, setSelected] = useState(images[0] || '');
+
+  // If no images, show placeholder
+  if (images.length === 0) {
+    return (
+      <div className="w-full">
+        <div className="rounded-lg overflow-hidden shadow-md flex justify-center items-center bg-gray-50 aspect-square max-w-[600px] sm:max-w-[800px] lg:max-w-[1024px]">
+          <div className="text-gray-400">No images available</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">
@@ -19,6 +27,9 @@ export default function ProductGallery() {
           src={selected}
           alt="product"
           className="w-full h-full object-contain"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400?text=Image+Not+Found';
+          }}
         />
       </div>
 
@@ -28,16 +39,19 @@ export default function ProductGallery() {
           <div
             key={index}
             onClick={() => setSelected(img)}
-            className={`cursor-pointer rounded-xl overflow-hidden border-2 ${
+            className={`cursor-pointer rounded-xl overflow-hidden border-2 transition-colors ${
               selected === img
                 ? 'border-green-600'
-                : 'border-transparent'
+                : 'border-transparent hover:border-gray-300'
             }`}
           >
             <img
               src={img}
-              alt="thumb"
+              alt={`thumb-${index}`}
               className="w-20 h-20 object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/80?text=No+Image';
+              }}
             />
           </div>
         ))}

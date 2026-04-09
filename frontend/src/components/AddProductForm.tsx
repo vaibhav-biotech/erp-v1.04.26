@@ -1,7 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiX, FiPlus } from 'react-icons/fi';
+
+interface Category {
+  _id: string;
+  name: string;
+  subcategories: { name: string; slug: string }[];
+}
 
 interface AddProductFormProps {
   isOpen: boolean;
@@ -13,11 +19,13 @@ export default function AddProductForm({ isOpen, onClose, onProductAdded }: AddP
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [availableSubcategories, setAvailableSubcategories] = useState<{ name: string; slug: string }[]>([]);
 
   const [formData, setFormData] = useState({
     name: '',
     category: '',
-    subcategory: '',
+    subcategories: [] as string[], // Changed to array
     originalPrice: '',
     discount: '0',
     rating: '4.5',
@@ -37,9 +45,44 @@ export default function AddProductForm({ isOpen, onClose, onProductAdded }: AddP
     ]
   });
 
+  // Fetch categories on mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch('http://localhost:5050/api/categories');
+        if (res.ok) {
+          const data = await res.json();
+          setCategories(data.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch categories:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Update available subcategories when category changes
+  useEffect(() => {
+    if (formData.category) {
+      const selected = categories.find(cat => cat._id === formData.category);
+      setAvailableSubcategories(selected?.subcategories || []);
+      // Clear subcategories when category changes
+      setFormData(prev => ({ ...prev, subcategories: [] }));
+    }
+  }, [formData.category, categories]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubcategoryToggle = (slug: string) => {
+    setFormData(prev => {
+      const newSubcategories = prev.subcategories.includes(slug)
+        ? prev.subcategories.filter(s => s !== slug)
+        : [...prev.subcategories, slug];
+      return { ...prev, subcategories: newSubcategories };
+    });
   };
 
   const handleImageChange = (index: number, value: string) => {
@@ -67,6 +110,13 @@ export default function AddProductForm({ isOpen, onClose, onProductAdded }: AddP
     setSuccess(false);
 
     try {
+      // Validate form
+      if (!formData.name || !formData.category || formData.subcategories.length === 0) {
+        setError('Product name, category, and at least one subcategory are required');
+        setIsLoading(false);
+        return;
+      }
+
       // Calculate final price
       const originalPrice = parseFloat(formData.originalPrice);
       const discount = parseFloat(formData.discount);
@@ -101,7 +151,7 @@ export default function AddProductForm({ isOpen, onClose, onProductAdded }: AddP
       const productData = {
         name: formData.name,
         category: formData.category,
-        subcategory: formData.subcategory,
+        subcategories: formData.subcategories,
         originalPrice: originalPrice,
         finalPrice: finalPrice,
         discount: discount > 0 ? discount : undefined,
@@ -132,7 +182,7 @@ export default function AddProductForm({ isOpen, onClose, onProductAdded }: AddP
       setFormData({
         name: '',
         category: '',
-        subcategory: '',
+        subcategories: [],
         originalPrice: '',
         discount: '0',
         rating: '4.5',
@@ -202,33 +252,26 @@ export default function AddProductForm({ isOpen, onClose, onProductAdded }: AddP
                 value={formData.name}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 placeholder:text-gray-700 text-gray-900"
                 placeholder="e.g., Monstera Plant"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-              <input
-                type="text"
+              <select
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
-                placeholder="e.g., Plants"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Subcategory *</label>
-              <input
-                type="text"
-                name="subcategory"
-                value={formData.subcategory}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
-                placeholder="e.g., Indoor Plants"
-              />
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-gray-900 bg-white"
+              >
+                <option value="" className="text-gray-900">Select a category</option>
+                {categories.map(cat => (
+                  <option key={cat._id} value={cat._id} className="text-gray-900">
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
@@ -236,14 +279,34 @@ export default function AddProductForm({ isOpen, onClose, onProductAdded }: AddP
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-gray-900 bg-white"
               >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="draft">Draft</option>
+                <option value="active" className="text-gray-900">Active</option>
+                <option value="inactive" className="text-gray-900">Inactive</option>
+                <option value="draft" className="text-gray-900">Draft</option>
               </select>
             </div>
           </div>
+
+          {/* Subcategories - Multi-select */}
+          {formData.category && availableSubcategories.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">Subcategories * (Select at least one)</label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {availableSubcategories.map(sub => (
+                  <label key={sub.slug} className="flex items-center gap-2 cursor-pointer p-2 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={formData.subcategories.includes(sub.slug)}
+                      onChange={() => handleSubcategoryToggle(sub.slug)}
+                      className="w-4 h-4 cursor-pointer accent-green-600"
+                    />
+                    <span className="text-sm text-gray-700">{sub.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Pricing */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -256,7 +319,7 @@ export default function AddProductForm({ isOpen, onClose, onProductAdded }: AddP
                 onChange={handleChange}
                 required
                 min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 placeholder:text-gray-700 text-gray-900"
                 placeholder="1000"
               />
             </div>
@@ -269,7 +332,7 @@ export default function AddProductForm({ isOpen, onClose, onProductAdded }: AddP
                 onChange={handleChange}
                 min="0"
                 max="100"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 placeholder:text-gray-700 text-gray-900"
                 placeholder="10"
               />
             </div>
@@ -283,7 +346,7 @@ export default function AddProductForm({ isOpen, onClose, onProductAdded }: AddP
                 min="0"
                 max="5"
                 step="0.1"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 placeholder:text-gray-700 text-gray-900"
                 placeholder="4.5"
               />
             </div>
@@ -295,7 +358,7 @@ export default function AddProductForm({ isOpen, onClose, onProductAdded }: AddP
                 value={formData.reviews}
                 onChange={handleChange}
                 min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 placeholder:text-gray-700 text-gray-900"
                 placeholder="0"
               />
             </div>
@@ -309,7 +372,7 @@ export default function AddProductForm({ isOpen, onClose, onProductAdded }: AddP
               value={formData.description}
               onChange={handleChange}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 placeholder:text-gray-700 text-gray-900"
               placeholder="Product description..."
             />
           </div>
@@ -325,7 +388,7 @@ export default function AddProductForm({ isOpen, onClose, onProductAdded }: AddP
                   value={img}
                   onChange={(e) => handleImageChange(idx, e.target.value)}
                   placeholder={`Image URL ${idx + 1}`}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-sm placeholder:text-gray-700 text-gray-900"
                 />
               ))}
             </div>
@@ -344,7 +407,7 @@ export default function AddProductForm({ isOpen, onClose, onProductAdded }: AddP
                       value={size.name}
                       onChange={(e) => handleSizeChange(idx, 'name', e.target.value)}
                       placeholder="Name"
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-sm"
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-sm placeholder:text-gray-700 text-gray-900"
                     />
                     <input
                       type="number"
@@ -352,7 +415,7 @@ export default function AddProductForm({ isOpen, onClose, onProductAdded }: AddP
                       onChange={(e) => handleSizeChange(idx, 'price', e.target.value)}
                       placeholder="Price"
                       min="0"
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-sm"
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-sm placeholder:text-gray-700 text-gray-900"
                     />
                   </div>
                 ))}
@@ -370,7 +433,7 @@ export default function AddProductForm({ isOpen, onClose, onProductAdded }: AddP
                       value={pot.name}
                       onChange={(e) => handlePotChange(idx, 'name', e.target.value)}
                       placeholder="Name"
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-sm"
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-sm placeholder:text-gray-700 text-gray-900"
                     />
                     <input
                       type="number"
@@ -378,7 +441,7 @@ export default function AddProductForm({ isOpen, onClose, onProductAdded }: AddP
                       onChange={(e) => handlePotChange(idx, 'price', e.target.value)}
                       placeholder="Price"
                       min="0"
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-sm"
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-sm placeholder:text-gray-700 text-gray-900"
                     />
                   </div>
                 ))}

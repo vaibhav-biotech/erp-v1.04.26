@@ -10,7 +10,7 @@ interface IVariant {
 interface IProduct extends Document {
   name: string;
   category: string;
-  subcategory: string;
+  subcategories: string[]; // Changed to array
   originalPrice: number;
   finalPrice: number;
   discount?: number;
@@ -48,12 +48,15 @@ const productSchema = new Schema(
       minlength: [2, 'Category must be at least 2 characters'],
       maxlength: [50, 'Category cannot exceed 50 characters']
     },
-    subcategory: {
-      type: String,
-      required: [true, 'Subcategory is required'],
-      trim: true,
-      minlength: [2, 'Subcategory must be at least 2 characters'],
-      maxlength: [50, 'Subcategory cannot exceed 50 characters']
+    subcategories: {
+      type: [String],
+      required: [true, 'At least one subcategory is required'],
+      validate: {
+        validator: function(v: string[]) {
+          return Array.isArray(v) && v.length > 0;
+        },
+        message: 'At least one subcategory must be selected'
+      }
     },
     originalPrice: {
       type: Number,
