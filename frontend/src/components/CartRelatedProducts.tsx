@@ -73,7 +73,7 @@ export default function CartRelatedProducts() {
 
                 {/* Price */}
                 <p className="font-montserrat font-semibold text-base text-green-600 mb-3">
-                  €{product.price?.toFixed(2) || '0.00'}
+                  ₹{product.price?.toFixed(2) || '0.00'}
                 </p>
 
                 {/* Quick Add Button */}

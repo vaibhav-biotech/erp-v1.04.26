@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Montserrat, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/contexts/CartContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import CartModal from "@/components/CartModal";
 
 const geistSans = Geist({
@@ -42,10 +43,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable} ${playfairDisplay.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-montserrat">
-        <CartProvider>
-          {children}
-          <CartModal />
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            {children}
+            <CartModal />
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );

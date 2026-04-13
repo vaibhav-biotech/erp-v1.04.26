@@ -44,7 +44,7 @@ export default function CartItemCard({ item }: CartItemCardProps) {
 
         {/* Price */}
         <p className="font-montserrat font-semibold text-base text-green-600 mb-3">
-          €{pricePerItem.toFixed(2)}
+          ₹{pricePerItem.toFixed(2)}
         </p>
 
         {/* Quantity Controls */}

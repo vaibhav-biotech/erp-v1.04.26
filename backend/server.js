@@ -6,6 +6,8 @@ const jwt = require('jsonwebtoken');
 const User = require('./models/User');
 const Category = require('./models/Category');
 const productsRouter = require('./routes/products');
+const authRouter = require('./routes/auth');
+const customersRouter = require('./routes/customers');
 
 const app = express();
 
@@ -266,6 +268,12 @@ app.delete('/api/categories/:id', async (req, res) => {
 
 // Products Router
 app.use('/api/products', productsRouter);
+
+// Customer Auth Router
+app.use('/api/auth', authRouter);
+
+// Customers Router
+app.use('/api/customers', customersRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

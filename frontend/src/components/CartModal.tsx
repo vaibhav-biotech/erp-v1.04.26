@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/contexts/CartContext';
 import CartItemCard from './CartItemCard';
@@ -47,7 +48,7 @@ export default function CartModal() {
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="font-montserrat font-semibold text-lg tracking-widest">
+              <h2 className="font-montserrat font-semibold text-lg tracking-widest text-black">
                 CART
               </h2>
               <button
@@ -61,10 +62,31 @@ export default function CartModal() {
             {/* Content - Scrollable */}
             <div className="flex-1 overflow-y-auto">
               {cartItems.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-                  <p className="font-montserrat text-gray-600 text-sm">
+                <div className="flex flex-col items-center justify-center h-full p-6">
+                  <p className="font-montserrat text-gray-600 text-sm text-center mb-8">
                     Your cart is empty
                   </p>
+                  <div className="w-full space-y-3">
+                    <p className="font-montserrat text-xs text-gray-500 uppercase tracking-wide text-center mb-4">
+                      Continue Shopping
+                    </p>
+                    {[
+                      { name: 'Plants', slug: 'plants' },
+                      { name: 'Seeds', slug: 'seeds' },
+                      { name: 'Planters', slug: 'planters' },
+                      { name: 'Combo Kits', slug: 'combo-kits' },
+                      { name: 'Tools & Accessories', slug: 'tools-accessories' },
+                    ].map((category) => (
+                      <Link
+                        key={category.slug}
+                        href={`/products/${category.slug}`}
+                        onClick={toggleCartModal}
+                        className="block w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-900 text-sm font-montserrat rounded-lg transition-colors text-center"
+                      >
+                        {category.name}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <>
@@ -72,7 +94,7 @@ export default function CartModal() {
                   {showFreeShippingBar && (
                     <div className="bg-green-50 border-b border-green-200 p-4">
                       <p className="font-montserrat text-xs text-green-700 text-center">
-                        Spend €{remainingForFreeShipping.toFixed(2)} more to reach
+                        Spend ₹{remainingForFreeShipping.toFixed(2)} more to reach
                         free shipping
                       </p>
                       <div className="w-full bg-gray-300 h-1 rounded-full mt-2">
@@ -106,7 +128,7 @@ export default function CartModal() {
                         className="w-4 h-4 rounded border-gray-300"
                       />
                       <span className="font-montserrat text-sm text-gray-900">
-                        Gift wrap for €10.00
+                        Gift wrap for ₹10.00
                       </span>
                     </label>
                   </div>
@@ -132,7 +154,7 @@ export default function CartModal() {
                 <div className="space-y-1">
                   <div className="flex justify-between font-montserrat text-sm text-gray-900">
                     <span>Subtotal</span>
-                    <span>€{subtotal.toFixed(2)}</span>
+                    <span>₹{subtotal.toFixed(2)}</span>
                   </div>
                   <p className="font-montserrat text-xs text-gray-500">
                     Taxes included. Discounts and shipping calculated at checkout.
@@ -140,7 +162,7 @@ export default function CartModal() {
                 </div>
 
                 <button className="w-full bg-black text-white py-3 font-montserrat font-bold text-sm tracking-wide hover:bg-gray-900 transition-colors rounded-lg">
-                  CHECK OUT — €{subtotal.toFixed(2)} EUR
+                  CHECK OUT — ₹{subtotal.toFixed(2)} INR
                 </button>
               </div>
             )}

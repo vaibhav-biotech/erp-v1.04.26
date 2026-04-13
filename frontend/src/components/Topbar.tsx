@@ -8,7 +8,7 @@ export default function Topbar() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     window.dispatchEvent(new Event('auth-changed'));
-    router.push('/login');
+    router.push('/auth/login');
   };
 
   return (

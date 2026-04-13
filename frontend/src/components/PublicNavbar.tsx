@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { RiShoppingBagLine } from 'react-icons/ri';
 import { FiMenu, FiX, FiChevronDown } from 'react-icons/fi';
 import CartBadge from '@/components/CartBadge';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Subcategory {
   name: string;
@@ -22,6 +23,7 @@ interface Category {
 
 export default function PublicNavbar() {
   const router = useRouter();
+  const { customerAuthenticated } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -123,16 +125,16 @@ export default function PublicNavbar() {
           {/* Auth Button & Cart - Desktop */}
           <div className="hidden lg:flex items-center gap-4">
             <CartBadge />
-            {!isLoggedIn ? (
+            {!customerAuthenticated ? (
               <Link
-                href="/login"
+                href="/auth/login"
                 className="px-4 py-2 border-2 border-black text-black rounded-lg hover:bg-black hover:text-white transition-colors font-medium text-sm"
               >
                 Login
               </Link>
             ) : (
               <Link
-                href="/dashboard"
+                href="/customer"
                 className="text-black font-medium hover:text-gray-700 transition-colors flex items-center gap-2 text-sm"
               >
                 <span>👤</span>
@@ -197,9 +199,9 @@ export default function PublicNavbar() {
             
             {/* Mobile Auth Links */}
             <div className="py-3 border-t border-gray-100 space-y-2">
-              {!isLoggedIn ? (
+              {!customerAuthenticated ? (
                 <Link
-                  href="/login"
+                  href="/auth/login"
                   className="block px-4 py-2 border-2 border-black text-black rounded-lg hover:bg-black hover:text-white transition-colors font-medium text-center text-sm"
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -207,7 +209,7 @@ export default function PublicNavbar() {
                 </Link>
               ) : (
                 <Link
-                  href="/dashboard"
+                  href="/customer"
                   className="block text-black font-medium hover:text-gray-700 transition-colors text-center text-sm py-2"
                   onClick={() => setMobileMenuOpen(false)}
                 >
