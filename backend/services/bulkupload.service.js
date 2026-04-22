@@ -1,7 +1,84 @@
 const Product = require('../models/Product');
+const Category = require('../models/Category');
 const { uploadImageToS3 } = require('./s3.service');
 const { downloadFromGoogleDrive } = require('./drive.service');
-const { validateProduct, validateBulkProducts } = require('./validation.service');
+const { validateProduct, validateBulkProducts, parseVariants } = require('./validation.service');
+
+/**
+ * Resolve subcategory slug to subcategory ID
+ */
+const resolveSubcategoryId = async (categoryId, subcategorySlug) => {
+  try {
+    const category = await Category.findById(categoryId);
+
+    if (!category) {
+      throw new Error(`Category with ID ${categoryId} not found`);
+    }
+
+    // Find subcategory by slug
+    const subcategory = category.subcategories.find(
+      (sub) => sub.slug.toLowerCase() === subcategorySlug.toLowerCase()
+    );
+
+    if (subcategory) {
+      return subcategory._id.toString();
+    }
+
+    console.warn(`⚠️ Subcategory not found: ${subcategorySlug}. Creating new subcategory...`);
+
+    // Create new subcategory if it doesn't exist
+    const newSubcategory = {
+      name: subcategorySlug
+        .split('-')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' '),
+      slug: subcategorySlug.toLowerCase(),
+      description: ''
+    };
+
+    category.subcategories.push(newSubcategory);
+    const updatedCategory = await category.save();
+    
+    // Return the newly added subcategory's ID
+    const addedSubcategory = updatedCategory.subcategories[updatedCategory.subcategories.length - 1];
+    return addedSubcategory._id.toString();
+  } catch (error) {
+    console.error('Error resolving subcategory:', error);
+    throw new Error(`Failed to resolve subcategory: ${subcategorySlug}`);
+  }
+};
+
+/**
+ * Resolve category name to category ID
+ * If category doesn't exist, create it
+ */
+const resolveCategoryId = async (categoryName) => {
+  try {
+    const category = await Category.findOne({
+      name: { $regex: new RegExp(`^${categoryName}$`, 'i') }
+    });
+
+    if (category) {
+      return category._id.toString();
+    }
+
+    console.warn(`⚠️ Category not found: ${categoryName}. Creating new category...`);
+    
+    // Create new category if it doesn't exist
+    const newCategory = new Category({
+      name: categoryName,
+      slug: categoryName.toLowerCase().replace(/\s+/g, '-'),
+      description: `${categoryName} category`,
+      subcategories: []
+    });
+    
+    const savedCategory = await newCategory.save();
+    return savedCategory._id.toString();
+  } catch (error) {
+    console.error('Error resolving category:', error);
+    throw new Error(`Failed to resolve category: ${categoryName}`);
+  }
+};
 
 /**
  * Main bulk upload orchestrator
@@ -99,10 +176,79 @@ const processBulkUpload = async (products) => {
       }
 
       // Step 2c: Replace Google Drive URLs with S3 URLs
+      // Step 2c1: Resolve category name to category ID
+      const resolvedCategoryId = await resolveCategoryId(product.category);
+      const categoryDoc = await Category.findById(resolvedCategoryId);
+      const categoryName = categoryDoc.name;
+
+      // Step 2c2: Verify subcategory slug exists in category (don't convert to ID, keep slug for filtering)
+      const categoryForSubcat = await Category.findById(resolvedCategoryId);
+      const subcategorySlug = product.subcategory.toLowerCase();
+      
+      const subcategoryExists = categoryForSubcat.subcategories.some(
+        (sub) => sub.slug.toLowerCase() === subcategorySlug
+      );
+
+      if (!subcategoryExists) {
+        console.warn(`⚠️ Subcategory not found: ${subcategorySlug}. Creating...`);
+        
+        const newSubcategory = {
+          name: subcategorySlug
+            .split('-')
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' '),
+          slug: subcategorySlug,
+          description: ''
+        };
+        
+        categoryForSubcat.subcategories.push(newSubcategory);
+        await categoryForSubcat.save();
+      }
+
+      // DEBUG: Log what we're receiving from frontend
+      console.log(`\n📦 Processing product: ${product.name}`);
+      console.log('   Received sizeVariants:', JSON.stringify(product.sizeVariants));
+      console.log('   Discount:', product.discount);
+
       const productData = {
         ...product,
+        category: resolvedCategoryId, // Use resolved category ID
+        categoryName: categoryName, // Store category name for filtering
+        subcategory: subcategorySlug, // Keep slug for filtering
+        // Apply discount to size variants (already parsed by frontend)
+        sizeVariants: product.sizeVariants && Array.isArray(product.sizeVariants)
+          ? product.sizeVariants.map(variant => ({
+              id: variant.id,
+              name: variant.name,
+              price: variant.price,
+              originalPrice: variant.originalPrice,
+              tag: variant.tag
+            }))
+          : [],
+        // POT VARIANTS DISABLED FOR NOW - focus on size variants only
+        potVariants: [],
+        // Parse benefits and care into arrays (split by | or ,)
+        benefits: product.benefits 
+          ? product.benefits
+              .split(/[|,]/)
+              .map(b => b.trim())
+              .filter(b => b.length > 0)
+          : [],
+        care: product.care
+          ? product.care
+              .split(/[|,]/)
+              .map(c => c.trim())
+              .filter(c => c.length > 0)
+          : [],
         images: s3ImageUrls
       };
+
+      // Debug logging
+      console.log(`  📝 Product data being saved:`);
+      console.log(`     sizeVariants: ${JSON.stringify(productData.sizeVariants)}`);
+      console.log(`     Description: ${productData.description ? productData.description.substring(0, 50) + '...' : 'EMPTY'}`);
+      console.log(`     Benefits: ${JSON.stringify(productData.benefits)}`);
+      console.log(`     Care: ${JSON.stringify(productData.care)}`);
 
       // Step 2d: Save to MongoDB
       console.log(`  💾 Saving to MongoDB...`);
@@ -157,7 +303,18 @@ const getAllProducts = async (filters) => {
     const limit = filters?.limit || 50;
     const skip = filters?.skip || 0;
 
-    const products = await Product.find(query).limit(limit).skip(skip).sort({ createdAt: -1 });
+    let products = await Product.find(query).limit(limit).skip(skip).sort({ createdAt: -1 });
+    
+    // Enrich products with category names from categoryName field
+    // If categoryName is not available, try to extract from category field
+    products = products.map(product => {
+      const productObj = product.toObject ? product.toObject() : product;
+      return {
+        ...productObj,
+        categoryName: productObj.categoryName || productObj.category
+      };
+    });
+
     const total = await Product.countDocuments(query);
 
     return {

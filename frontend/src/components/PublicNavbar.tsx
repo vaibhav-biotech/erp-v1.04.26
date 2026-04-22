@@ -23,13 +23,14 @@ interface Category {
 
 export default function PublicNavbar() {
   const router = useRouter();
-  const { customerAuthenticated } = useAuth();
+  const { customerAuthenticated, logoutCustomer } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -38,9 +39,13 @@ export default function PublicNavbar() {
         if (res.ok) {
           const data = await res.json();
           setCategories(data.data || []);
+        } else {
+          console.error('Failed to fetch categories:', res.status, res.statusText);
+          setCategories([]);
         }
       } catch (err) {
         console.error('Error fetching categories:', err);
+        setCategories([]);
       } finally {
         setLoading(false);
       }
@@ -133,13 +138,39 @@ export default function PublicNavbar() {
                 Login
               </Link>
             ) : (
-              <Link
-                href="/customer"
-                className="text-black font-medium hover:text-gray-700 transition-colors flex items-center gap-2 text-sm"
-              >
-                <span>👤</span>
-                My Account
-              </Link>
+              <div className="relative">
+                <button
+                  onClick={() => setAccountDropdownOpen(!accountDropdownOpen)}
+                  className="text-black font-medium hover:text-gray-700 transition-colors flex items-center gap-2 text-sm px-3 py-2 rounded-lg hover:bg-gray-100"
+                >
+                  <span>👤</span>
+                  My Account
+                  <FiChevronDown size={16} className={`transition-transform ${accountDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Account Dropdown Menu */}
+                {accountDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-50">
+                    <Link
+                      href="/customer"
+                      className="block px-4 py-2 text-black hover:bg-gray-50 transition-colors text-sm border-b border-gray-100"
+                      onClick={() => setAccountDropdownOpen(false)}
+                    >
+                      👤 My Account
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setAccountDropdownOpen(false);
+                        logoutCustomer();
+                        router.push('/');
+                      }}
+                      className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-50 transition-colors text-sm font-medium"
+                    >
+                      🚪 Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 

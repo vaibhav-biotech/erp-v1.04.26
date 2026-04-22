@@ -1,104 +1,125 @@
 'use client';
 
-import React from 'react';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut } from 'lucide-react';
 
-export default function CustomerPage() {
-  const router = useRouter();
-  const { customer, logoutCustomer } = useAuth();
+export default function CustomerDashboard() {
+  const { customer } = useAuth();
+  const [activeTab, setActiveTab] = useState('profile');
 
-  const handleLogout = () => {
-    logoutCustomer();
-    router.push('/auth/login');
+  const tabs = ['profile', 'orders', 'address', 'wishlist', 'settings'];
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'profile':
+        return (
+          <div>
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-3xl font-playfair font-normal">My Profile</h2>
+              <button className="px-6 py-2 border-2 border-black text-black rounded-lg hover:bg-black hover:text-white transition-colors font-medium">
+                Edit Profile
+              </button>
+            </div>
+
+            <div className="border-t border-b border-gray-300 py-8">
+              <div className="grid grid-cols-3 gap-8">
+                {/* Column 1 */}
+                <div>
+                  <label className="text-sm font-medium text-gray-600 block mb-2">First Name</label>
+                  <p className="text-lg text-black">{customer?.firstName || '-'}</p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-600 block mb-2">Last Name</label>
+                  <p className="text-lg text-black">{customer?.lastName || '-'}</p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-600 block mb-2">Email</label>
+                  <p className="text-lg text-black">{customer?.email || '-'}</p>
+                </div>
+
+                {/* Column 2 */}
+                <div>
+                  <label className="text-sm font-medium text-gray-600 block mb-2">Phone</label>
+                  <p className="text-lg text-black">{customer?.phone || '-'}</p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-600 block mb-2">Account ID</label>
+                  <p className="text-lg text-black font-mono text-sm">{customer?._id || '-'}</p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-600 block mb-2">Email Verified</label>
+                  <p className="text-lg text-black">{customer?.isEmailVerified ? 'Yes' : 'No'}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case 'orders':
+        return (
+          <div>
+            <h2 className="text-2xl font-playfair font-normal mb-4">My Orders</h2>
+            <p className="text-black">Welcome to your orders page, {customer?.firstName}. Your orders will appear here.</p>
+          </div>
+        );
+      case 'address':
+        return (
+          <div>
+            <h2 className="text-2xl font-playfair font-normal mb-4">My Address</h2>
+            <p className="text-black">Welcome to your address page, {customer?.firstName}. Manage your delivery addresses here.</p>
+          </div>
+        );
+      case 'wishlist':
+        return (
+          <div>
+            <h2 className="text-2xl font-playfair font-normal mb-4">My Wishlist</h2>
+            <p className="text-black">Welcome to your wishlist, {customer?.firstName}. Your saved plants will appear here.</p>
+          </div>
+        );
+      case 'settings':
+        return (
+          <div>
+            <h2 className="text-2xl font-playfair font-normal mb-4">Settings</h2>
+            <p className="text-black">Welcome to your settings page, {customer?.firstName}. Manage your account preferences here.</p>
+          </div>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
-    <div className="max-w-4xl mx-auto py-12">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="bg-white rounded-2xl shadow-lg p-8"
-      >
-        {/* Welcome Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-playfair text-gray-900 mb-2">
-            Welcome, {customer?.firstName}! 👋
-          </h1>
-          <p className="text-gray-600 font-montserrat">
-            Manage your account and explore our plants collection
-          </p>
-        </div>
-
-        {/* Customer Info Card */}
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 mb-8 border border-green-200">
-          <h2 className="text-lg font-playfair text-gray-900 mb-4">My Account</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <p className="text-sm text-gray-600 font-montserrat">Email</p>
-              <p className="text-lg text-gray-900 font-medium">{customer?.email}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 font-montserrat">Full Name</p>
-              <p className="text-lg text-gray-900 font-medium">
-                {customer?.firstName} {customer?.lastName}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 font-montserrat">Phone</p>
-              <p className="text-lg text-gray-900 font-medium">{customer?.phone || 'Not provided'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 font-montserrat">Account ID</p>
-              <p className="text-sm text-gray-700 font-mono">{customer?._id}</p>
-            </div>
+    <div className="py-8 text-black">
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-10">
+        <div className="flex gap-8">
+          {/* Left Side - Small Menu Box */}
+          <div className="w-48 bg-gray-100 rounded-lg p-4 h-fit">
+            {tabs.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`w-full text-left px-4 py-3 mb-2 rounded transition-all ${
+                  activeTab === tab
+                    ? 'bg-black text-white font-medium'
+                    : 'text-black hover:bg-gray-100'
+                }`}
+              >
+                {tab === 'profile' && 'My Profile'}
+                {tab === 'orders' && 'My Orders'}
+                {tab === 'address' && 'Address'}
+                {tab === 'wishlist' && 'Wishlist'}
+                {tab === 'settings' && 'Settings'}
+              </button>
+            ))}
           </div>
+
+          {/* Right Side - Content Area */}
+          <div className="flex-1">{renderContent()}</div>
         </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="p-4 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-left"
-          >
-            <p className="font-playfair text-green-900">📦 My Orders</p>
-            <p className="text-sm text-gray-600 font-montserrat">View your purchases</p>
-          </motion.button>
-
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="p-4 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-left"
-          >
-            <p className="font-playfair text-green-900">❤️ Wishlist</p>
-            <p className="text-sm text-gray-600 font-montserrat">Saved plants</p>
-          </motion.button>
-
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="p-4 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-left"
-          >
-            <p className="font-playfair text-green-900">🎁 Addresses</p>
-            <p className="text-sm text-gray-600 font-montserrat">Delivery locations</p>
-          </motion.button>
-        </div>
-
-        {/* Logout Button */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={handleLogout}
-          className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-montserrat font-medium flex items-center justify-center gap-2 transition-colors"
-        >
-          <LogOut size={20} />
-          Logout
-        </motion.button>
-      </motion.div>
+      </div>
     </div>
   );
 }

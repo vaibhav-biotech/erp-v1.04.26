@@ -8,6 +8,8 @@ const Category = require('./models/Category');
 const productsRouter = require('./routes/products');
 const authRouter = require('./routes/auth');
 const customersRouter = require('./routes/customers');
+const adminRouter = require('./routes/admin');
+const storeRouter = require('./middleware/storeRouter'); // NEW: Store detection middleware
 
 const app = express();
 
@@ -17,10 +19,15 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Store-Name']
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// STEP 1: Store Router Middleware (Option C Implementation)
+// Purpose: Detect which store is accessing and set req.storeName
+// Runs on ALL routes before other handlers
+app.use(storeRouter);
 
 // File upload middleware (memory storage so we can forward buffer to S3)
 const multer = require('multer');
@@ -271,6 +278,9 @@ app.use('/api/products', productsRouter);
 
 // Customer Auth Router
 app.use('/api/auth', authRouter);
+
+// Admin Auth Router
+app.use('/api/admin', adminRouter);
 
 // Customers Router
 app.use('/api/customers', customersRouter);

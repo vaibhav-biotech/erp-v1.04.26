@@ -36,9 +36,9 @@ export default function CustomerLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
       <PublicNavbar />
-      <main className="flex-1 pt-20 px-4 md:px-8">{children}</main>
+      <main className="flex-1 px-4 md:px-8 text-black">{children}</main>
       <PublicFooter />
     </div>
   );

@@ -20,12 +20,12 @@ const validateProduct = (product) => {
   }
 
   // Subcategory validation
-  if (!product.subcategory || typeof product.subcategory !== 'string') {
-    errors.push('subcategory: Subcategory is required and must be a string');
+  if (!product.subcategory) {
+    errors.push('subcategory: Subcategory is required');
+  } else if (typeof product.subcategory !== 'string') {
+    errors.push('subcategory: Subcategory must be a string (ID or slug)');
   } else if (product.subcategory.trim().length < 2) {
     errors.push('subcategory: Subcategory must be at least 2 characters');
-  } else if (product.subcategory.length > 50) {
-    errors.push('subcategory: Subcategory cannot exceed 50 characters');
   }
 
   // Original Price validation
@@ -67,6 +67,13 @@ const validateProduct = (product) => {
     errors.push('reviews: Reviews count cannot be negative');
   }
 
+  // Stock validation
+  if (typeof product.stock !== 'number') {
+    errors.push('stock: Stock must be a number');
+  } else if (product.stock < 0) {
+    errors.push('stock: Stock cannot be negative');
+  }
+
   // Images validation
   if (!Array.isArray(product.images)) {
     errors.push('images: Images must be an array');
@@ -93,16 +100,16 @@ const validateProduct = (product) => {
     }
   }
 
-  // Pot Variants validation
-  if (product.potVariants) {
-    if (!Array.isArray(product.potVariants)) {
-      errors.push('potVariants: Pot variants must be an array');
-    } else {
-      product.potVariants.forEach((variant, index) => {
-        validateVariant(variant, `potVariants[${index}]`, errors);
-      });
-    }
-  }
+  // Pot Variants validation - DISABLED FOR NOW
+  // if (product.potVariants) {
+  //   if (!Array.isArray(product.potVariants)) {
+  //     errors.push('potVariants: Pot variants must be an array');
+  //   } else {
+  //     product.potVariants.forEach((variant, index) => {
+  //       validateVariant(variant, `potVariants[${index}]`, errors);
+  //     });
+  //   }
+  // }
 
   // Status validation
   if (product.status) {
@@ -116,6 +123,58 @@ const validateProduct = (product) => {
     isValid: errors.length === 0,
     errors
   };
+};
+
+/**
+ * Parses variants from two formats:
+ * 1. String format: "small:599,medium:799,large:999"
+ * 2. Array format (from spreadsheet): names="small, medium, large" prices="599, 799, 999"
+ * 
+ * @param {string|array} names - Variant names
+ * @param {string|array} prices - Variant prices
+ * @param {number} discount - Discount percentage to apply (0-100)
+ */
+const parseVariants = (names, prices, discount = 0) => {
+  // If names is a string with colons, use old format
+  if (typeof names === 'string' && names.includes(':')) {
+    try {
+      return names.split(',').map((variant, index) => {
+        const [name, price] = variant.trim().split(':');
+        const originalPrice = parseInt(price.trim(), 10);
+        const finalPrice = discount > 0 ? Math.round(originalPrice * (1 - discount / 100)) : originalPrice;
+        
+        return {
+          id: index + 1,
+          name: name.trim(),
+          price: finalPrice
+        };
+      });
+    } catch (error) {
+      console.error('Error parsing colon-format variants:', error);
+      return [];
+    }
+  }
+
+  // Parse new format: separate names and prices
+  try {
+    const nameArray = typeof names === 'string' ? names.split(',').map(n => n.trim()) : (Array.isArray(names) ? names : []);
+    const priceArray = typeof prices === 'string' ? prices.split(',').map(p => parseInt(p.trim(), 10)) : (Array.isArray(prices) ? prices.map(p => parseInt(p, 10)) : []);
+
+    // Combine names and prices, apply discount
+    return nameArray.map((name, index) => {
+      const originalPrice = priceArray[index] || 0;
+      const finalPrice = discount > 0 ? Math.round(originalPrice * (1 - discount / 100)) : originalPrice;
+      
+      return {
+        id: index + 1,
+        name: name,
+        price: finalPrice
+      };
+    }).filter(v => v.name && !isNaN(v.price));
+  } catch (error) {
+    console.error('Error parsing new-format variants:', error);
+    return [];
+  }
 };
 
 /**
@@ -165,5 +224,6 @@ const validateBulkProducts = (products) => {
 
 module.exports = {
   validateProduct,
-  validateBulkProducts
+  validateBulkProducts,
+  parseVariants
 };

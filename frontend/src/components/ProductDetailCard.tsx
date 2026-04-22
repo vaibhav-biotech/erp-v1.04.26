@@ -20,6 +20,7 @@ interface Variant {
   id: number;
   name: string;
   price: number;
+  originalPrice?: number;
   tag?: string;
 }
 
@@ -71,18 +72,36 @@ export default function ProductDetailCard({
   const [activePot, setActivePot] = useState(1);
   const [isGift, setIsGift] = useState(false);
 
-  // Get selected variant details
-  const selectedSize = sizeVariants.find((v) => v.id === activeSize) || sizeVariants[0];
-  const selectedPot = potVariants.find((v) => v.id === activePot) || potVariants[0];
+  // Debug: Log what we're receiving
+  console.log('🔍 ProductDetailCard received:', {
+    productName: product.name,
+    sizeVariants,
+    potVariants,
+    discount: product.discount
+  });
+
+  // Ensure sizeVariants and potVariants have fallback values
+  const validSizeVariants = (sizeVariants && sizeVariants.length > 0) 
+    ? sizeVariants 
+    : [{ id: 1, name: 'Default', price: product.finalPrice || 0, tag: undefined }];
+  
+  const validPotVariants = (potVariants && potVariants.length > 0) 
+    ? potVariants 
+    : [{ id: 1, name: 'No Pot', price: 0, tag: undefined }];
+
+  // Get selected variant details with fallback
+  const selectedSize = validSizeVariants.find((v) => v.id === activeSize) || validSizeVariants[0];
+  const selectedPot = validPotVariants.find((v) => v.id === activePot) || validPotVariants[0];
 
   // Calculate prices
-  const plantPrice = selectedSize.price;
-  const potPrice = selectedPot.price;
+  const plantPrice = selectedSize?.price || 0;
+  const potPrice = selectedPot?.price || 0;
   const totalPrice = plantPrice + potPrice;
 
-  // For display (use product's finalPrice and originalPrice as base)
+  // For display (use variant's originalPrice if available, else use product's originalPrice)
   const displayFinalPrice = totalPrice;
-  const displayOriginalPrice = product.originalPrice + (selectedPot.price || 0);
+  const variantOriginalPrice = selectedSize?.originalPrice || product.originalPrice;
+  const displayOriginalPrice = variantOriginalPrice + (selectedPot?.price || 0);
 
   const handleAddToCart = () => {
     onAddToCart?.(1, activeSize, activePot, isGift);
@@ -126,7 +145,7 @@ export default function ProductDetailCard({
                 Select Size
               </h3>
               <div className="flex gap-3 flex-wrap">
-                {sizeVariants.map((variant) => (
+                {validSizeVariants.map((variant) => (
                   <VariantCard
                     key={variant.id}
                     variant={variant}
@@ -143,7 +162,7 @@ export default function ProductDetailCard({
                 Select Planter
               </h3>
               <div className="flex gap-3 flex-wrap">
-                {potVariants.map((variant) => (
+                {validPotVariants.map((variant) => (
                   <VariantCard
                     key={variant.id}
                     variant={variant}

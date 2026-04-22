@@ -14,11 +14,13 @@ interface Product {
   _id: string;
   name: string;
   category: string;
+  categoryName?: string;
   subcategory: string;
   originalPrice: number;
   finalPrice: number;
   rating: number;
   reviews: number;
+  stock: number;
   images: string[];
   status: 'active' | 'inactive' | 'draft';
   createdAt: string;
@@ -235,6 +237,9 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                 </button>
               </th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                Stock
+              </th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
                 <button
                   onClick={() => handleSort('rating')}
                   className="flex items-center gap-2 hover:text-green-600 transition"
@@ -279,10 +284,15 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {product.category}
+                    {product.categoryName || product.category}
                   </td>
                   <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                     ₹{product.finalPrice.toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${product.stock > 10 ? 'bg-green-100 text-green-800' : product.stock > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                      {product.stock} units
+                    </span>
                   </td>
                   <td className="px-6 py-4 text-sm">
                     <span className="text-yellow-600">⭐ {product.rating}</span>

@@ -2,7 +2,8 @@
 
 import { useEffect, useState, use } from 'react';
 import { motion } from 'framer-motion';
-import PublicLayout from '@/components/PublicLayout';
+import PublicNavbar from '@/components/PublicNavbar';
+import PublicFooter from '@/components/PublicFooter';
 import ProductGrid from '@/components/ProductGrid';
 
 interface Subcategory {
@@ -23,7 +24,9 @@ interface Product {
   sizeVariants?: Array<{ id: number; name: string; price: number; tag?: string }>;
   stock: number;
   category?: string;
+  categoryName?: string;
   subcategory?: string;
+  status?: string;
 }
 
 interface Props {
@@ -80,7 +83,7 @@ export default function ProductsPage({ params }: Props) {
               foundCategoryId = cat._id;
               setCategoryName(cat.name);
               setSubcategory(foundSubcategory);
-              setDisplayName(foundSubcategory.name);
+              setDisplayName(foundSubcategory?.name || '');
               break;
             }
           }
@@ -98,22 +101,48 @@ export default function ProductsPage({ params }: Props) {
 
         const prodData = await prodRes.json();
         
-        // Filter products by category ID
+        // Debug: Log what we're working with
+        console.log('🔍 Debug Info:');
+        console.log('   foundCategoryId:', foundCategoryId);
+        console.log('   categoryName:', categoryName);
+        console.log('   isMainCategory:', isMainCategory);
+        console.log('   slug:', slug);
+        console.log('   foundSubcategory:', foundSubcategory);
+        console.log('   First product:', prodData.data?.[0]);
+        
+        // Filter products by category NAME and status (works with all products)
         const filtered = (prodData.data || []).filter((p: Product) => {
-          const matchesCategory = p.category === foundCategoryId;
+          const matchesCategory = p.categoryName?.toLowerCase() === categoryName.toLowerCase() || p.category === foundCategoryId;
+          const isActive = p.status === 'active';
+          
+          console.log(`   Product "${p.name}": categoryName="${p.categoryName}" vs "${categoryName}" = ${matchesCategory}, status="${p.status}" = ${isActive}`);
           
           // If it's a subcategory, also filter by subcategory
           if (!isMainCategory) {
-            return matchesCategory && p.subcategory === slug;
+            const matchesSub = p.subcategory === slug;
+            console.log(`      subcategory="${p.subcategory}" vs "${slug}" = ${matchesSub}`);
+            return matchesCategory && matchesSub && isActive;
           }
           
-          // If it's a main category, show all products in that category
-          return matchesCategory;
+          // If it's a main category, show all active products in that category
+          return matchesCategory && isActive;
+        });
+
+        // 🎯 DEDUPLICATION: Remove duplicate products by _id
+        const seen = new Set<string>();
+        const deduplicatedProducts = filtered.filter((product: Product) => {
+          if (seen.has(product._id)) {
+            console.log(`⚠️ Removing duplicate product: ${product.name} (${product._id})`);
+            return false;
+          }
+          seen.add(product._id);
+          return true;
         });
 
         console.log('✅ Fetched products:', prodData.data?.length || 0);
         console.log('📊 Filtered for this category/subcategory:', filtered.length);
-        setProducts(filtered);
+        console.log('🎯 After deduplication:', deduplicatedProducts.length);
+        setProducts(deduplicatedProducts);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -127,28 +156,33 @@ export default function ProductsPage({ params }: Props) {
 
   if (loading) {
     return (
-      <PublicLayout>
+      <>
+        <PublicNavbar />
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-16 text-center">
           <p className="text-gray-600 text-lg font-montserrat">Loading products...</p>
         </div>
-      </PublicLayout>
+        <PublicFooter />
+      </>
     );
   }
 
   if (error || (!subcategory && !category)) {
     return (
-      <PublicLayout>
+      <>
+        <PublicNavbar />
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-16 text-center">
           <p className="text-gray-600 text-lg font-montserrat">
             {error || 'Category not found'}
           </p>
         </div>
-      </PublicLayout>
+        <PublicFooter />
+      </>
     );
   }
 
   return (
-    <PublicLayout>
+    <>
+      <PublicNavbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6">
         {/* Header */}
         <motion.div
@@ -177,6 +211,8 @@ export default function ProductsPage({ params }: Props) {
           />
         </motion.div>
       </div>
-    </PublicLayout>
+      <PublicFooter />
+    </>
   );
 }
+

@@ -5,6 +5,7 @@ const variantSchema = new Schema({
   id: { type: Number, required: true },
   name: { type: String, required: true },
   price: { type: Number, required: true },
+  originalPrice: { type: Number, default: null },
   tag: { type: String, default: null }
 });
 
@@ -23,6 +24,11 @@ const productSchema = new Schema(
       trim: true,
       minlength: [2, 'Category must be at least 2 characters'],
       maxlength: [50, 'Category cannot exceed 50 characters']
+    },
+    categoryName: {
+      type: String,
+      default: null,
+      trim: true
     },
     subcategory: {
       type: String,

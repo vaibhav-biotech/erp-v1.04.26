@@ -2,18 +2,26 @@ const axios = require('axios');
 
 const extractDriveFileId = (urlOrId) => {
   try {
-    // If it's already just an ID
-    if (urlOrId.length === 33 && !urlOrId.includes('/')) {
+    // If it's already just an ID (33 chars alphanumeric, dashes, underscores)
+    if (/^[a-zA-Z0-9-_]{33}$/.test(urlOrId)) {
       return urlOrId;
     }
 
     // Format: https://drive.google.com/file/d/FILE_ID/view
-    const match1 = urlOrId.match(/\/d\/([a-zA-Z0-9-_]+)\//);
+    const match1 = urlOrId.match(/\/d\/([a-zA-Z0-9-_]+)(\/?)/);
     if (match1) return match1[1];
 
     // Format: https://drive.google.com/open?id=FILE_ID
-    const match2 = urlOrId.match(/id=([a-zA-Z0-9-_]+)/);
+    const match2 = urlOrId.match(/[?&]id=([a-zA-Z0-9-_]+)/);
     if (match2) return match2[1];
+
+    // Format: https://drive.google.com/uc?id=FILE_ID
+    const match3 = urlOrId.match(/uc\?id=([a-zA-Z0-9-_]+)/);
+    if (match3) return match3[1];
+
+    // Format: https://drive.google.com/uc?export=download&id=FILE_ID
+    const match4 = urlOrId.match(/id=([a-zA-Z0-9-_]+)/);
+    if (match4) return match4[1];
 
     return null;
   } catch (error) {

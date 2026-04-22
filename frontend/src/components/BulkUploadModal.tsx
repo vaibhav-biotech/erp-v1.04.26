@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FiX, FiUpload, FiCheck, FiAlertCircle, FiEye, FiArrowRight } from 'react-icons/fi';
+import { FiX, FiUpload, FiCheck, FiAlertCircle, FiEye, FiArrowRight, FiDownload, FiInfo } from 'react-icons/fi';
 import { 
   readFile, 
   getFileType, 
   parseExcelFile, 
   parseCSVFile 
 } from '../utils/parseExcelFile';
+import { generateSampleTemplate, getColumnInstructions } from '../utils/generateSampleTemplate';
 
 interface UploadResult {
   success: boolean;
@@ -60,6 +61,8 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
   const [parsedProducts, setParsedProducts] = useState<ParsedProduct[] | null>(null);
   const [parseErrors, setParseErrors] = useState<string[] | null>(null);
   const [currentStep, setCurrentStep] = useState<'upload' | 'preview' | 'results'>('upload');
+  const [cachedFileData, setCachedFileData] = useState<ArrayBuffer | string | null>(null);
+  const [showInstructions, setShowInstructions] = useState(false);
 
   if (!isOpen) return null;
 
@@ -97,12 +100,21 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
     }
   };
 
-  const parseExcelToProducts = async (excelFile: File): Promise<ParsedProduct[] | null> => {
+  const parseExcelToProducts = async (excelFile: File, useCache: boolean = false): Promise<ParsedProduct[] | null> => {
     try {
-      console.log('📄 Parsing file:', excelFile.name);
+      console.log('📄 Parsing file:', excelFile.name, 'useCache:', useCache);
       setIsLoading(true);
 
-      const fileData = await readFile(excelFile);
+      // Read file only if not cached
+      let fileData = cachedFileData;
+      if (!fileData || !useCache) {
+        console.log('📥 Reading file (not in cache)');
+        fileData = await readFile(excelFile);
+        setCachedFileData(fileData); // Cache for later use
+      } else {
+        console.log('📦 Using cached file data');
+      }
+
       const fileType = getFileType(excelFile.name);
 
       let result;
@@ -128,6 +140,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
       setError(err.message || 'Failed to parse file');
       setParseErrors(null);
       setParsedProducts(null);
+      setCachedFileData(null); // Clear cache on error
       return null;
     } finally {
       setIsLoading(false);
@@ -140,8 +153,8 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
       return;
     }
 
-    // Step 1: Parse file
-    const products = await parseExcelToProducts(file);
+    // Step 1: Parse file (read only once, cache the result)
+    const products = await parseExcelToProducts(file, false); // false = read fresh
     
     if (!products || products.length === 0) {
       return;
@@ -163,6 +176,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
 
     try {
       console.log(`📤 Uploading ${parsedProducts.length} products...`);
+      console.log('🔍 First product data:', JSON.stringify(parsedProducts[0], null, 2));
 
       const response = await fetch('/api/products/bulk-upload', {
         method: 'POST',
@@ -200,6 +214,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
     setParseErrors(null);
     setError(null);
     setDragActive(false);
+    setCachedFileData(null);
     setCurrentStep('upload');
     onClose();
   };
@@ -277,13 +292,45 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
 
               {/* Info Box */}
               <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-900 font-semibold mb-2">📋 Excel File Requirements:</p>
-                <ul className="text-sm text-blue-800 space-y-1 ml-4">
-                  <li>• Columns: Product Number, Names, Category, Subcategory, Original Price, etc.</li>
-                  <li>• Drive image URLs or File IDs in the Image URLs column</li>
-                  <li>• Size variants as comma-separated (e.g., "S,M,L")</li>
-                  <li>• Size prices as comma-separated (e.g., "100,150,200")</li>
+                <div className="flex items-start justify-between mb-3">
+                  <p className="text-sm text-blue-900 font-semibold">📋 Excel File Requirements:</p>
+                  <button
+                    onClick={() => setShowInstructions(!showInstructions)}
+                    className="text-blue-600 hover:text-blue-800 transition"
+                  >
+                    <FiInfo size={18} />
+                  </button>
+                </div>
+                <ul className="text-sm text-blue-800 space-y-1 ml-4 mb-4">
+                  <li>• Columns: Images Link, Names, Category, Subcategory, Description, Benefits, Care, Stock, Size Variants, Size Original Prices, Discount, Rating, Status, Reviews</li>
+                  <li>• Google Drive direct image URLs (https://drive.google.com/uc?id=ID)</li>
+                  <li>• Comma-separated subcategories create separate product entries</li>
+                  <li>• Size variants (2-column format): Names = "small, medium, large" | Original Prices = "599, 799, 999" | Discount applies to each</li>
                 </ul>
+
+                {/* Instructions Expandable */}
+                {showInstructions && (
+                  <div className="mt-4 p-3 bg-white rounded border border-blue-300 max-h-64 overflow-y-auto">
+                    <p className="font-semibold text-blue-900 mb-3 text-sm">Column Details:</p>
+                    {getColumnInstructions().map((col, idx) => (
+                      <div key={idx} className="mb-2 text-xs">
+                        <div className="font-semibold text-blue-800">
+                          {col.column} {col.required ? <span className="text-red-600">*</span> : ''}
+                        </div>
+                        <div className="text-blue-700 ml-2">Format: {col.format}</div>
+                        <div className="text-gray-600 ml-2">Example: {col.example}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  onClick={() => generateSampleTemplate()}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition mt-2"
+                >
+                  <FiDownload size={16} />
+                  Download Sample Template
+                </button>
               </div>
 
               {/* Action Buttons */}

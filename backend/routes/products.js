@@ -7,8 +7,79 @@ const {
   deleteProduct,
   searchProducts
 } = require('../services/bulkupload.service');
+const Category = require('../models/Category');
+const Product = require('../models/Product');
 
 const router = express.Router();
+
+/**
+ * POST /api/products/migrate
+ * Migrate old products with string category to category ID
+ * Temporary endpoint for one-time migration
+ */
+router.post('/migrate', async (req, res) => {
+  try {
+    console.log('🔄 Starting product migration...');
+
+    // Get all products
+    const products = await Product.find({});
+    console.log(`📊 Found ${products.length} products to check`);
+
+    let migratedCount = 0;
+    const results = [];
+
+    for (const product of products) {
+      // Check if category is a string (old format)
+      if (typeof product.category === 'string') {
+        console.log(`\n🔄 Processing: ${product.name}`);
+        console.log(`   Current category: ${product.category}`);
+
+        // Find category by name
+        const category = await Category.findOne({
+          name: { $regex: new RegExp(`^${product.category}$`, 'i') }
+        });
+
+        if (category) {
+          // Update product with category ID and name
+          product.category = category._id.toString();
+          product.categoryName = category.name;
+          await product.save();
+          console.log(`   ✅ Updated to ID: ${category._id}, Name: ${category.name}`);
+          migratedCount++;
+          results.push({
+            productName: product.name,
+            status: 'migrated',
+            categoryId: category._id,
+            categoryName: category.name
+          });
+        } else {
+          console.log(`   ⚠️ Category not found: ${product.category}`);
+          results.push({
+            productName: product.name,
+            status: 'failed',
+            reason: 'Category not found'
+          });
+        }
+      }
+    }
+
+    console.log(`\n📈 Migration complete! Migrated: ${migratedCount}/${products.length}`);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Migration completed',
+      migratedCount,
+      totalProducts: products.length,
+      results
+    });
+  } catch (error) {
+    console.error('Migration error:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Migration failed'
+    });
+  }
+});
 
 /**
  * POST /api/products/bulk-upload
@@ -32,8 +103,10 @@ router.post('/bulk-upload', async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'Bulk upload completed',
-      data: result
+      totalProducts: result.totalProducts,
+      successCount: result.successCount,
+      failureCount: result.failureCount,
+      results: result.results
     });
   } catch (error) {
     console.error('Bulk Upload Error:', error);

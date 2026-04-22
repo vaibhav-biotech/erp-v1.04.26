@@ -5,6 +5,11 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 export interface Admin {
   _id: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
+  role?: 'super_admin' | 'store_admin';
+  storeName?: string | null;
+  canAccessAllStores?: boolean;
 }
 
 export interface Customer {
@@ -13,6 +18,7 @@ export interface Customer {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  isEmailVerified?: boolean;
 }
 
 interface AuthContextType {
@@ -23,6 +29,7 @@ interface AuthContextType {
   adminAuthenticated: boolean;
   loginAdmin: (email: string, password: string) => Promise<void>;
   logoutAdmin: () => void;
+  logout: () => void; // Generic logout that handles both admin and customer
 
   // Customer
   customer: Customer | null;
@@ -69,7 +76,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginAdmin = useCallback(async (email: string, password: string) => {
     try {
       setAdminLoading(true);
-      const response = await fetch('http://localhost:5050/api/login', {
+      
+      // Build the admin API URL
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
+      const response = await fetch(`${baseUrl}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -102,12 +112,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Customer login
+  // STEP 4: Updated to include X-Store-Name header for Option C
   const loginCustomer = useCallback(async (email: string, password: string) => {
     try {
       setCustomerLoading(true);
-      const response = await fetch('http://localhost:5050/api/auth/login', {
+      
+      // Import store config utilities
+      const { getApiHeaders, buildApiUrl } = require('@/lib/storeConfig');
+      const headers = getApiHeaders();
+      
+      const response = await fetch(buildApiUrl('/api/auth/login'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ email, password }),
       });
 
@@ -142,6 +158,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('customer');
   }, []);
 
+  // Generic logout (clears whoever is logged in)
+  const logout = useCallback(() => {
+    logoutAdmin();
+    logoutCustomer();
+  }, [logoutAdmin, logoutCustomer]);
+
   return (
     <AuthContext.Provider
       value={{
@@ -151,6 +173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         adminAuthenticated: !!adminToken,
         loginAdmin,
         logoutAdmin,
+        logout,
 
         customer,
         customerToken,

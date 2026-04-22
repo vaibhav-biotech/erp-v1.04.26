@@ -5,6 +5,7 @@ interface VariantCardProps {
   variant: {
     name: string;
     price: number;
+    originalPrice?: number;
     tag?: string;
   };
   active: boolean;
@@ -38,6 +39,8 @@ export default function VariantCard({ variant, active, onClick }: VariantCardPro
       <p className="font-normal text-sm mb-1 text-gray-900">
         {variant.name}
       </p>
+      
+      {/* Show only final price in size cards */}
       <p className="text-lg font-semibold text-gray-900">
         ₹{variant.price}
       </p>

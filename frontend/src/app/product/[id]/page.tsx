@@ -22,6 +22,8 @@ interface Product {
   care?: string[];
   images: string[];
   stock: number;
+  sizeVariants?: Array<{ id: number; name: string; price: number; originalPrice?: number; tag?: string }>;
+  potVariants?: Array<{ id: number; name: string; price: number; tag?: string }>;
 }
 
 interface Props {
@@ -139,6 +141,8 @@ export default function ProductDetailPage({ params }: Props) {
               care: product.care,
               images: product.images,
             }}
+            sizeVariants={product.sizeVariants}
+            potVariants={product.potVariants}
             breadcrumbs={[
               { label: 'Home', href: '/' },
               { label: product.categoryName || 'Category', href: `/products/${product.category}` },
