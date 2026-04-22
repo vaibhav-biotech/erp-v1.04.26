@@ -35,7 +35,8 @@ export default function PublicNavbar() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch('http://localhost:5050/api/categories');
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
+        const res = await fetch(`${baseUrl}/api/categories`);
         if (res.ok) {
           const data = await res.json();
           setCategories(data.data || []);

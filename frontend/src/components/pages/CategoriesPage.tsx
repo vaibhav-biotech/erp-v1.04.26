@@ -77,7 +77,8 @@ export default function CategoriesPage() {
     // Save new order to backend
     setReorderLoading(true);
     try {
-      const response = await fetch('http://localhost:5050/api/categories/reorder', {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
+      const response = await fetch(`${baseUrl}/api/categories/reorder`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ categories: newCategories }),

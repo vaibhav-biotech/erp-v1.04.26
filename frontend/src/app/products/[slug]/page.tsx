@@ -50,8 +50,9 @@ export default function ProductsPage({ params }: Props) {
 
     const fetchCategoriesAndProducts = async () => {
       try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
         // Step 1: Fetch categories
-        const catRes = await fetch('http://localhost:5050/api/categories');
+        const catRes = await fetch(`${baseUrl}/api/categories`);
         if (!catRes.ok) throw new Error('Failed to fetch categories');
 
         const catData = await catRes.json();
@@ -96,7 +97,7 @@ export default function ProductsPage({ params }: Props) {
         }
 
         // Step 2: Fetch products
-        const prodRes = await fetch(`http://localhost:5050/api/products`);
+        const prodRes = await fetch(`${baseUrl}/api/products`);
         if (!prodRes.ok) throw new Error('Failed to fetch products');
 
         const prodData = await prodRes.json();

@@ -43,8 +43,9 @@ export default function ProductDetailPage({ params }: Props) {
 
     const fetchProduct = async () => {
       try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
         // Fetch the product by ID
-        const res = await fetch(`http://localhost:5050/api/products/${id}`);
+        const res = await fetch(`${baseUrl}/api/products/${id}`);
         if (!res.ok) {
           throw new Error('Product not found');
         }
@@ -57,7 +58,7 @@ export default function ProductDetailPage({ params }: Props) {
         }
 
         // Fetch categories to get category and subcategory names
-        const catRes = await fetch('http://localhost:5050/api/categories');
+        const catRes = await fetch(`${baseUrl}/api/categories`);
         if (catRes.ok) {
           const catData = await catRes.json();
           const categories = catData.data || [];
