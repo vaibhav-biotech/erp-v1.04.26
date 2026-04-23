@@ -5,8 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { RiShoppingBagLine } from 'react-icons/ri';
 import { FiMenu, FiX, FiChevronDown } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
 import CartBadge from '@/components/CartBadge';
 import { useAuth } from '@/contexts/AuthContext';
+import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 
 interface Subcategory {
   name: string;
@@ -35,17 +37,20 @@ export default function PublicNavbar() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
-        const res = await fetch(`${baseUrl}/api/categories`);
+        const headers = getApiHeaders();
+        console.log('🔗 Fetching categories from:', buildApiUrl('/api/categories'));
+        const res = await fetch(buildApiUrl('/api/categories'), { headers });
+        console.log('📥 Categories response status:', res.status);
         if (res.ok) {
           const data = await res.json();
+          console.log('✅ Categories fetched:', data.data?.length);
           setCategories(data.data || []);
         } else {
-          console.error('Failed to fetch categories:', res.status, res.statusText);
+          console.error('❌ Failed to fetch categories:', res.status, res.statusText);
           setCategories([]);
         }
       } catch (err) {
-        console.error('Error fetching categories:', err);
+        console.error('❌ Error fetching categories:', err);
         setCategories([]);
       } finally {
         setLoading(false);
@@ -187,17 +192,25 @@ export default function PublicNavbar() {
           </div>
         </div>
 
-        {/* Mobile Menu - Categories */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden mt-4 pb-4 border-t border-gray-200">
-            {loading ? (
-              <span className="text-gray-600">Loading...</span>
-            ) : (
-              categories.map((category) => (
-                <div key={category._id} className="py-3 border-b border-gray-100">
-                  <button 
-                    onClick={() => setExpandedCategory(expandedCategory === category._id ? null : category._id)}
-                    className="text-black font-medium text-left w-full flex items-center justify-between hover:text-gray-700 transition-colors"
+        {/* Mobile Menu - Categories (Fixed Overlay Drawer) */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div 
+              className="fixed top-16 left-0 right-0 bottom-0 bg-white z-40 lg:hidden overflow-y-auto shadow-xl"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+            >
+              <div className="pb-4 bg-white">
+                {loading ? (
+                  <span className="text-gray-600 block px-4 py-4 bg-white">Loading...</span>
+                ) : (
+                  categories.map((category) => (
+                    <div key={category._id} className="py-3 border-b border-gray-100 bg-white">
+                      <button 
+                        onClick={() => setExpandedCategory(expandedCategory === category._id ? null : category._id)}
+                        className="text-black font-medium text-left w-full px-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
                   >
                     <span>{category.name}</span>
                     {category.subcategories.length > 0 && (
@@ -214,7 +227,7 @@ export default function PublicNavbar() {
                         <Link
                           key={idx}
                           href={`/products/${sub.slug}`}
-                          className="block text-black text-sm hover:text-gray-700 transition-colors"
+                          className="block text-black text-sm hover:text-gray-700 transition-colors bg-white hover:bg-gray-50 px-3 py-2"
                           onClick={() => {
                             setMobileMenuOpen(false);
                             setExpandedCategory(null);
@@ -230,7 +243,7 @@ export default function PublicNavbar() {
             )}
             
             {/* Mobile Auth Links */}
-            <div className="py-3 border-t border-gray-100 space-y-2">
+            <div className="py-3 px-4 border-t border-gray-100 space-y-2 bg-white">
               {!customerAuthenticated ? (
                 <Link
                   href="/auth/login"
@@ -249,8 +262,10 @@ export default function PublicNavbar() {
                 </Link>
               )}
             </div>
-          </div>
-        )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </nav>
   );

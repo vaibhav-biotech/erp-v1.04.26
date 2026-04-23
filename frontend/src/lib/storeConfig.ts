@@ -30,13 +30,21 @@
 export const getStoreFromDomain = (): string => {
   if (typeof window === 'undefined') {
     // Server-side (during SSR/build)
-    return process.env.NEXT_PUBLIC_STORE_NAME || 'plantsingarden';
+    const store = process.env.NEXT_PUBLIC_STORE_NAME || 'plants in garden';
+    return store.toLowerCase();
   }
 
   try {
     const hostname = window.location.hostname;
     
-    // Remove port if present (e.g., "localhost:3000" → "localhost")
+    // For localhost development, use the env variable or default
+    if (hostname.includes('localhost')) {
+      const storeName = (process.env.NEXT_PUBLIC_STORE_NAME || 'plants in garden').toLowerCase();
+      console.log(`[storeConfig] Development mode - using store: ${storeName}`);
+      return storeName;
+    }
+    
+    // Remove port if present (e.g., "plantsingarden.com:3000" → "plantsingarden.com")
     const hostWithoutPort = hostname.split(':')[0];
     
     // Split by dots and get first part (subdomain)
@@ -48,7 +56,7 @@ export const getStoreFromDomain = (): string => {
     
     if (!isValid) {
       console.warn(`[storeConfig] Invalid store name detected: ${storeName}, using default`);
-      return process.env.NEXT_PUBLIC_STORE_NAME || 'plantsingarden';
+      return process.env.NEXT_PUBLIC_STORE_NAME || 'Plants in Garden';
     }
     
     if (process.env.NODE_ENV === 'development') {
@@ -58,7 +66,7 @@ export const getStoreFromDomain = (): string => {
     return storeName;
   } catch (error) {
     console.error(`[storeConfig] Error detecting store:`, error);
-    return process.env.NEXT_PUBLIC_STORE_NAME || 'plantsingarden';
+    return process.env.NEXT_PUBLIC_STORE_NAME || 'Plants in Garden';
   }
 };
 

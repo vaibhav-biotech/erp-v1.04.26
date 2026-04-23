@@ -8,6 +8,7 @@ const Category = require('./models/Category');
 const productsRouter = require('./routes/products');
 const authRouter = require('./routes/auth');
 const customersRouter = require('./routes/customers');
+const ordersRouter = require('./routes/orders');
 const adminRouter = require('./routes/admin');
 const storeRouter = require('./middleware/storeRouter'); // NEW: Store detection middleware
 
@@ -15,12 +16,36 @@ const app = express();
 
 
 // Middleware
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow multiple origins - return only the matching one
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5050',
+      'https://erp-v1-04-26-cwfl.vercel.app',
+      'https://www.plantingarden.com',
+      'https://plantingarden.com',
+      process.env.CORS_ORIGIN
+    ].filter(Boolean);
+    
+    // No origin (like mobile apps or curl requests) - allow
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, origin); // Echo back the specific origin
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Store-Name']
-}));
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -277,13 +302,16 @@ app.delete('/api/categories/:id', async (req, res) => {
 app.use('/api/products', productsRouter);
 
 // Customer Auth Router
-app.use('/api/auth', authRouter);
+app.use('/api/auth', storeRouter, authRouter);
 
 // Admin Auth Router
 app.use('/api/admin', adminRouter);
 
 // Customers Router
 app.use('/api/customers', customersRouter);
+
+// Orders Router
+app.use('/api/orders', ordersRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

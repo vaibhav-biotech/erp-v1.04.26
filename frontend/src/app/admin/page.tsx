@@ -92,10 +92,12 @@ export default function AdminLoginPage() {
 
           {/* Test Credentials Info */}
           <div className="rounded-lg bg-blue-50 p-4 border border-blue-200">
-            <p className="text-sm font-medium text-blue-900 mb-2">Test Credentials:</p>
+            <p className="text-sm font-medium text-blue-900 mb-2">Test Credentials (Plants in Garden Store):</p>
             <div className="text-sm text-blue-800 space-y-1">
-              <p><strong>Super Admin:</strong> super@plantsmall.com / SuperAdmin@123</p>
-              <p><strong>Store Admin:</strong> admin+plantsingarden@plantsmall.com / Store@123</p>
+              <p><strong>Email:</strong> admin@plantsingarden.com</p>
+              <p><strong>Password:</strong> Plants@123</p>
+              <p><strong>Role:</strong> Store Admin</p>
+              <p><strong>Store:</strong> Plants in Garden</p>
             </div>
           </div>
 

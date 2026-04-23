@@ -83,7 +83,7 @@ export default function ProductGridCard({ product }: ProductGridCardProps) {
       <div className="flex-1 flex flex-col space-y-2">
         {/* Title */}
         <Link href={`/products/${product._id}`}>
-          <h3 className="text-sm font-montserrat font-normal text-gray-900 line-clamp-2 hover:text-green-600 transition-colors">
+          <h3 className="text-base font-montserrat font-bold text-gray-900 line-clamp-2 hover:text-green-600 transition-colors">
             {product.name}
           </h3>
         </Link>
@@ -94,7 +94,7 @@ export default function ProductGridCard({ product }: ProductGridCardProps) {
             {tags.map((tag, idx) => (
               <span
                 key={idx}
-                className="text-xs font-montserrat font-normal px-2.5 py-1 rounded-full bg-green-100 text-green-700"
+                className="text-xs font-montserrat font-normal px-2.5 py-1 rounded-full bg-stone-100 text-gray-900"
               >
                 {tag}
               </span>

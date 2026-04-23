@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { getApiHeaders, buildApiUrl } from '@/lib/storeConfig';
 
 export interface Admin {
   _id: string;
@@ -37,6 +38,12 @@ interface AuthContextType {
   customerLoading: boolean;
   customerAuthenticated: boolean;
   loginCustomer: (email: string, password: string) => Promise<void>;
+  registerCustomer: (userData: {
+    fullName: string;
+    email: string;
+    phone: string;
+    password: string;
+  }) => Promise<void>;
   logoutCustomer: () => void;
 }
 
@@ -117,8 +124,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setCustomerLoading(true);
       
-      // Import store config utilities
-      const { getApiHeaders, buildApiUrl } = require('@/lib/storeConfig');
       const headers = getApiHeaders();
       
       const response = await fetch(buildApiUrl('/api/auth/login'), {
@@ -130,6 +135,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Customer login failed');
+      }
+
+      const data = await response.json();
+      
+      // Handle both response formats
+      const token = data.data?.token || data.token;
+      const customer = data.data?.customer || data.user;
+      
+      setCustomerToken(token);
+      setCustomer(customer);
+
+      localStorage.setItem('customerToken', token);
+      localStorage.setItem('customer', JSON.stringify(customer));
+    } catch (error) {
+      throw error;
+    } finally {
+      setCustomerLoading(false);
+    }
+  }, []);
+
+  // Customer register
+  const registerCustomer = useCallback(async (userData: {
+    fullName: string;
+    email: string;
+    phone: string;
+    password: string;
+  }) => {
+    try {
+      setCustomerLoading(true);
+      
+      const headers = getApiHeaders();
+      
+      // Split full name into first and last name
+      const nameParts = userData.fullName.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      const response = await fetch(buildApiUrl('/api/auth/register'), {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email: userData.email,
+          phone: userData.phone,
+          password: userData.password,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Registration failed');
       }
 
       const data = await response.json();
@@ -180,6 +237,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         customerLoading,
         customerAuthenticated: !!customerToken,
         loginCustomer,
+        registerCustomer,
         logoutCustomer,
       }}
     >

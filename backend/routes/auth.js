@@ -27,6 +27,7 @@ const generateToken = (id, type, role, storeName) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    const storeName = req.headers['x-store-name'] || 'test'; // Get store from header
 
     // Validation
     if (!email || !password) {
@@ -36,7 +37,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    console.log(`🔐 Login attempt for: ${email}`);
+    console.log(`🔐 Login attempt for: ${email} in store: ${storeName}`);
 
     // STEP 1: Try Admin login first (Admin model)
     console.log('🔍 Checking Admin credentials...');
@@ -92,6 +93,7 @@ router.post('/login', async (req, res) => {
               firstName: customer.firstName,
               lastName: customer.lastName,
               phone: customer.phone,
+              store: customer.store,
             },
             token,
           },
@@ -111,6 +113,77 @@ router.post('/login', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error during login',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// @route   POST /api/auth/signup
+// @desc    Register a new customer
+// @access  Public
+router.post('/signup', async (req, res) => {
+  try {
+    const { email, password, firstName, lastName, phone } = req.body;
+
+    // Validation
+    if (!email || !password || !firstName || !lastName || !phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required',
+      });
+    }
+
+    // Check if customer already exists
+    const existingCustomer = await Customer.findOne({ email });
+    if (existingCustomer) {
+      return res.status(409).json({
+        success: false,
+        message: 'Email already registered',
+      });
+    }
+
+    // Get store name from request (set by storeRouter middleware)
+    const storeName = req.storeName || 'test';
+
+    // Create new customer
+    const newCustomer = new Customer({
+      email,
+      password,
+      firstName,
+      lastName,
+      phone,
+      store: storeName,
+      isEmailVerified: false,
+      preferences: {
+        notifications: true,
+        newsletter: true,
+      },
+    });
+
+    await newCustomer.save();
+
+    // Generate token
+    const token = generateToken(newCustomer._id.toString(), 'customer');
+
+    res.status(201).json({
+      success: true,
+      message: 'Customer registered successfully',
+      data: {
+        customer: {
+          _id: newCustomer._id,
+          email: newCustomer.email,
+          firstName: newCustomer.firstName,
+          lastName: newCustomer.lastName,
+          phone: newCustomer.phone,
+        },
+        token,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Signup error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error during signup',
       error: error instanceof Error ? error.message : 'Unknown error',
     });
   }

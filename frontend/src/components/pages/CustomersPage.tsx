@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Mail, Phone, Calendar, Trash2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Customer {
   _id: string;
@@ -14,18 +15,28 @@ interface Customer {
 }
 
 export default function CustomersPage() {
+  const { adminToken } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchCustomers();
-  }, []);
+    if (adminToken) {
+      fetchCustomers();
+    }
+  }, [adminToken]);
 
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5050/api/customers');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
+      
+      const response = await fetch(`${apiUrl}/api/customers`, {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
       const data = await response.json();
 
       if (data.success) {
@@ -44,8 +55,14 @@ export default function CustomersPage() {
     if (!window.confirm('Are you sure you want to delete this customer?')) return;
 
     try {
-      const response = await fetch(`http://localhost:5050/api/customers/${id}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
+      
+      const response = await fetch(`${apiUrl}/api/customers/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json',
+        },
       });
       const data = await response.json();
 

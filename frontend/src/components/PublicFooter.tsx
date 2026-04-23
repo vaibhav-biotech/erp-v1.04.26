@@ -34,6 +34,11 @@ export default function PublicFooter() {
                 </Link>
               </li>
               <li>
+                <Link href="/admin" className="text-stone-600 hover:text-black transition-colors">
+                  Admin
+                </Link>
+              </li>
+              <li>
                 <a href="#" className="text-stone-600 hover:text-black transition-colors">
                   About Us
                 </a>

@@ -162,7 +162,9 @@ export default function CartModal() {
                 </div>
 
                 <button className="w-full bg-black text-white py-3 font-montserrat font-bold text-sm tracking-wide hover:bg-gray-900 transition-colors rounded-lg">
-                  CHECK OUT — ₹{subtotal.toFixed(2)} INR
+                  <Link href="/checkout" onClick={toggleCartModal} className="block">
+                    CHECK OUT — ₹{subtotal.toFixed(2)} INR
+                  </Link>
                 </button>
               </div>
             )}

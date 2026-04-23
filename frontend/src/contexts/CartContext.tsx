@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 export interface CartItem {
   productId: string;
@@ -39,6 +39,29 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Initialize from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedCart = localStorage.getItem('cartItems');
+      if (savedCart) {
+        setCartItems(JSON.parse(savedCart));
+        console.log('🛒 Cart restored from localStorage:', JSON.parse(savedCart));
+      }
+    } catch (error) {
+      console.error('Error loading cart from localStorage:', error);
+    }
+    setIsHydrated(true);
+  }, []);
+
+  // Save to localStorage whenever cart changes
+  useEffect(() => {
+    if (isHydrated) {
+      localStorage.setItem('cartItems', JSON.stringify(cartItems));
+      console.log('💾 Cart saved to localStorage:', cartItems);
+    }
+  }, [cartItems, isHydrated]);
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -98,6 +121,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const clearCart = useCallback(() => {
     setCartItems([]);
+    localStorage.removeItem('cartItems');
   }, []);
 
   const toggleCartModal = useCallback(() => {
