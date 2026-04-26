@@ -156,7 +156,19 @@ export const fetchWithStore = async (
  * Get API base URL (backend URL)
  */
 export const getApiBaseUrl = (): string => {
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
+  const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
+
+  try {
+    const parsedUrl = new URL(rawUrl);
+    const normalizedPath = parsedUrl.pathname.replace(/\/+$/, '');
+    const safePath = !normalizedPath || normalizedPath === '/' || normalizedPath.startsWith('/api')
+      ? ''
+      : normalizedPath;
+
+    return `${parsedUrl.origin}${safePath}`;
+  } catch {
+    return rawUrl.replace(/\/api(?:\/.*)?$/, '').replace(/\/+$/, '');
+  }
 };
 
 /**

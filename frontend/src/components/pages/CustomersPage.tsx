@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Users, Mail, Phone, Calendar, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { buildApiUrl } from '@/lib/storeConfig';
 
 interface Customer {
   _id: string;
@@ -29,9 +30,8 @@ export default function CustomersPage() {
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
-      
-      const response = await fetch(`${apiUrl}/api/customers`, {
+
+      const response = await fetch(buildApiUrl('/api/customers'), {
         headers: {
           'Authorization': `Bearer ${adminToken}`,
           'Content-Type': 'application/json',
@@ -55,10 +55,9 @@ export default function CustomersPage() {
     if (!window.confirm('Are you sure you want to delete this customer?')) return;
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
       const storeName = process.env.NEXT_PUBLIC_STORE_NAME || 'plants in garden';
       
-      const response = await fetch(`${apiUrl}/api/customers/${id}`, {
+      const response = await fetch(buildApiUrl(`/api/customers/${id}`), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${adminToken}`,

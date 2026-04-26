@@ -104,9 +104,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginAdmin = useCallback(async (email: string, password: string) => {
     try {
       setAdminLoading(true);
-      
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
-      const response = await fetch(`${baseUrl}/api/admin/login`, {
+
+      const response = await fetch(buildApiUrl('/api/admin/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

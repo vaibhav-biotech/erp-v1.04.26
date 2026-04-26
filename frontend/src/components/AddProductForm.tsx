@@ -49,8 +49,8 @@ export default function AddProductForm({ isOpen, onClose, onProductAdded }: AddP
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
-        const res = await fetch(`${baseUrl}/api/categories`);
+        const { buildApiUrl } = await import('@/lib/storeConfig');
+        const res = await fetch(buildApiUrl('/api/categories'));
         if (res.ok) {
           const data = await res.json();
           setCategories(data.data || []);
