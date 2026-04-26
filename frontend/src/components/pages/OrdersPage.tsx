@@ -1,5 +1,11 @@
 'use client';
 
+export default function OrdersPage() {
+  return null;
+}
+
+/*
+
 import { useEffect, useMemo, useState } from 'react';
 import { FiRefreshCw, FiEye, FiFileText } from 'react-icons/fi';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
@@ -701,3 +707,4 @@ export default function OrdersPage() {
             )}
           </div>
         );
+      */
