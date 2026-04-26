@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { fetchWithStore } from '@/lib/storeConfig';
 import {
   FiEdit2,
   FiTrash2,
@@ -61,13 +62,14 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
   const fetchProducts = async () => {
     setIsLoading(true);
     try {
+      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') || undefined : undefined;
       let url = `/api/products?limit=${pagination.pageSize}&skip=${(pagination.currentPage - 1) * pagination.pageSize}`;
 
       if (filterStatus !== 'all') {
         url += `&status=${filterStatus}`;
       }
 
-      const response = await fetch(url);
+      const response = await fetchWithStore(url, { token: adminToken });
       if (!response.ok) throw new Error('Failed to fetch products');
 
       const data = await response.json();
@@ -92,7 +94,10 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
 
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/products/search?q=${encodeURIComponent(searchQuery)}`);
+      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') || undefined : undefined;
+      const response = await fetchWithStore(`/api/products/search?q=${encodeURIComponent(searchQuery)}`, {
+        token: adminToken,
+      });
       if (!response.ok) throw new Error('Search failed');
 
       const data = await response.json();
@@ -117,8 +122,10 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     if (!confirm('Are you sure you want to delete this product?')) return;
 
     try {
-      const response = await fetch(`/api/products/${productId}`, {
+      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') || undefined : undefined;
+      const response = await fetchWithStore(`/api/products/${productId}`, {
         method: 'DELETE'
+        , token: adminToken
       });
 
       if (!response.ok) throw new Error('Delete failed');

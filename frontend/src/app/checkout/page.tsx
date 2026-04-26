@@ -33,6 +33,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [placedOrderId, setPlacedOrderId] = useState('');
 
   const [formData, setFormData] = useState({
     email: '',
@@ -124,7 +125,7 @@ export default function CheckoutPage() {
           pincode: formData.pincode,
           phone: formData.phone,
         },
-        paymentMethod: 'COD',
+        paymentMethod: formData.paymentMethod,
       };
 
       const headers = getApiHeaders(customerToken || '');
@@ -142,10 +143,11 @@ export default function CheckoutPage() {
 
       clearCart();
       setSuccess(true);
+      setPlacedOrderId(result.data?.orderId || result.data?.orderNumber || result.data?._id || '');
       
-      // Redirect to order details after 2 seconds
+      // Redirect to customer orders (My Account > Orders) after success
       setTimeout(() => {
-        router.push(`/customer/orders/${result.data._id}`);
+        router.push('/customer?tab=orders');
       }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error placing order');
@@ -193,7 +195,10 @@ export default function CheckoutPage() {
                   className="bg-green-50 border border-green-200 rounded-lg p-8 text-center"
                 >
                   <p className="font-montserrat text-green-700 text-lg">✓ Order placed successfully!</p>
-                  <p className="font-montserrat text-gray-600 text-sm mt-2">Redirecting to order details...</p>
+                  {placedOrderId && (
+                    <p className="font-montserrat text-black text-sm mt-2">Order ID: {placedOrderId}</p>
+                  )}
+                  <p className="font-montserrat text-gray-600 text-sm mt-2">Redirecting to My Orders...</p>
                 </motion.div>
               ) : (
                 <>

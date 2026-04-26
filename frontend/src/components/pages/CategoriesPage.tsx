@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useCategories } from '@/hooks/useCategories';
+import { buildApiUrl, fetchWithStore } from '@/lib/storeConfig';
 import DataTable from '@/components/DataTable';
 import Modal from '@/components/Modal';
 import Button from '@/components/Button';
@@ -77,10 +78,10 @@ export default function CategoriesPage() {
     // Save new order to backend
     setReorderLoading(true);
     try {
-      const { buildApiUrl } = await import('@/lib/storeConfig');
-      const response = await fetch(buildApiUrl('/api/categories/reorder'), {
+      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') || undefined : undefined;
+      const response = await fetchWithStore(buildApiUrl('/api/categories/reorder'), {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        token: adminToken,
         body: JSON.stringify({ categories: newCategories }),
       });
       if (!response.ok) {

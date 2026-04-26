@@ -7,7 +7,7 @@ import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import HomePage from './pages/HomePage';
 import CategoriesPage from './pages/CategoriesPage';
-import OrdersPage from './pages/OrdersPage';
+import OrdersManagementPage from './pages/OrdersManagementPage';
 import UsersPage from './pages/UsersPage';
 import CustomersPage from './pages/CustomersPage';
 import AddProductPage from './pages/AddProductPage';
@@ -70,7 +70,7 @@ export default function DashboardLayout({ children }: { children?: React.ReactNo
       case 'add-product':
         return <AddProductPage />;
       case 'orders':
-        return <OrdersPage />;
+        return <OrdersManagementPage />;
       case 'users':
         return <UsersPage />;
       case 'customers':

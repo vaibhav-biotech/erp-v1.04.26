@@ -30,7 +30,7 @@ export default function CustomerSidebar() {
     { label: 'Dashboard', href: '/customer', icon: <Home size={20} /> },
     { label: 'Profile', href: '/customer/profile', icon: <User size={20} /> },
     { label: 'Addresses', href: '/customer/addresses', icon: <MapPin size={20} /> },
-    { label: 'Orders', href: '/customer/orders', icon: <ShoppingBag size={20} /> },
+    { label: 'Orders', href: '/customer?tab=orders', icon: <ShoppingBag size={20} /> },
     { label: 'Wishlist', href: '/customer/wishlist', icon: <Heart size={20} /> },
     { label: 'Reviews', href: '/customer/reviews', icon: <Star size={20} /> },
     { label: 'Settings', href: '/customer/settings', icon: <Settings size={20} /> },

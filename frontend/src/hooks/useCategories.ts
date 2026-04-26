@@ -1,6 +1,10 @@
 import { useState, useCallback } from 'react';
+import { buildApiUrl, fetchWithStore } from '@/lib/storeConfig';
 
-const API_BASE = 'http://localhost:5050/api';
+const getAdminToken = () => {
+  if (typeof window === 'undefined') return undefined;
+  return localStorage.getItem('adminToken') || undefined;
+};
 
 export const useCategories = () => {
   const [loading, setLoading] = useState(false);
@@ -10,7 +14,9 @@ export const useCategories = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${API_BASE}/categories`);
+      const res = await fetchWithStore(buildApiUrl('/api/categories'), {
+        token: getAdminToken(),
+      });
       if (!res.ok) throw new Error('Failed to fetch categories');
       const data = await res.json();
       return data.data || [];
@@ -27,9 +33,9 @@ export const useCategories = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${API_BASE}/categories`, {
+      const res = await fetchWithStore(buildApiUrl('/api/categories'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        token: getAdminToken(),
         body: JSON.stringify(category),
       });
       if (!res.ok) throw new Error('Failed to create category');
@@ -48,9 +54,9 @@ export const useCategories = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${API_BASE}/categories/${id}`, {
+      const res = await fetchWithStore(buildApiUrl(`/api/categories/${id}`), {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        token: getAdminToken(),
         body: JSON.stringify(category),
       });
       if (!res.ok) throw new Error('Failed to update category');
@@ -69,8 +75,9 @@ export const useCategories = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${API_BASE}/categories/${id}`, {
+      const res = await fetchWithStore(buildApiUrl(`/api/categories/${id}`), {
         method: 'DELETE',
+        token: getAdminToken(),
       });
       if (!res.ok) throw new Error('Failed to delete category');
       return true;

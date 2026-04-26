@@ -3,11 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { getApiHeaders } from '@/lib/storeConfig';
 import { FiPlus, FiRefreshCw, FiTrendingUp } from 'react-icons/fi';
 import BulkUploadModal from '@/components/BulkUploadModal';
 import ProductsTable from '@/components/ProductsTable';
 import CategoriesPage from '@/components/pages/CategoriesPage';
-import OrdersPage from '@/components/pages/OrdersPage';
+import StoreAdminOrdersListPage from '@/components/pages/StoreAdminOrdersListPage';
 import CustomersPage from '@/components/pages/CustomersPage';
 
 interface DashboardStats {
@@ -68,8 +69,8 @@ export default function StoreAdminDashboard() {
     try {
       const response = await fetch('/api/admin/profile', {
         headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json'
+          ...getApiHeaders(adminToken || undefined),
+          'Authorization': `Bearer ${adminToken}`
         }
       });
 
@@ -91,8 +92,8 @@ export default function StoreAdminDashboard() {
     setIsLoadingStats(true);
     try {
       const headers = {
-        'Authorization': `Bearer ${adminToken}`,
-        'Content-Type': 'application/json'
+        ...getApiHeaders(adminToken || undefined),
+        'Authorization': `Bearer ${adminToken}`
       };
 
       const [allRes, activeRes, inactiveRes, draftRes] = await Promise.all([
@@ -171,7 +172,7 @@ export default function StoreAdminDashboard() {
       case 'categories':
         return <CategoriesPage />;
       case 'orders':
-        return <OrdersPage />;
+        return <StoreAdminOrdersListPage />;
       case 'customers':
         return <CustomersPage />;
       default:

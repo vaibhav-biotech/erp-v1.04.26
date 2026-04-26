@@ -4,8 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import PublicNavbar from '@/components/PublicNavbar';
-import PublicFooter from '@/components/PublicFooter';
 import Link from 'next/link';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 
@@ -35,7 +33,7 @@ export default function OrderDetailPage() {
 
         if (!res.ok) throw new Error('Failed to fetch order');
         const data = await res.json();
-        setOrder(data.order);
+        setOrder(data.data);
       } catch (err: any) {
         setError(err.message || 'Error loading order');
       } finally {
@@ -54,25 +52,42 @@ export default function OrderDetailPage() {
     switch (status) {
       case 'delivered':
         return 'bg-green-100 text-green-800';
+      case 'out_for_delivery':
+        return 'bg-orange-100 text-orange-800';
       case 'shipped':
         return 'bg-blue-100 text-blue-800';
+      case 'packed':
+      case 'confirmed':
       case 'processing':
         return 'bg-yellow-100 text-yellow-800';
       case 'pending':
         return 'bg-gray-100 text-gray-800';
+      case 'cancelled':
+      case 'returned':
+        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
 
+  const formatLabel = (value: string) =>
+    String(value || '')
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (m) => m.toUpperCase());
+
+  const customerVisibleUpdates = (order?.trackingUpdates || []).filter(
+    (u: any) => !u.visibility || u.visibility === 'customer'
+  );
+
+  const customerVisibleStatusHistory = (order?.statusHistory || []).filter(
+    (u: any) => !u.visibility || u.visibility === 'customer'
+  );
+
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      <PublicNavbar />
-      
-      <div className="flex-1 py-12 px-4">
-        <div className="max-w-4xl mx-auto">
+    <div className="py-12">
+      <div className="max-w-4xl mx-auto">
           {/* Back Link */}
-          <Link href="/customer/orders" className="text-black font-montserrat hover:underline mb-6 inline-block">
+          <Link href="/customer?tab=orders" className="text-black font-montserrat hover:underline mb-6 inline-block">
             ← Back to Orders
           </Link>
 
@@ -99,7 +114,7 @@ export default function OrderDetailPage() {
                 </h1>
                 <div className="flex flex-wrap gap-4">
                   <span className={`px-4 py-2 rounded font-montserrat font-semibold text-sm ${getStatusColor(order.orderStatus)}`}>
-                    {order.orderStatus.charAt(0).toUpperCase() + order.orderStatus.slice(1)}
+                    {formatLabel(order.orderStatus || 'pending')}
                   </span>
                   <span className="px-4 py-2 rounded bg-gray-100 text-gray-800 font-montserrat font-semibold text-sm">
                     {new Date(order.createdAt).toLocaleDateString('en-IN', {
@@ -162,6 +177,88 @@ export default function OrderDetailPage() {
                     </div>
                   </div>
 
+                  {/* Tracking */}
+                  {(order.tracking?.trackingNumber || order.tracking?.courierName || order.tracking?.carrier || order.tracking?.estimatedDelivery || order.tracking?.estimatedDeliveryDate) && (
+                    <div className="border border-gray-300 rounded-lg p-6 mb-6">
+                      <h2 className="font-montserrat font-bold text-lg text-black mb-4">
+                        Tracking Details
+                      </h2>
+                      <div className="space-y-2 text-sm font-montserrat">
+                        {(order.tracking?.courierName || order.tracking?.carrier) && (
+                          <p><span className="text-gray-600">Courier:</span> <span className="text-black font-semibold">{order.tracking.courierName || order.tracking.carrier}</span></p>
+                        )}
+                        {order.tracking?.trackingNumber && (
+                          <p><span className="text-gray-600">Tracking Number:</span> <span className="text-black font-semibold">{order.tracking.trackingNumber}</span></p>
+                        )}
+                        {(order.tracking?.estimatedDelivery || order.tracking?.estimatedDeliveryDate) && (
+                          <p><span className="text-gray-600">Estimated Delivery:</span> <span className="text-black font-semibold">{new Date(order.tracking.estimatedDelivery || order.tracking.estimatedDeliveryDate).toLocaleDateString('en-IN')}</span></p>
+                        )}
+                        {order.tracking?.trackingUrl && (
+                          <a
+                            href={order.tracking.trackingUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-block mt-1 text-blue-700 hover:underline"
+                          >
+                            Track Shipment
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Status Flow */}
+                  {customerVisibleStatusHistory.length > 0 && (
+                    <div className="border border-gray-300 rounded-lg p-6 mb-6">
+                      <h2 className="font-montserrat font-bold text-lg text-black mb-4">
+                        Status Flow
+                      </h2>
+                      <div className="space-y-3">
+                        {customerVisibleStatusHistory
+                          .slice()
+                          .reverse()
+                          .map((event: any, idx: number) => (
+                            <div key={event._id || idx} className="border border-gray-200 rounded p-3">
+                              <p className="text-black text-sm font-montserrat font-semibold">
+                                {formatLabel(event.status || 'pending')}
+                              </p>
+                              {event.note && (
+                                <p className="text-gray-700 text-sm mt-1 font-montserrat">{event.note}</p>
+                              )}
+                              <p className="text-xs text-gray-500 mt-1">
+                                {new Date(event.createdAt).toLocaleString('en-IN')}
+                              </p>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Updates Timeline */}
+                  {customerVisibleUpdates.length > 0 && (
+                    <div className="border border-gray-300 rounded-lg p-6 mb-6">
+                      <h2 className="font-montserrat font-bold text-lg text-black mb-4">
+                        Order Updates
+                      </h2>
+                      <div className="space-y-3">
+                        {customerVisibleUpdates
+                          .slice()
+                          .reverse()
+                          .map((update: any, idx: number) => (
+                            <div key={update._id || idx} className="border border-gray-200 rounded p-3">
+                              <p className="text-black text-sm font-montserrat">{update.message || update.description || 'Order updated'}</p>
+                              {update.location && (
+                                <p className="text-xs text-gray-600 mt-1">{update.location}</p>
+                              )}
+                              <p className="text-xs text-gray-500 mt-1">
+                                {new Date(update.createdAt).toLocaleString('en-IN')}
+                              </p>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Shipping Address */}
                   <div className="border border-gray-300 rounded-lg p-6">
                     <h2 className="font-montserrat font-bold text-lg text-black mb-4">
@@ -169,14 +266,14 @@ export default function OrderDetailPage() {
                     </h2>
                     <div className="text-gray-700 font-montserrat">
                       <p className="font-bold text-black">{`${customer.firstName || ''} ${customer.lastName || ''}`.trim()}</p>
-                      <p>{order.address.street}</p>
+                      <p>{order.address?.street || order.shippingAddress?.address || '-'}</p>
                       <p>
-                        {order.address.city}, {order.address.state}{' '}
-                        {order.address.pincode}
+                        {order.address?.city || order.shippingAddress?.city || '-'}, {order.address?.state || order.shippingAddress?.state || '-'}{' '}
+                        {order.address?.pincode || order.shippingAddress?.postalCode || '-'}
                       </p>
-                      {order.address.phone && (
+                      {(order.address?.phone || order.shippingAddress?.phone) && (
                         <p className="mt-2 text-black font-montserrat">
-                          {order.address.phone}
+                          {order.address?.phone || order.shippingAddress?.phone}
                         </p>
                       )}
                     </div>
@@ -227,7 +324,7 @@ export default function OrderDetailPage() {
                       <div>
                         <p className="text-gray-600 mb-1">Payment Method</p>
                         <p className="text-black font-bold">
-                          {order.paymentMethod === 'cod'
+                          {String(order.paymentMethod || '').toLowerCase() === 'cod'
                             ? 'Cash on Delivery'
                             : order.paymentMethod}
                         </p>
@@ -236,13 +333,12 @@ export default function OrderDetailPage() {
                         <p className="text-gray-600 mb-1">Payment Status</p>
                         <p
                           className={`font-bold ${
-                            order.paymentStatus === 'completed'
+                            ['paid', 'completed'].includes(String(order.paymentStatus || '').toLowerCase())
                               ? 'text-green-600'
                               : 'text-yellow-600'
                           }`}
                         >
-                          {order.paymentStatus.charAt(0).toUpperCase() +
-                            order.paymentStatus.slice(1)}
+                          {formatLabel(order.paymentStatus || 'pending')}
                         </p>
                       </div>
                       {order.notes && (
@@ -251,10 +347,24 @@ export default function OrderDetailPage() {
                           <p className="text-black">{order.notes}</p>
                         </div>
                       )}
+
+                      {order.invoice?.generated && (
+                        <div>
+                          <p className="text-gray-600 mb-1">Invoice</p>
+                          <p className="text-black font-bold">
+                            {order.invoice.invoiceNumber || 'Generated'}
+                          </p>
+                          {order.invoice.generatedAt && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              Generated on {new Date(order.invoice.generatedAt).toLocaleString('en-IN')}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <Link
-                      href="/customer/orders"
+                      href="/customer?tab=orders"
                       className="w-full block text-center bg-black text-white py-3 rounded-lg font-montserrat font-bold text-sm hover:bg-gray-900 transition mt-6"
                     >
                       Back to Orders
@@ -266,8 +376,5 @@ export default function OrderDetailPage() {
           ) : null}
         </div>
       </div>
-
-      <PublicFooter />
-    </div>
   );
 }
