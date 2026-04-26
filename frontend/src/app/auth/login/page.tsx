@@ -106,13 +106,12 @@ export default function AuthPage() {
         return;
       }
 
-      const fullName = `${signupForm.firstName} ${signupForm.lastName}`.trim();
-
       await registerCustomer({
-        fullName,
         email: signupForm.email,
-        phone: signupForm.phone,
         password: signupForm.password,
+        firstName: signupForm.firstName,
+        lastName: signupForm.lastName,
+        phone: signupForm.phone,
       });
 
       router.push('/customer');

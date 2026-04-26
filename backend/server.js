@@ -2,8 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const jwt = require('jsonwebtoken');
-const User = require('./models/User');
 const Category = require('./models/Category');
 const productsRouter = require('./routes/products');
 const authRouter = require('./routes/auth');
@@ -16,33 +14,48 @@ const app = express();
 
 
 // Middleware
+const allowedExactOrigins = [
+  'https://erp-v1-04-26-cwfl.vercel.app',
+  'https://plantingarden.vercel.app',
+  'https://www.plantingarden.com',
+  'https://plantingarden.com',
+  'http://www.plantingarden.com',
+  'http://plantingarden.com',
+  ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()) : []),
+].filter(Boolean);
+
+const allowedOriginPatterns = [
+  /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,
+  /^https:\/\/erp-v1-04-26.*\.vercel\.app$/,
+  /^https:\/\/plantingarden.*\.vercel\.app$/,
+];
+
+const isOriginAllowed = (origin) => {
+  return allowedExactOrigins.includes(origin) || allowedOriginPatterns.some((pattern) => pattern.test(origin));
+};
+
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow multiple origins - return only the matching one
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:5050',
-      'https://erp-v1-04-26-cwfl.vercel.app',
-      'https://www.plantingarden.com',
-      'https://plantingarden.com',
-      process.env.CORS_ORIGIN
-    ].filter(Boolean);
-    
-    // No origin (like mobile apps or curl requests) - allow
+    console.log(`[CORS] Request from: ${origin || 'NO ORIGIN (curl/mobile)'}`);
+
     if (!origin) {
       return callback(null, true);
     }
-    
-    // Check if origin is in allowed list
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, origin); // Echo back the specific origin
-    } else {
-      return callback(new Error('Not allowed by CORS'));
+
+    if (isOriginAllowed(origin)) {
+      console.log(`[CORS] ✓ Allowed: ${origin}`);
+      return callback(null, true);
     }
+
+    console.warn(`[CORS] ✗ Blocked: ${origin}`);
+    console.warn(`[CORS] Allowed exact: ${allowedExactOrigins.join(' | ')}`);
+    return callback(new Error('CORS not allowed'));
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Store-Name']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Store-Name', 'Accept', 'X-Requested-With'],
+  exposedHeaders: ['X-Total-Count', 'Content-Length'],
+  maxAge: 3600
 };
 
 app.use(cors(corsOptions));
@@ -53,6 +66,9 @@ app.use(express.urlencoded({ extended: true }));
 // Purpose: Detect which store is accessing and set req.storeName
 // Runs on ALL routes before other handlers
 app.use(storeRouter);
+
+// Pre-flight handler for all routes - use RegExp instead of '*' for Express 5
+app.options(/.*/, cors(corsOptions));
 
 // File upload middleware (memory storage so we can forward buffer to S3)
 const multer = require('multer');
@@ -116,45 +132,6 @@ app.get('/api/test', (req, res) => {
     success: true,
     timestamp: new Date().toISOString()
   });
-});
-
-// Auth Routes
-app.post('/api/auth/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password are required' });
-    }
-
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    const isPasswordMatch = await user.matchPassword(password);
-    if (!isPasswordMatch) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    const token = jwt.sign(
-      { userId: user._id, email: user.email },
-      process.env.JWT_SECRET || 'your-secret-key-change-this',
-      { expiresIn: '7d' }
-    );
-
-    res.json({
-      success: true,
-      token,
-      user: {
-        id: user._id,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Login failed' });
-  }
 });
 
 // Category Routes
@@ -302,7 +279,7 @@ app.delete('/api/categories/:id', async (req, res) => {
 app.use('/api/products', productsRouter);
 
 // Customer Auth Router
-app.use('/api/auth', storeRouter, authRouter);
+app.use('/api/auth', authRouter);
 
 // Admin Auth Router
 app.use('/api/admin', adminRouter);

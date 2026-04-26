@@ -1,35 +1,24 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const User = require('../models/User.js');
-const Customer = require('../models/Customer.js');
-const Admin = require('../models/Admin.js');
+const Customer = require('../models/Customer');
 
 const router = express.Router();
 
-// Generate JWT Token
-const generateToken = (id, type, role, storeName) => {
-  const payload = { id, type };
-  if (type === 'admin') {
-    payload.role = role;
-    payload.storeName = storeName;
-  }
+const generateToken = (customerId) => {
   return jwt.sign(
-    payload,
-    process.env.JWT_SECRET || 'your-secret-key',
+    { id: customerId, type: 'customer' },
+    process.env.JWT_SECRET || 'your-super-secret-key-change-in-production',
     { expiresIn: '30d' }
   );
 };
 
 // @route   POST /api/auth/login
-// @desc    Unified login for Admin & Customer
+// @desc    Customer login
 // @access  Public
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    const storeName = req.headers['x-store-name'] || 'test'; // Get store from header
 
-    // Validation
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -37,89 +26,63 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    console.log(`🔐 Login attempt for: ${email} in store: ${storeName}`);
+    console.log(`\n🔐 LOGIN ATTEMPT: ${email}`);
 
-    // STEP 1: Try Admin login first (Admin model)
-    console.log('🔍 Checking Admin credentials...');
-    const admin = await Admin.findOne({ email }).select('+password');
-    
-    if (admin) {
-      console.log('✓ Admin found, verifying password...');
-      const isPasswordCorrect = await admin.comparePassword(password);
-      
-      if (isPasswordCorrect) {
-        const token = generateToken(admin._id.toString(), 'admin', admin.role, admin.storeName);
-        console.log('✅ Admin login successful', `Role: ${admin.role}`);
-        
-        return res.status(200).json({
-          success: true,
-          message: 'Admin login successful',
-          type: 'admin',
-          data: {
-            admin: {
-              _id: admin._id,
-              email: admin.email,
-              firstName: admin.firstName,
-              lastName: admin.lastName,
-              role: admin.role,
-              storeName: admin.storeName,
-            },
-            token,
-          },
-        });
-      }
+    // Find customer by email
+    const customer = await Customer.findOne({ email: email.toLowerCase() });
+    console.log(`   Customer found: ${customer ? '✓' : '✗'}`);
+
+    if (!customer) {
+      console.log(`   ❌ Customer not found`);
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password',
+      });
     }
 
-    // STEP 2: If not admin, try Customer login (Customer model)
-    console.log('🔍 Checking Customer credentials...');
-    const customer = await Customer.findOne({ email }).select('+password');
-    
-    if (customer) {
-      console.log('✓ Customer found, verifying password...');
-      const isPasswordCorrect = await customer.comparePassword(password);
-      
-      if (isPasswordCorrect) {
-        const token = generateToken(customer._id.toString(), 'customer', null, null);
-        console.log('✅ Customer login successful');
-        
-        return res.status(200).json({
-          success: true,
-          message: 'Customer login successful',
-          type: 'customer',
-          data: {
-            customer: {
-              _id: customer._id,
-              email: customer.email,
-              firstName: customer.firstName,
-              lastName: customer.lastName,
-              phone: customer.phone,
-              store: customer.store,
-            },
-            token,
-          },
-        });
-      }
+    // Compare password (plain text)
+    const isPasswordCorrect = password === customer.password;
+    console.log(`   Password match: ${isPasswordCorrect ? '✓' : '✗'}`);
+
+    if (!isPasswordCorrect) {
+      console.log(`   ❌ Password incorrect`);
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password',
+      });
     }
 
-    // STEP 3: If neither admin nor customer found or password wrong
-    console.log('❌ Invalid credentials');
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid email or password',
+    // Generate token
+    const token = generateToken(customer._id.toString());
+    console.log(`   ✅ Login successful`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      data: {
+        token,
+        customer: {
+          _id: customer._id,
+          email: customer.email,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          phone: customer.phone,
+          store: customer.store,
+        },
+      },
     });
-
   } catch (error) {
-    console.error('❌ Login error:', error);
+    console.error('❌ Login error:', error.message);
     res.status(500).json({
       success: false,
       message: 'Error during login',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error.message,
     });
   }
 });
 
 // @route   POST /api/auth/signup
-// @desc    Register a new customer
+// @desc    Customer signup
 // @access  Public
 router.post('/signup', async (req, res) => {
   try {
@@ -133,58 +96,55 @@ router.post('/signup', async (req, res) => {
       });
     }
 
+    console.log(`\n📝 SIGNUP ATTEMPT: ${email}`);
+
     // Check if customer already exists
-    const existingCustomer = await Customer.findOne({ email });
+    const existingCustomer = await Customer.findOne({ email: email.toLowerCase() });
     if (existingCustomer) {
+      console.log(`   ❌ Customer already exists`);
       return res.status(409).json({
         success: false,
         message: 'Email already registered',
       });
     }
 
-    // Get store name from request (set by storeRouter middleware)
-    const storeName = req.storeName || 'test';
-
-    // Create new customer
+    // Create new customer with plain text password
     const newCustomer = new Customer({
-      email,
-      password,
-      firstName,
-      lastName,
-      phone,
-      store: storeName,
-      isEmailVerified: false,
-      preferences: {
-        notifications: true,
-        newsletter: true,
-      },
+      email: email.toLowerCase(),
+      password, // Plain text - no hashing
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      phone: phone.trim(),
+      store: 'plants in garden', // Default store
     });
 
     await newCustomer.save();
+    console.log(`   ✅ Customer created`);
 
     // Generate token
-    const token = generateToken(newCustomer._id.toString(), 'customer');
+    const token = generateToken(newCustomer._id.toString());
 
     res.status(201).json({
       success: true,
-      message: 'Customer registered successfully',
+      message: 'Signup successful',
       data: {
+        token,
         customer: {
           _id: newCustomer._id,
           email: newCustomer.email,
           firstName: newCustomer.firstName,
           lastName: newCustomer.lastName,
           phone: newCustomer.phone,
+          store: newCustomer.store,
         },
-        token,
       },
     });
   } catch (error) {
-    console.error('❌ Signup error:', error);
+    console.error('❌ Signup error:', error.message);
     res.status(500).json({
       success: false,
       message: 'Error during signup',
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error.message,
     });
   }
 });

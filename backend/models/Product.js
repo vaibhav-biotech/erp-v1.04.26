@@ -105,6 +105,11 @@ const productSchema = new Schema(
       type: String,
       enum: ['active', 'inactive', 'draft'],
       default: 'active'
+    },
+    storeName: {
+      type: String,
+      lowercase: true,
+      default: 'plants in garden'
     }
   },
   {
@@ -116,6 +121,7 @@ const productSchema = new Schema(
 // Index for faster queries
 productSchema.index({ category: 1, subcategory: 1 });
 productSchema.index({ status: 1 });
+productSchema.index({ storeName: 1 });
 productSchema.index({ name: 'text' });
 
 const Product = mongoose.model('Product', productSchema);

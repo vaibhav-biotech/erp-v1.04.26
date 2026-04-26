@@ -5,7 +5,7 @@ const Admin = require('../models/Admin');
 
 const generateAdminToken = (adminId, role, storeName) => {
   return jwt.sign(
-    { id: adminId, role, storeName: storeName || null },
+    { id: adminId, role, storeName: storeName ? storeName.toLowerCase() : null },
     process.env.JWT_SECRET || 'your-super-secret-key-change-in-production',
     { expiresIn: '24h' }
   );
@@ -60,7 +60,7 @@ router.post('/login', async (req, res) => {
           firstName: admin.firstName,
           lastName: admin.lastName,
           role: admin.role,
-          storeName: admin.storeName || null,
+          storeName: admin.storeName ? admin.storeName.toLowerCase() : null,
           canAccessAllStores: admin.role === 'super_admin'
         }
       }

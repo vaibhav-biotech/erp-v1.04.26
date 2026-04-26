@@ -152,6 +152,7 @@ router.get('/', async (req, res) => {
     const { category, status, limit, skip } = req.query;
 
     const result = await getAllProducts({
+      storeName: req.storeName,
       category,
       status,
       limit: limit ? parseInt(limit) : undefined,

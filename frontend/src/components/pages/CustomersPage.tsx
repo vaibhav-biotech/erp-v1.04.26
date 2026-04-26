@@ -56,12 +56,14 @@ export default function CustomersPage() {
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
+      const storeName = process.env.NEXT_PUBLIC_STORE_NAME || 'plants in garden';
       
       const response = await fetch(`${apiUrl}/api/customers/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${adminToken}`,
           'Content-Type': 'application/json',
+          'X-Store-Name': storeName,
         },
       });
       const data = await response.json();

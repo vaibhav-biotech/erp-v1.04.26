@@ -25,8 +25,8 @@ const storeRouter = (req, res, next) => {
     // Method 3: Use environment variable (fallback)
     const storeFromEnv = process.env.STORE_NAME || 'plantsingarden';
     
-    // Determine which store to use (priority order)
-    const detectedStore = storeFromHeader || storeFromDomain || storeFromEnv;
+    // Determine which store to use (priority order) - normalize to lowercase for consistency
+    const detectedStore = (storeFromHeader || storeFromDomain || storeFromEnv).toLowerCase();
     
     // Set store context on request object
     req.storeName = detectedStore;

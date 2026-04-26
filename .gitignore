@@ -37,5 +37,18 @@ Thumbs.db
 /.coverage/
 /junit.xml
 
+# Temporary debug docs/scripts
+/CORS_FIX_COMPLETE.md
+/LOGIN_FLOW_ANALYSIS.md
+/backend/fix-admin-lowercase.js
+/backend/reset-customer-password.js
+/backend/set-plain-password.js
+/backend/verify-and-fix-password.js
+/backend/test-cors.sh
+/backend/test-login-console.js
+/backend/package-lock 2.json
+/backend/package-lock 3.json
+/frontend/src/app/testing/
+
 # Misc
 *.pem

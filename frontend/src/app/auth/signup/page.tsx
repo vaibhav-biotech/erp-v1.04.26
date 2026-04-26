@@ -65,7 +65,7 @@ export default function CustomerSignupPage() {
     setLoading(true);
     try {
       // Call backend signup API
-      const response = await fetch('http://localhost:5050/api/auth/register', {
+      const response = await fetch('http://localhost:5050/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

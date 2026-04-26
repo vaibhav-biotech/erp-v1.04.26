@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { FiUsers } from 'react-icons/fi';
 import DataTable, { Column } from '@/components/DataTable';
 import { useAuth } from '@/contexts/AuthContext';
+import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 
 interface Customer {
   _id: string;
@@ -37,11 +38,9 @@ export default function AllCustomersPage() {
 
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5050/api/customers/all', {
-        headers: {
-          'Authorization': `Bearer ${adminToken}`,
-          'Content-Type': 'application/json',
-        },
+      const headers = getApiHeaders(adminToken);
+      const response = await fetch(buildApiUrl('/api/customers/all'), {
+        headers,
       });
       const data = await response.json();
 
@@ -79,11 +78,10 @@ export default function AllCustomersPage() {
     if (!adminToken) return;
 
     try {
-      const response = await fetch(`http://localhost:5050/api/customers/${customer._id}`, {
+      const headers = getApiHeaders(adminToken);
+      const response = await fetch(buildApiUrl(`/api/customers/${customer._id}`), {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${adminToken}`,
-        },
+        headers,
       });
       const data = await response.json();
 

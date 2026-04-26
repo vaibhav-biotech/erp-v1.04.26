@@ -51,8 +51,8 @@ export default function CustomerDashboard() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-600 block mb-2">Email Verified</label>
-                  <p className="text-lg text-black">{customer?.isEmailVerified ? 'Yes' : 'No'}</p>
+                  <label className="text-sm font-medium text-gray-600 block mb-2">Store</label>
+                  <p className="text-lg text-black">{customer?.store || '-'}</p>
                 </div>
               </div>
             </div>

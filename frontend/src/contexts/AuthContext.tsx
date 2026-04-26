@@ -16,10 +16,10 @@ export interface Admin {
 export interface Customer {
   _id: string;
   email: string;
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
-  isEmailVerified?: boolean;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  store: string;
 }
 
 interface AuthContextType {
@@ -30,7 +30,7 @@ interface AuthContextType {
   adminAuthenticated: boolean;
   loginAdmin: (email: string, password: string) => Promise<void>;
   logoutAdmin: () => void;
-  logout: () => void; // Generic logout that handles both admin and customer
+  logout: () => void;
 
   // Customer
   customer: Customer | null;
@@ -38,16 +38,29 @@ interface AuthContextType {
   customerLoading: boolean;
   customerAuthenticated: boolean;
   loginCustomer: (email: string, password: string) => Promise<void>;
-  registerCustomer: (userData: {
-    fullName: string;
+  registerCustomer: (data: {
     email: string;
-    phone: string;
     password: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
   }) => Promise<void>;
   logoutCustomer: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const safeParseStorageItem = <T,>(value: string | null): T | null => {
+  if (!value || value === 'undefined' || value === 'null') {
+    return null;
+  }
+
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return null;
+  }
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Admin state
@@ -64,17 +77,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const storedAdminToken = localStorage.getItem('adminToken');
     const storedAdmin = localStorage.getItem('admin');
-    if (storedAdminToken && storedAdmin) {
+    const parsedAdmin = safeParseStorageItem<Admin>(storedAdmin);
+    if (storedAdminToken && parsedAdmin) {
       setAdminToken(storedAdminToken);
-      setAdmin(JSON.parse(storedAdmin));
+      setAdmin(parsedAdmin);
+    } else if (storedAdmin === 'undefined' || storedAdmin === 'null') {
+      localStorage.removeItem('admin');
+      localStorage.removeItem('adminToken');
     }
     setAdminLoading(false);
 
     const storedCustomerToken = localStorage.getItem('customerToken');
     const storedCustomer = localStorage.getItem('customer');
-    if (storedCustomerToken && storedCustomer) {
+    const parsedCustomer = safeParseStorageItem<Customer>(storedCustomer);
+    if (storedCustomerToken && parsedCustomer) {
       setCustomerToken(storedCustomerToken);
-      setCustomer(JSON.parse(storedCustomer));
+      setCustomer(parsedCustomer);
+    } else if (storedCustomer === 'undefined' || storedCustomer === 'null') {
+      localStorage.removeItem('customer');
+      localStorage.removeItem('customerToken');
     }
     setCustomerLoading(false);
   }, []);
@@ -84,7 +105,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setAdminLoading(true);
       
-      // Build the admin API URL
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
       const response = await fetch(`${baseUrl}/api/admin/login`, {
         method: 'POST',
@@ -118,8 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('admin');
   }, []);
 
-  // Customer login
-  // STEP 4: Updated to include X-Store-Name header for Option C
+  // Customer login - PLAIN TEXT PASSWORD
   const loginCustomer = useCallback(async (email: string, password: string) => {
     try {
       setCustomerLoading(true);
@@ -134,14 +153,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Customer login failed');
+        throw new Error(error.message || 'Login failed');
       }
 
       const data = await response.json();
-      
-      // Handle both response formats
       const token = data.data?.token || data.token;
-      const customer = data.data?.customer || data.user;
+      const customer = data.data?.customer || data.customer || data.user;
+
+      if (!token || !customer) {
+        throw new Error('Invalid login response from server');
+      }
       
       setCustomerToken(token);
       setCustomer(customer);
@@ -155,32 +176,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Customer register
+  // Customer register - PLAIN TEXT PASSWORD
   const registerCustomer = useCallback(async (userData: {
-    fullName: string;
     email: string;
-    phone: string;
     password: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
   }) => {
     try {
       setCustomerLoading(true);
       
       const headers = getApiHeaders();
-      
-      // Split full name into first and last name
-      const nameParts = userData.fullName.trim().split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
 
-      const response = await fetch(buildApiUrl('/api/auth/register'), {
+      const response = await fetch(buildApiUrl('/api/auth/signup'), {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          firstName,
-          lastName,
           email: userData.email,
-          phone: userData.phone,
           password: userData.password,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          phone: userData.phone,
         }),
       });
 
@@ -190,10 +207,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const data = await response.json();
-      
-      // Handle both response formats
       const token = data.data?.token || data.token;
-      const customer = data.data?.customer || data.user;
+      const customer = data.data?.customer || data.customer || data.user;
+
+      if (!token || !customer) {
+        throw new Error('Invalid signup response from server');
+      }
       
       setCustomerToken(token);
       setCustomer(customer);
@@ -215,7 +234,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('customer');
   }, []);
 
-  // Generic logout (clears whoever is logged in)
+  // Generic logout
   const logout = useCallback(() => {
     logoutAdmin();
     logoutCustomer();

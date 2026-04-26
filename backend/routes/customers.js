@@ -27,10 +27,7 @@ router.get('/', async (req, res) => {
   try {
     const admin = getAdminFromToken(req);
     
-    // Get the store from request (set by storeRouter middleware) or admin token
-    const storeName = admin?.storeName || req.storeName || 'test';
-    
-    const customers = await Customer.find({ store: storeName })
+    const customers = await Customer.find({})
       .select('-password')
       .sort({ createdAt: -1 });
 
