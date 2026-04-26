@@ -11,6 +11,7 @@ import { Eye, EyeOff } from 'lucide-react';
 
 export default function CustomerSignupPage() {
   const router = useRouter();
+  const { registerCustomer } = useAuth();
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -41,8 +42,16 @@ export default function CustomerSignupPage() {
       setError('First name is required');
       return false;
     }
+    if (!formData.lastName.trim()) {
+      setError('Last name is required');
+      return false;
+    }
     if (!formData.email.match(/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/)) {
       setError('Please enter a valid email');
+      return false;
+    }
+    if (!/^\d{10}$/.test(formData.phone.trim())) {
+      setError('Phone must be 10 digits');
       return false;
     }
     if (formData.password.length < 6) {
@@ -64,28 +73,17 @@ export default function CustomerSignupPage() {
 
     setLoading(true);
     try {
-      // Call backend signup API
-      const response = await fetch('http://localhost:5050/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          password: formData.password,
-          phone: formData.phone,
-        }),
+      await registerCustomer({
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        phone: formData.phone.trim(),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Signup failed');
-      }
 
       setSuccess(true);
       setTimeout(() => {
-        router.push('/auth/login');
+        router.push('/customer');
       }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed');
@@ -176,7 +174,7 @@ export default function CustomerSignupPage() {
               {/* Last Name */}
               <div>
                 <label className="block font-montserrat text-sm text-gray-700 mb-2">
-                  Last Name
+                  Last Name *
                 </label>
                 <input
                   type="text"
@@ -206,14 +204,15 @@ export default function CustomerSignupPage() {
               {/* Phone */}
               <div>
                 <label className="block font-montserrat text-sm text-gray-700 mb-2">
-                  Phone
+                  Phone *
                 </label>
                 <input
                   type="tel"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  placeholder="+1 (555) 123-4567"
+                  placeholder="9876543210"
+                  maxLength={10}
                   className="w-full px-4 py-3 font-montserrat text-sm border border-gray-300 rounded-lg focus:outline-none focus:border-green-600 focus:ring-1 focus:ring-green-600"
                 />
               </div>

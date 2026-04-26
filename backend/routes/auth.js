@@ -1,5 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const Customer = require('../models/Customer');
 
 const router = express.Router();
@@ -40,8 +41,13 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Compare password (plain text)
-    const isPasswordCorrect = password === customer.password;
+    // Compare password (supports plain text + legacy bcrypt hashes)
+    let isPasswordCorrect = false;
+    if (typeof customer.password === 'string' && customer.password.startsWith('$2')) {
+      isPasswordCorrect = await bcrypt.compare(password, customer.password);
+    } else {
+      isPasswordCorrect = password === customer.password;
+    }
     console.log(`   Password match: ${isPasswordCorrect ? '✓' : '✗'}`);
 
     if (!isPasswordCorrect) {
