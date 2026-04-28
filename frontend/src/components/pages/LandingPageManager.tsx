@@ -379,6 +379,7 @@ export default function LandingPageManager() {
       {message && <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm">{message}</div>}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+        <div className="space-y-6">
         <form ref={addBannerCardRef} onSubmit={handleCreate} className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Add Banner</h2>
 
@@ -432,6 +433,61 @@ export default function LandingPageManager() {
             {isSaving ? 'Saving...' : `Add Banner${selectedFiles.length > 1 ? 's' : ''}`}
           </button>
         </form>
+
+        <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Top Picks Section</h2>
+            <p className="text-xs text-gray-500 mt-1">Set title, subheading, and number of products. Product selection is managed from Products table using Top Pick marker.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase text-gray-600 mb-1">Section Title</label>
+              <input
+                value={topPicksTitle}
+                onChange={(e) => setTopPicksTitle(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                placeholder="Top Picks"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase text-gray-600 mb-1">Subheading</label>
+              <input
+                value={topPicksSubheading}
+                onChange={(e) => setTopPicksSubheading(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                placeholder="Curated products selected by our store team"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase text-gray-600 mb-1">Number of Products</label>
+              <input
+                type="number"
+                min={1}
+                max={12}
+                value={topPicksCount}
+                onChange={(e) => setTopPicksCount(Number(e.target.value || 4))}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="text-sm text-gray-700">
+            {isTopPicksLoading ? 'Loading selected products count...' : `Selected from Products table: ${topPicksProductIds.length} product(s)`}
+          </div>
+
+          <button
+            type="button"
+            onClick={saveTopPicksSettings}
+            disabled={isTopPicksSaving}
+            className="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-black"
+          >
+            {isTopPicksSaving ? 'Saving...' : 'Save Top Picks Settings'}
+          </button>
+        </div>
+        </div>
 
         <div
           className="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col min-h-0"
@@ -518,60 +574,6 @@ export default function LandingPageManager() {
 
           {reorderLoading && <div className="px-4 py-2 text-xs text-blue-600 border-t border-gray-200">Saving banner order...</div>}
         </div>
-      </div>
-
-      <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">Top Picks Section</h2>
-          <p className="text-xs text-gray-500 mt-1">Set title, subheading, and number of products. Product selection is managed from Products table using Top Pick marker.</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-semibold uppercase text-gray-600 mb-1">Section Title</label>
-            <input
-              value={topPicksTitle}
-              onChange={(e) => setTopPicksTitle(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              placeholder="Top Picks"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase text-gray-600 mb-1">Subheading</label>
-            <input
-              value={topPicksSubheading}
-              onChange={(e) => setTopPicksSubheading(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-              placeholder="Curated products selected by our store team"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase text-gray-600 mb-1">Number of Products</label>
-            <input
-              type="number"
-              min={1}
-              max={12}
-              value={topPicksCount}
-              onChange={(e) => setTopPicksCount(Number(e.target.value || 4))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-            />
-          </div>
-        </div>
-
-        <div className="text-sm text-gray-700">
-          {isTopPicksLoading ? 'Loading selected products count...' : `Selected from Products table: ${topPicksProductIds.length} product(s)`}
-        </div>
-
-        <button
-          type="button"
-          onClick={saveTopPicksSettings}
-          disabled={isTopPicksSaving}
-          className="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-black"
-        >
-          {isTopPicksSaving ? 'Saving...' : 'Save Top Picks Settings'}
-        </button>
       </div>
     </div>
   );

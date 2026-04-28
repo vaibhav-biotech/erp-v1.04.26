@@ -26,6 +26,11 @@ const storeRouter = (req, res, next) => {
     if (storeFromDomain === 'www' && hostParts.length > 1) {
       storeFromDomain = hostParts[1];
     }
+
+    // Normalize known legacy/branding aliases to canonical store key
+    if (storeFromDomain === 'plantingarden' || storeFromDomain === 'plants-in-garden') {
+      storeFromDomain = 'plantsingarden';
+    }
     
     // Method 3: Use environment variable (fallback)
     const storeFromEnv = process.env.STORE_NAME || 'plantsingarden';

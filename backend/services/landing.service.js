@@ -17,14 +17,19 @@ const normalizeStoreName = (storeName) => {
 const getStoreNameAliases = (storeName) => {
   const normalized = normalizeStoreName(storeName);
   const compact = normalized.replace(/\s+/g, '');
-  return Array.from(new Set([normalized, compact])).filter(Boolean);
+  const aliases = new Set([normalized, compact]);
+
+  if (aliases.has('plantsingarden') || aliases.has('plantingarden') || aliases.has('plants in garden')) {
+    aliases.add('plantsingarden');
+    aliases.add('plantingarden');
+    aliases.add('plants in garden');
+  }
+
+  return Array.from(aliases).filter(Boolean);
 };
 
 const getStoreNameMatchConditions = (storeName) => {
-  const normalized = normalizeStoreName(storeName);
-  const compact = normalized.replace(/\s+/g, '');
-
-  const values = Array.from(new Set([normalized, compact])).filter(Boolean);
+  const values = getStoreNameAliases(storeName);
 
   return [
     { storeName: { $in: values } },

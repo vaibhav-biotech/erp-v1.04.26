@@ -56,6 +56,11 @@ export const getStoreFromDomain = (): string => {
       storeName = parts[1];
     }
     
+    // Normalize known legacy/branding aliases to canonical store key
+    if (storeName === 'plantingarden' || storeName === 'plants-in-garden') {
+      storeName = 'plantsingarden';
+    }
+
     // Validate store name (alphanumeric, hyphen, underscore)
     const isValid = /^[a-z0-9-_]+$/.test(storeName);
     
