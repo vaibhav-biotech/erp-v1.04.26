@@ -192,7 +192,7 @@ router.get('/search', async (req, res) => {
       });
     }
 
-    const result = await searchProducts(q, limit ? parseInt(limit) : 20);
+    const result = await searchProducts(q, limit ? parseInt(limit) : 20, req.storeName);
 
     if (!result.success) {
       return res.status(500).json(result);

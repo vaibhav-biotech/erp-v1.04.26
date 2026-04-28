@@ -62,6 +62,13 @@ const safeParseStorageItem = <T,>(value: string | null): T | null => {
   }
 };
 
+const sanitizeStoredToken = (value: string | null): string | null => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === 'undefined' || trimmed === 'null') return null;
+  return trimmed;
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Admin state
   const [admin, setAdmin] = useState<Admin | null>(null);
@@ -75,7 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Load from localStorage on mount
   useEffect(() => {
-    const storedAdminToken = localStorage.getItem('adminToken');
+    const storedAdminToken = sanitizeStoredToken(localStorage.getItem('adminToken'));
     const storedAdmin = localStorage.getItem('admin');
     const parsedAdmin = safeParseStorageItem<Admin>(storedAdmin);
     if (storedAdminToken && parsedAdmin) {
@@ -87,7 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setAdminLoading(false);
 
-    const storedCustomerToken = localStorage.getItem('customerToken');
+    const storedCustomerToken = sanitizeStoredToken(localStorage.getItem('customerToken'));
     const storedCustomer = localStorage.getItem('customer');
     const parsedCustomer = safeParseStorageItem<Customer>(storedCustomer);
     if (storedCustomerToken && parsedCustomer) {

@@ -8,6 +8,7 @@ const authRouter = require('./routes/auth');
 const customersRouter = require('./routes/customers');
 const ordersRouter = require('./routes/orders');
 const adminRouter = require('./routes/admin');
+const landingRouter = require('./routes/landing');
 const storeRouter = require('./middleware/storeRouter'); // NEW: Store detection middleware
 
 const app = express();
@@ -83,8 +84,11 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     const fileBuffer = req.file.buffer;
     const originalName = req.file.originalname || `upload-${Date.now()}`;
     const contentType = req.file.mimetype || 'image/jpeg';
+    const folder = typeof req.body?.folder === 'string' && req.body.folder.trim()
+      ? req.body.folder.trim()
+      : 'products';
 
-    const result = await uploadImageToS3(fileBuffer, originalName, contentType);
+    const result = await uploadImageToS3(fileBuffer, originalName, contentType, folder);
     if (!result.success) return res.status(500).json({ success: false, error: result.error });
 
     return res.status(200).json({ success: true, url: result.url });
@@ -289,6 +293,9 @@ app.use('/api/customers', customersRouter);
 
 // Orders Router
 app.use('/api/orders', ordersRouter);
+
+// Landing Page Router (hero banners)
+app.use('/api/landing', landingRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

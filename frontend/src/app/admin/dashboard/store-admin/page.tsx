@@ -10,6 +10,7 @@ import ProductsTable from '@/components/ProductsTable';
 import CategoriesPage from '@/components/pages/CategoriesPage';
 import StoreAdminOrdersListPage from '@/components/pages/StoreAdminOrdersListPage';
 import CustomersPage from '@/components/pages/CustomersPage';
+import LandingPageManager from '@/components/pages/LandingPageManager';
 
 interface DashboardStats {
   totalProducts: number;
@@ -28,7 +29,7 @@ interface StoreInfo {
 export default function StoreAdminDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { admin, adminToken, adminAuthenticated } = useAuth();
+  const { admin, adminToken, adminAuthenticated, logoutAdmin } = useAuth();
   
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null);
@@ -74,6 +75,12 @@ export default function StoreAdminDashboard() {
         }
       });
 
+      if (response.status === 401) {
+        logoutAdmin();
+        router.push('/admin');
+        return;
+      }
+
       if (response.ok) {
         const data = await response.json();
         setStoreInfo({
@@ -102,6 +109,12 @@ export default function StoreAdminDashboard() {
         fetch('/api/products?status=inactive&limit=1', { headers }),
         fetch('/api/products?status=draft&limit=1', { headers })
       ]);
+
+      if ([allRes, activeRes, inactiveRes, draftRes].some((res) => res.status === 401)) {
+        logoutAdmin();
+        router.push('/admin');
+        return;
+      }
 
       const allData = await allRes.json();
       const activeData = await activeRes.json();
@@ -175,6 +188,8 @@ export default function StoreAdminDashboard() {
         return <StoreAdminOrdersListPage />;
       case 'customers':
         return <CustomersPage />;
+      case 'landing':
+        return <LandingPageManager />;
       default:
         return (
           <div className="max-w-4xl mx-auto">

@@ -7,13 +7,14 @@ const s3 = new AWS.S3({
   region: process.env.AWS_REGION
 });
 
-const uploadImageToS3 = async (fileBuffer, fileName, contentType = 'image/jpeg') => {
+const uploadImageToS3 = async (fileBuffer, fileName, contentType = 'image/jpeg', folder = 'products') => {
   try {
     // Generate unique file name
     const timestamp = Date.now();
     const randomId = uuidv4();
     const fileExtension = fileName.split('.').pop();
-    const uniqueFileName = `products/${timestamp}-${randomId}.${fileExtension}`;
+    const safeFolder = String(folder || 'products').replace(/[^a-zA-Z0-9/_-]/g, '') || 'products';
+    const uniqueFileName = `${safeFolder}/${timestamp}-${randomId}.${fileExtension}`;
 
     const params = {
       Bucket: process.env.AWS_S3_BUCKET_NAME || '',

@@ -53,11 +53,22 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     totalPages: 1,
     total: 0
   });
+  const [topPicksProductIds, setTopPicksProductIds] = useState<string[]>([]);
+  const [topPicksConfig, setTopPicksConfig] = useState({
+    title: 'Top Picks',
+    subheading: 'Curated products selected by our store team',
+    productCount: 4,
+  });
+  const [updatingTopPickId, setUpdatingTopPickId] = useState<string | null>(null);
 
   // Fetch products
   useEffect(() => {
     fetchProducts();
   }, [pagination.currentPage, filterStatus]);
+
+  useEffect(() => {
+    fetchTopPicksConfig();
+  }, []);
 
   const fetchProducts = async () => {
     setIsLoading(true);
@@ -83,6 +94,65 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
       console.error('Error fetching products:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchTopPicksConfig = async () => {
+    try {
+      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') || undefined : undefined;
+      const response = await fetchWithStore('/api/landing/top-picks/admin', { token: adminToken });
+      if (!response.ok) throw new Error('Failed to fetch top picks config');
+
+      const data = await response.json();
+      const config = data?.data?.config || {};
+
+      setTopPicksConfig({
+        title: config.title || 'Top Picks',
+        subheading: config.subheading || 'Curated products selected by our store team',
+        productCount: Number(config.productCount || 4),
+      });
+      setTopPicksProductIds(Array.isArray(config.productIds) ? config.productIds : []);
+    } catch (error) {
+      console.error('Error loading top picks config:', error);
+    }
+  };
+
+  const toggleTopPick = async (productId: string) => {
+    const product = products.find((item) => item._id === productId);
+    if (!product || product.status !== 'active') {
+      alert('Only active products can be marked as Top Pick');
+      return;
+    }
+
+    const nextIds = topPicksProductIds.includes(productId)
+      ? topPicksProductIds.filter((id) => id !== productId)
+      : [...topPicksProductIds, productId];
+
+    try {
+      setUpdatingTopPickId(productId);
+      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') || undefined : undefined;
+
+      const response = await fetchWithStore('/api/landing/top-picks/admin', {
+        method: 'PUT',
+        token: adminToken,
+        body: JSON.stringify({
+          title: topPicksConfig.title,
+          subheading: topPicksConfig.subheading,
+          productCount: topPicksConfig.productCount,
+          productIds: nextIds,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update top picks');
+      }
+
+      setTopPicksProductIds(nextIds);
+    } catch (error) {
+      console.error('Error updating top picks:', error);
+      alert('Failed to update top picks marker');
+    } finally {
+      setUpdatingTopPickId(null);
     }
   };
 
@@ -258,6 +328,9 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                 Status
               </th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                Top Pick
+              </th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
                 Actions
               </th>
             </tr>
@@ -265,13 +338,13 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                   Loading products...
                 </td>
               </tr>
             ) : sortedProducts.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
                   No products found
                 </td>
               </tr>
@@ -309,6 +382,26 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                     <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(product.status)}`}>
                       {product.status}
                     </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <button
+                      onClick={() => toggleTopPick(product._id)}
+                      disabled={updatingTopPickId === product._id || product.status !== 'active'}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold border transition ${
+                        topPicksProductIds.includes(product._id)
+                          ? 'bg-purple-100 text-purple-800 border-purple-300'
+                          : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
+                      } disabled:opacity-60`}
+                      title="Toggle top pick"
+                    >
+                      {updatingTopPickId === product._id
+                        ? 'Saving...'
+                        : product.status !== 'active'
+                          ? 'Inactive'
+                          : topPicksProductIds.includes(product._id)
+                            ? 'Top Picked'
+                            : 'Mark'}
+                    </button>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">

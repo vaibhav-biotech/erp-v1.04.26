@@ -292,6 +292,16 @@ const getAllProducts = async (filters) => {
   try {
     let query = {};
 
+    if (filters?.storeName) {
+      const normalizedStoreName = String(filters.storeName).toLowerCase().trim();
+      query.$or = [
+        { storeName: normalizedStoreName },
+        { storeName: { $exists: false } },
+        { storeName: null },
+        { storeName: '' },
+      ];
+    }
+
     if (filters?.category) {
       query.category = filters.category;
     }
@@ -425,10 +435,24 @@ const deleteProduct = async (productId) => {
 /**
  * Search products by name
  */
-const searchProducts = async (query, limit = 20) => {
+const searchProducts = async (query, limit = 20, storeName) => {
   try {
+    const searchFilter = {
+      $text: { $search: query }
+    };
+
+    if (storeName) {
+      const normalizedStoreName = String(storeName).toLowerCase().trim();
+      searchFilter.$or = [
+        { storeName: normalizedStoreName },
+        { storeName: { $exists: false } },
+        { storeName: null },
+        { storeName: '' },
+      ];
+    }
+
     const products = await Product.find(
-      { $text: { $search: query } },
+      searchFilter,
       { score: { $meta: 'textScore' } }
     )
       .sort({ score: { $meta: 'textScore' } })

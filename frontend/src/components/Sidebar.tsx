@@ -42,6 +42,7 @@ export default function Sidebar({ onPageChange, currentPage }: SidebarProps) {
     ),
     { id: 'products', label: 'Products', icon: <FiShoppingCart className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=products', roles: ['store_admin'] },
     { id: 'categories', label: 'Categories', icon: <FiPackage className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=categories', roles: ['store_admin'] },
+    { id: 'landing', label: 'Landing Page', icon: <FiHome className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=landing', roles: ['store_admin'] },
     { id: 'orders', label: 'Orders', icon: <FiList className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=orders', roles: ['store_admin'] },
     { id: 'customers', label: 'Customers', icon: <FiUsers className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=customers', roles: ['store_admin'] },
     { id: 'all-customers', label: 'All Customers', icon: <FiUsers className="w-5 h-5" />, route: '/admin/dashboard/super-admin?page=all-customers', roles: ['super_admin'] },
