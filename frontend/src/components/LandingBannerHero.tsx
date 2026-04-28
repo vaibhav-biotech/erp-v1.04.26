@@ -38,14 +38,25 @@ export default function LandingBannerHero() {
   }, []);
 
   useEffect(() => {
+    if (banners.length === 0) {
+      setActiveIndex(0);
+      return;
+    }
+
+    if (activeIndex >= banners.length) {
+      setActiveIndex(0);
+    }
+  }, [banners.length, activeIndex]);
+
+  useEffect(() => {
     if (banners.length <= 1) return;
 
-    const id = window.setInterval(() => {
+    const id = window.setTimeout(() => {
       setActiveIndex((prev) => (prev + 1) % banners.length);
     }, 4500);
 
-    return () => window.clearInterval(id);
-  }, [banners.length]);
+    return () => window.clearTimeout(id);
+  }, [activeIndex, banners.length]);
 
   const hasBanners = useMemo(() => banners.length > 0, [banners.length]);
 

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { getApiHeaders } from '@/lib/storeConfig';
+import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 import { FiPlus, FiRefreshCw, FiTrendingUp } from 'react-icons/fi';
 import BulkUploadModal from '@/components/BulkUploadModal';
 import ProductsTable from '@/components/ProductsTable';
@@ -68,7 +68,7 @@ export default function StoreAdminDashboard() {
 
   const fetchStoreInfo = async () => {
     try {
-      const response = await fetch('/api/admin/profile', {
+      const response = await fetch(buildApiUrl('/api/admin/profile'), {
         headers: {
           ...getApiHeaders(adminToken || undefined),
           'Authorization': `Bearer ${adminToken}`
@@ -104,10 +104,10 @@ export default function StoreAdminDashboard() {
       };
 
       const [allRes, activeRes, inactiveRes, draftRes] = await Promise.all([
-        fetch('/api/products?limit=1', { headers }),
-        fetch('/api/products?status=active&limit=1', { headers }),
-        fetch('/api/products?status=inactive&limit=1', { headers }),
-        fetch('/api/products?status=draft&limit=1', { headers })
+        fetch(buildApiUrl('/api/products?limit=1'), { headers }),
+        fetch(buildApiUrl('/api/products?status=active&limit=1'), { headers }),
+        fetch(buildApiUrl('/api/products?status=inactive&limit=1'), { headers }),
+        fetch(buildApiUrl('/api/products?status=draft&limit=1'), { headers })
       ]);
 
       if ([allRes, activeRes, inactiveRes, draftRes].some((res) => res.status === 401)) {

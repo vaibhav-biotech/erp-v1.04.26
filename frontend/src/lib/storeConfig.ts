@@ -45,18 +45,23 @@ export const getStoreFromDomain = (): string => {
     }
     
     // Remove port if present (e.g., "plantsingarden.com:3000" → "plantsingarden.com")
-    const hostWithoutPort = hostname.split(':')[0];
-    
+    const hostWithoutPort = hostname.split(':')[0].toLowerCase();
+
     // Split by dots and get first part (subdomain)
-    const parts = hostWithoutPort.split('.');
-    const storeName = parts[0];
+    const parts = hostWithoutPort.split('.').filter(Boolean);
+    let storeName = parts[0] || '';
+
+    // Handle www domains (www.plantingarden.com -> plantingarden)
+    if (storeName === 'www' && parts.length > 1) {
+      storeName = parts[1];
+    }
     
     // Validate store name (alphanumeric, hyphen, underscore)
     const isValid = /^[a-z0-9-_]+$/.test(storeName);
     
     if (!isValid) {
       console.warn(`[storeConfig] Invalid store name detected: ${storeName}, using default`);
-      return process.env.NEXT_PUBLIC_STORE_NAME || 'Plants in Garden';
+      return (process.env.NEXT_PUBLIC_STORE_NAME || 'plantsingarden').toLowerCase().replace(/\s+/g, '');
     }
     
     if (process.env.NODE_ENV === 'development') {
@@ -66,8 +71,36 @@ export const getStoreFromDomain = (): string => {
     return storeName;
   } catch (error) {
     console.error(`[storeConfig] Error detecting store:`, error);
-    return process.env.NEXT_PUBLIC_STORE_NAME || 'Plants in Garden';
+    return (process.env.NEXT_PUBLIC_STORE_NAME || 'plantsingarden').toLowerCase().replace(/\s+/g, '');
   }
+};
+
+const getAdminStoreFromLocalStorage = (): string | null => {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const rawAdmin = localStorage.getItem('admin');
+    if (!rawAdmin || rawAdmin === 'undefined' || rawAdmin === 'null') return null;
+
+    const parsedAdmin = JSON.parse(rawAdmin) as { storeName?: string | null };
+    const adminStore = parsedAdmin?.storeName ? String(parsedAdmin.storeName).trim().toLowerCase() : '';
+
+    if (!adminStore) return null;
+    return adminStore;
+  } catch {
+    return null;
+  }
+};
+
+export const getStoreForApi = (token?: string): string => {
+  // For authenticated admin calls on shared ERP domain, prefer admin.storeName.
+  // This prevents wrong store header like "erp-v1-...".
+  if (token) {
+    const adminStore = getAdminStoreFromLocalStorage();
+    if (adminStore) return adminStore;
+  }
+
+  return getStoreFromDomain();
 };
 
 /**
@@ -111,7 +144,7 @@ export const getApiHeaders = (
 ): Record<string, string> => {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'X-Store-Name': getStoreFromDomain(),
+    'X-Store-Name': getStoreForApi(token),
   };
   
   if (token) {
@@ -145,8 +178,10 @@ export const fetchWithStore = async (
   if (process.env.NODE_ENV === 'development') {
     console.log(`[API] ${options.method || 'GET'} ${url} with store: ${getStoreFromDomain()}`);
   }
+
+  const resolvedUrl = /^https?:\/\//i.test(url) ? url : buildApiUrl(url);
   
-  return fetch(url, {
+  return fetch(resolvedUrl, {
     ...fetchOptions,
     headers,
   });

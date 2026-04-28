@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { buildApiUrl, getApiHeaders, getStoreFromDomain } from '@/lib/storeConfig';
+import { buildApiUrl, getApiHeaders, getStoreForApi } from '@/lib/storeConfig';
 import { useAuth } from '@/contexts/AuthContext';
 import BannerParserUploader, { ParsedBannerFile } from '@/components/BannerParserUploader';
 
@@ -162,7 +162,7 @@ export default function LandingPageManager() {
         const uploadResponse = await fetch(buildApiUrl('/api/upload'), {
           method: 'POST',
           headers: {
-            'X-Store-Name': getStoreFromDomain(),
+            'X-Store-Name': getStoreForApi(adminToken),
             Authorization: `Bearer ${adminToken}`,
           },
           body: uploadFormData,

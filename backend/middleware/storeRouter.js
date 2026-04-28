@@ -19,8 +19,13 @@ const storeRouter = (req, res, next) => {
     
     // Method 2: Parse from domain/hostname
     const host = req.get('host') || 'localhost:5050'; // e.g., "plantsingarden.localhost", "store2.com"
-    const hostParts = host.split(':')[0].split('.'); // Remove port, split by dots
-    const storeFromDomain = hostParts[0]; // Get first part (subdomain)
+    const hostParts = host.split(':')[0].toLowerCase().split('.').filter(Boolean); // Remove port, split by dots
+    let storeFromDomain = hostParts[0] || 'plantsingarden'; // Get first part (subdomain)
+
+    // Handle www domains (www.plantingarden.com -> plantingarden)
+    if (storeFromDomain === 'www' && hostParts.length > 1) {
+      storeFromDomain = hostParts[1];
+    }
     
     // Method 3: Use environment variable (fallback)
     const storeFromEnv = process.env.STORE_NAME || 'plantsingarden';

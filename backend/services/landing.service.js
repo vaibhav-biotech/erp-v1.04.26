@@ -14,6 +14,12 @@ const normalizeStoreName = (storeName) => {
   return value || 'plants in garden';
 };
 
+const getStoreNameAliases = (storeName) => {
+  const normalized = normalizeStoreName(storeName);
+  const compact = normalized.replace(/\s+/g, '');
+  return Array.from(new Set([normalized, compact])).filter(Boolean);
+};
+
 const getStoreNameMatchConditions = (storeName) => {
   const normalized = normalizeStoreName(storeName);
   const compact = normalized.replace(/\s+/g, '');
@@ -38,14 +44,14 @@ const getDefaultTopPicksConfig = (storeName) => ({
 
 const listPublicBanners = async (storeName) => {
   return getCollection()
-    .find({ storeName: normalizeStoreName(storeName), isActive: true })
+    .find({ storeName: { $in: getStoreNameAliases(storeName) }, isActive: true })
     .sort({ displayOrder: 1, createdAt: -1 })
     .toArray();
 };
 
 const listAdminBanners = async (storeName) => {
   return getCollection()
-    .find({ storeName: normalizeStoreName(storeName) })
+    .find({ storeName: { $in: getStoreNameAliases(storeName) } })
     .sort({ displayOrder: 1, createdAt: -1 })
     .toArray();
 };
@@ -83,7 +89,7 @@ const patchBanner = async ({ storeName, bannerId, title, imageUrl, isActive, dis
   }
 
   return getCollection().findOneAndUpdate(
-    { _id: objectId, storeName: normalizeStoreName(storeName) },
+    { _id: objectId, storeName: { $in: getStoreNameAliases(storeName) } },
     { $set: payload },
     { returnDocument: 'after' }
   );
@@ -93,7 +99,7 @@ const removeBanner = async ({ storeName, bannerId }) => {
   const objectId = toObjectId(bannerId);
   if (!objectId) return null;
 
-  return getCollection().deleteOne({ _id: objectId, storeName: normalizeStoreName(storeName) });
+  return getCollection().deleteOne({ _id: objectId, storeName: { $in: getStoreNameAliases(storeName) } });
 };
 
 const reorderBannersByIds = async ({ storeName, orderedBannerIds }) => {
@@ -105,7 +111,7 @@ const reorderBannersByIds = async ({ storeName, orderedBannerIds }) => {
 
   const operations = objectIds.map((objectId, index) => ({
     updateOne: {
-      filter: { _id: objectId, storeName: normalizeStoreName(storeName) },
+      filter: { _id: objectId, storeName: { $in: getStoreNameAliases(storeName) } },
       update: {
         $set: {
           displayOrder: index,
@@ -119,7 +125,9 @@ const reorderBannersByIds = async ({ storeName, orderedBannerIds }) => {
 };
 
 const getTopPicksConfig = async (storeName) => {
-  const config = await getTopPicksCollection().findOne({ storeName: normalizeStoreName(storeName) });
+  const config = await getTopPicksCollection().findOne({
+    storeName: { $in: getStoreNameAliases(storeName) },
+  });
 
   if (!config) return getDefaultTopPicksConfig(storeName);
 
