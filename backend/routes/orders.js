@@ -5,6 +5,32 @@ const router = express.Router();
 const ORDER_STATUS_OPTIONS = ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled', 'returned'];
 const PAYMENT_STATUS_OPTIONS = ['pending', 'paid', 'failed', 'refunded', 'cod_pending'];
 
+const normalizeStoreName = (value) => {
+  const normalized = String(value || '').toLowerCase().trim();
+  if (!normalized) return 'plantsingarden';
+
+  if (normalized === 'plants in garden' || normalized === 'plants-in-garden' || normalized === 'plantingarden') {
+    return 'plantsingarden';
+  }
+
+  return normalized.replace(/\s+/g, '');
+};
+
+const getStoreAliases = (value) => {
+  const base = String(value || '').toLowerCase().trim();
+  const compact = base.replace(/\s+/g, '');
+  const aliases = new Set([base, compact, normalizeStoreName(base)]);
+
+  if (aliases.has('plantsingarden') || aliases.has('plants in garden') || aliases.has('plants-in-garden') || aliases.has('plantingarden')) {
+    aliases.add('plantsingarden');
+    aliases.add('plants in garden');
+    aliases.add('plants-in-garden');
+    aliases.add('plantingarden');
+  }
+
+  return Array.from(aliases).filter(Boolean);
+};
+
 const toObjectId = (value) => {
   if (!value || !mongoose.Types.ObjectId.isValid(value)) return null;
   return new mongoose.Types.ObjectId(value);
@@ -41,7 +67,7 @@ router.post('/', async (req, res) => {
     }
 
     // Get store name from middleware
-    const storeName = req.storeName || 'plants in garden';
+    const storeName = normalizeStoreName(req.storeName || 'plantsingarden');
 
     // Calculate totals
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -147,12 +173,12 @@ router.post('/', async (req, res) => {
 // Get Orders for Store (Admin)
 router.get('/', async (req, res) => {
   try {
-    const storeName = req.storeName || 'plants in garden';
+    const storeName = req.storeName || 'plantsingarden';
 
     const db = mongoose.connection.db;
     const orders = await db
       .collection('orders')
-      .find({ storeName })
+      .find({ storeName: { $in: getStoreAliases(storeName) } })
       .sort({ createdAt: -1 })
       .toArray();
 
@@ -175,7 +201,7 @@ router.get('/', async (req, res) => {
 router.get('/customer/:customerId', async (req, res) => {
   try {
     const { customerId } = req.params;
-    const storeName = req.storeName || 'plants in garden';
+    const storeName = req.storeName || 'plantsingarden';
     const customerObjectId = toObjectId(customerId);
 
     if (!customerObjectId) {
@@ -190,7 +216,7 @@ router.get('/customer/:customerId', async (req, res) => {
       .collection('orders')
       .find({
         customerId: customerObjectId,
-        storeName,
+        storeName: { $in: getStoreAliases(storeName) },
       })
       .sort({ createdAt: -1 })
       .toArray();
@@ -214,7 +240,7 @@ router.get('/customer/:customerId', async (req, res) => {
 router.get('/:orderId', async (req, res) => {
   try {
     const { orderId } = req.params;
-    const storeName = req.storeName || 'plants in garden';
+    const storeName = req.storeName || 'plantsingarden';
     const orderObjectId = toObjectId(orderId);
 
     if (!orderObjectId) {
@@ -227,7 +253,7 @@ router.get('/:orderId', async (req, res) => {
     const db = mongoose.connection.db;
     const order = await db.collection('orders').findOne({
       _id: orderObjectId,
-      storeName,
+      storeName: { $in: getStoreAliases(storeName) },
     });
 
     if (!order) {
@@ -269,7 +295,7 @@ router.patch('/:orderId', async (req, res) => {
       actor,
       fulfillment,
     } = req.body || {};
-    const storeName = req.storeName || 'plants in garden';
+    const storeName = req.storeName || 'plantsingarden';
     const orderObjectId = toObjectId(orderId);
 
     if (!orderObjectId) {
@@ -299,7 +325,7 @@ router.patch('/:orderId', async (req, res) => {
     const db = mongoose.connection.db;
     const existingOrder = await db.collection('orders').findOne({
       _id: orderObjectId,
-      storeName,
+      storeName: { $in: getStoreAliases(storeName) },
     });
 
     if (!existingOrder) {
@@ -411,7 +437,7 @@ router.patch('/:orderId', async (req, res) => {
     const result = await db.collection('orders').updateOne(
       {
         _id: orderObjectId,
-        storeName,
+        storeName: { $in: getStoreAliases(storeName) },
       },
       updateQuery
     );
@@ -441,7 +467,7 @@ router.patch('/:orderId', async (req, res) => {
 router.post('/:orderId/invoice', async (req, res) => {
   try {
     const { orderId } = req.params;
-    const storeName = req.storeName || 'plants in garden';
+    const storeName = req.storeName || 'plantsingarden';
     const orderObjectId = toObjectId(orderId);
 
     if (!orderObjectId) {
@@ -452,7 +478,10 @@ router.post('/:orderId/invoice', async (req, res) => {
     }
 
     const db = mongoose.connection.db;
-    const order = await db.collection('orders').findOne({ _id: orderObjectId, storeName });
+    const order = await db.collection('orders').findOne({
+      _id: orderObjectId,
+      storeName: { $in: getStoreAliases(storeName) },
+    });
 
     if (!order) {
       return res.status(404).json({
@@ -484,7 +513,10 @@ router.post('/:orderId/invoice', async (req, res) => {
     };
 
     await db.collection('orders').updateOne(
-      { _id: orderObjectId, storeName },
+      {
+        _id: orderObjectId,
+        storeName: { $in: getStoreAliases(storeName) },
+      },
       {
         $set: {
           invoice: invoicePayload,

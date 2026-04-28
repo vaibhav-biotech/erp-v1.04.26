@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useState, use } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import PublicLayout from '@/components/PublicLayout';
 import ProductDetailCard from '@/components/ProductDetailCard';
+import { useCart } from '@/contexts/CartContext';
+import { buildApiUrl } from '@/lib/storeConfig';
 
 interface Product {
   _id: string;
@@ -34,18 +37,23 @@ interface Props {
 
 export default function ProductDetailPage({ params }: Props) {
   const { id } = use(params);
+  const router = useRouter();
+  const { addToCart, clearCart } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
+    const controller = new AbortController();
 
     const fetchProduct = async () => {
       try {
-        // Fetch the product by ID
-        const { buildApiUrl } = await import('@/lib/storeConfig');
-        const res = await fetch(buildApiUrl(`/api/products/${id}`));
+        const [res, catRes] = await Promise.all([
+          fetch(buildApiUrl(`/api/products/${id}`), { signal: controller.signal }),
+          fetch(buildApiUrl('/api/categories'), { signal: controller.signal }),
+        ]);
+
         if (!res.ok) {
           throw new Error('Product not found');
         }
@@ -57,8 +65,6 @@ export default function ProductDetailPage({ params }: Props) {
           throw new Error('No product data received');
         }
 
-        // Fetch categories to get category and subcategory names
-        const catRes = await fetch(buildApiUrl('/api/categories'));
         if (catRes.ok) {
           const catData = await catRes.json();
           const categories = catData.data || [];
@@ -77,10 +83,9 @@ export default function ProductDetailPage({ params }: Props) {
             }
           }
         }
-
-        console.log('✅ Fetched product:', productData);
         setProduct(productData);
       } catch (err) {
+        if ((err as Error).name === 'AbortError') return;
         console.error('Error fetching product:', err);
         setError(err instanceof Error ? err.message : 'Failed to load product');
       } finally {
@@ -89,6 +94,8 @@ export default function ProductDetailPage({ params }: Props) {
     };
 
     fetchProduct();
+
+    return () => controller.abort();
   }, [id]);
 
   if (loading) {
@@ -112,6 +119,43 @@ export default function ProductDetailPage({ params }: Props) {
       </PublicLayout>
     );
   }
+
+  const handleBuyNow = (quantity: number, size: number, pot: number, _isGift: boolean) => {
+    if (!product) return;
+
+    const selectedSize = product.sizeVariants?.find((v) => v.id === size);
+    const selectedPot = product.potVariants?.find((v) => v.id === pot);
+
+    const sizeVariant = {
+      id: String(size),
+      name: selectedSize?.name || 'Standard',
+      price: selectedSize?.price ?? product.finalPrice,
+    };
+
+    const potVariant = {
+      id: String(pot),
+      name: selectedPot?.name || 'No Pot',
+      price: selectedPot?.price ?? 0,
+    };
+
+    const unitPrice = sizeVariant.price + potVariant.price;
+
+    clearCart();
+    addToCart(
+      {
+        productId: product._id,
+        name: product.name,
+        image: product.images?.[0] || '',
+        sizeVariant,
+        potVariant,
+        quantity,
+        totalPrice: unitPrice,
+      },
+      true
+    );
+
+    router.push('/checkout');
+  };
 
   return (
     <PublicLayout>
@@ -144,6 +188,7 @@ export default function ProductDetailPage({ params }: Props) {
             }}
             sizeVariants={product.sizeVariants}
             potVariants={product.potVariants}
+            onBuyNow={handleBuyNow}
             breadcrumbs={[
               { label: 'Home', href: '/' },
               { label: product.categoryName || 'Category', href: `/products/${product.category}` },

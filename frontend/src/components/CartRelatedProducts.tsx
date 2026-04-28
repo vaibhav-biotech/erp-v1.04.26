@@ -27,7 +27,15 @@ export default function CartRelatedProducts() {
       setLoading(true);
       const response = await fetch('/api/products?limit=4&sort=-featured');
       const data = await response.json();
-      setRelatedProducts(data.products?.slice(0, 4) || []);
+      const raw: RelatedProduct[] = data.products || data.data || [];
+      // Deduplicate by _id to avoid React key collision
+      const seen = new Set<string>();
+      const unique = raw.filter((p) => {
+        if (seen.has(p._id)) return false;
+        seen.add(p._id);
+        return true;
+      });
+      setRelatedProducts(unique.slice(0, 4));
     } catch (error) {
       console.error('Error fetching related products:', error);
     } finally {
@@ -47,7 +55,7 @@ export default function CartRelatedProducts() {
       <div className="flex gap-3 overflow-x-auto pb-2 snap-x">
         {relatedProducts.map((product, index) => (
           <motion.div
-            key={product._id}
+            key={`${product._id}-${index}`}
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}

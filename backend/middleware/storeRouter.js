@@ -12,6 +12,20 @@
  * Backwards Compatible: Always has a fallback value
  */
 
+const normalizeStoreName = (value) => {
+  const normalized = String(value || '').toLowerCase().trim();
+
+  if (
+    normalized === 'plants in garden'
+    || normalized === 'plants-in-garden'
+    || normalized === 'plantingarden'
+  ) {
+    return 'plantsingarden';
+  }
+
+  return normalized.replace(/\s+/g, '');
+};
+
 const storeRouter = (req, res, next) => {
   try {
     // Method 1: Check X-Store-Name header (frontend sends this)
@@ -27,16 +41,13 @@ const storeRouter = (req, res, next) => {
       storeFromDomain = hostParts[1];
     }
 
-    // Normalize known legacy/branding aliases to canonical store key
-    if (storeFromDomain === 'plantingarden' || storeFromDomain === 'plants-in-garden') {
-      storeFromDomain = 'plantsingarden';
-    }
+    storeFromDomain = normalizeStoreName(storeFromDomain);
     
     // Method 3: Use environment variable (fallback)
     const storeFromEnv = process.env.STORE_NAME || 'plantsingarden';
     
     // Determine which store to use (priority order) - normalize to lowercase for consistency
-    const detectedStore = (storeFromHeader || storeFromDomain || storeFromEnv).toLowerCase();
+    const detectedStore = normalizeStoreName(storeFromHeader || storeFromDomain || storeFromEnv);
     
     // Set store context on request object
     req.storeName = detectedStore;
@@ -58,7 +69,7 @@ const storeRouter = (req, res, next) => {
   } catch (error) {
     console.error('[storeRouter] Error:', error.message);
     // Don't fail the request, just use default
-    req.storeName = process.env.STORE_NAME || 'plantsingarden';
+    req.storeName = normalizeStoreName(process.env.STORE_NAME || 'plantsingarden');
     next();
   }
 };

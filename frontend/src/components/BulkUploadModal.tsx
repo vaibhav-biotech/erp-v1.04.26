@@ -30,6 +30,7 @@ interface ParsedProduct {
   name: string;
   category: string;
   subcategory: string;
+  tags?: string[];
   originalPrice: number;
   finalPrice: number;
   discount?: number;
@@ -302,9 +303,9 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
                   </button>
                 </div>
                 <ul className="text-sm text-blue-800 space-y-1 ml-4 mb-4">
-                  <li>• Columns: Images Link, Names, Category, Subcategory, Description, Benefits, Care, Stock, Size Variants, Size Original Prices, Discount, Rating, Status, Reviews</li>
+                  <li>• Columns: Images Link, Names, Category, Subcategory, Tags, Description, Benefits, Care, Stock, Size Variants, Size Original Prices, Discount, Rating, Status, Reviews</li>
                   <li>• Google Drive direct image URLs (https://drive.google.com/uc?id=ID)</li>
-                  <li>• Comma-separated subcategories create separate product entries</li>
+                  <li>• Use one Subcategory; use Tags for cross-listing in other subcategory views</li>
                   <li>• Size variants (2-column format): Names = "small, medium, large" | Original Prices = "599, 799, 999" | Discount applies to each</li>
                 </ul>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useCart } from '@/contexts/CartContext';
@@ -34,6 +34,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState('');
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -62,10 +63,17 @@ export default function CheckoutPage() {
 
   // Redirect if cart is empty
   useEffect(() => {
-    if (cartItems.length === 0 && customerAuthenticated) {
-      setTimeout(() => router.push('/products'), 2000);
+    if (cartItems.length === 0) {
+      redirectTimerRef.current = setTimeout(() => router.push('/products'), 2000);
     }
-  }, [cartItems, router, customerAuthenticated]);
+
+    return () => {
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+        redirectTimerRef.current = null;
+      }
+    };
+  }, [cartItems.length, router]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -82,8 +90,8 @@ export default function CheckoutPage() {
     if (!formData.street) return 'Street address is required';
     if (!formData.city) return 'City is required';
     if (!formData.state) return 'State is required';
-    if (!formData.pincode || formData.pincode.length !== 6) return 'Pincode must be 6 digits';
-    if (!formData.phone) return 'Phone number is required';
+    if (!/^\d{6}$/.test(formData.pincode)) return 'Pincode must be 6 digits';
+    if (!/^\d{10}$/.test(formData.phone)) return 'Phone number must be 10 digits';
     return null;
   };
 
@@ -146,7 +154,7 @@ export default function CheckoutPage() {
       setPlacedOrderId(result.data?.orderId || result.data?.orderNumber || result.data?._id || '');
       
       // Redirect to customer orders (My Account > Orders) after success
-      setTimeout(() => {
+      redirectTimerRef.current = setTimeout(() => {
         router.push('/customer?tab=orders');
       }, 2000);
     } catch (err) {
@@ -156,10 +164,13 @@ export default function CheckoutPage() {
     }
   };
 
-  const subtotal = getSubtotal();
-  const shipping = subtotal >= 60 ? 0 : 50;
-  const tax = Math.round(subtotal * 0.18 * 100) / 100;
-  const total = subtotal + shipping + tax;
+  const pricing = useMemo(() => {
+    const subtotal = getSubtotal();
+    const shipping = subtotal >= 60 ? 0 : 50;
+    const tax = Math.round(subtotal * 0.18 * 100) / 100;
+    const total = subtotal + shipping + tax;
+    return { subtotal, shipping, tax, total };
+  }, [getSubtotal, cartItems]);
 
   if (cartItems.length === 0) {
     return (
@@ -211,7 +222,7 @@ export default function CheckoutPage() {
                     <div className="flex justify-between items-center mb-4">
                       <h2 className="font-montserrat font-bold text-lg text-black">Contact</h2>
                       {!customerAuthenticated && (
-                        <Link href="/auth/login" className="text-blue-600 font-montserrat text-sm hover:underline">
+                        <Link href="/auth/login?redirect=/checkout" className="text-blue-600 font-montserrat text-sm hover:underline">
                           Sign in
                         </Link>
                       )}
@@ -378,12 +389,25 @@ export default function CheckoutPage() {
                 {/* Items */}
                 <div className="border-b border-gray-200 pb-4 space-y-2">
                   {cartItems.map((item, idx) => (
-                    <div key={idx} className="text-sm">
-                      <div className="flex justify-between font-montserrat text-gray-600">
-                        <span>{item.name} x {item.quantity}</span>
-                        <span>₹{item.totalPrice.toLocaleString('en-IN')}</span>
+                    <div key={`${item.productId}-${idx}`} className="flex items-start gap-3 text-sm">
+                      <img
+                        src={item.image || '/placeholder.png'}
+                        alt={item.name}
+                        className="w-12 h-12 rounded-md object-cover border border-gray-200 shrink-0"
+                        loading="lazy"
+                        decoding="async"
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://via.placeholder.com/80?text=Plant';
+                        }}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex justify-between gap-2 font-montserrat text-gray-600">
+                          <span className="font-semibold text-gray-800 truncate">{item.name}</span>
+                          <span className="shrink-0">₹{item.totalPrice.toLocaleString('en-IN')}</span>
+                        </div>
+                        <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                        <p className="text-xs text-gray-500 truncate">{item.sizeVariant.name} / {item.potVariant.name}</p>
                       </div>
-                      <p className="text-xs text-gray-500">{item.sizeVariant.name} / {item.potVariant.name}</p>
                     </div>
                   ))}
                 </div>
@@ -392,16 +416,16 @@ export default function CheckoutPage() {
                 <div className="space-y-2 text-sm border-b border-gray-200 pb-4">
                   <div className="flex justify-between font-montserrat text-gray-600">
                     <span>Subtotal</span>
-                    <span>₹{subtotal.toLocaleString('en-IN')}</span>
+                    <span>₹{pricing.subtotal.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="flex justify-between font-montserrat text-gray-600">
                     <span>Tax (18%)</span>
-                    <span>₹{tax.toLocaleString('en-IN')}</span>
+                    <span>₹{pricing.tax.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="flex justify-between font-montserrat text-gray-600">
                     <span>Shipping</span>
-                    <span className={shipping === 0 ? 'text-green-600 font-bold' : ''}>
-                      {shipping === 0 ? 'FREE' : `₹${shipping}`}
+                    <span className={pricing.shipping === 0 ? 'text-green-600 font-bold' : ''}>
+                      {pricing.shipping === 0 ? 'FREE' : `₹${pricing.shipping}`}
                     </span>
                   </div>
                 </div>
@@ -409,7 +433,7 @@ export default function CheckoutPage() {
                 {/* Total */}
                 <div className="flex justify-between font-montserrat font-bold text-lg text-black">
                   <span>Total</span>
-                  <span>₹{total.toLocaleString('en-IN')}</span>
+                  <span>₹{pricing.total.toLocaleString('en-IN')}</span>
                 </div>
               </motion.div>
             </div>

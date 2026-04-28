@@ -28,6 +28,19 @@ const validateProduct = (product) => {
     errors.push('subcategory: Subcategory must be at least 2 characters');
   }
 
+  // Tags validation (optional)
+  if (product.tags !== undefined) {
+    if (!Array.isArray(product.tags)) {
+      errors.push('tags: Tags must be an array of strings');
+    } else {
+      product.tags.forEach((tag, index) => {
+        if (typeof tag !== 'string' || !tag.trim()) {
+          errors.push(`tags[${index}]: Tag must be a non-empty string`);
+        }
+      });
+    }
+  }
+
   // Original Price validation
   if (typeof product.originalPrice !== 'number') {
     errors.push('originalPrice: Original price must be a number');

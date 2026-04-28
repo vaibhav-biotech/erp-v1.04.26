@@ -10,7 +10,7 @@ export default function ProductsPage() {
 
   // Redirect to first category
   React.useEffect(() => {
-    router.push('/products/plants');
+    router.replace('/products/plants');
   }, [router]);
 
   return (

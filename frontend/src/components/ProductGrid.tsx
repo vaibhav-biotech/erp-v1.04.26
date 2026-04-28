@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { FiFilter, FiChevronDown } from 'react-icons/fi';
 import ProductGridCard from './ProductGridCard';
@@ -43,39 +43,41 @@ export default function ProductGrid({
     inStock: false
   });
 
-  // Sort products
-  const sortedProducts = [...products].sort((a, b) => {
-    switch (sortBy) {
-      case 'price-low':
-        return a.finalPrice - b.finalPrice;
-      case 'price-high':
-        return b.finalPrice - a.finalPrice;
-      case 'name-asc':
-        return a.name.localeCompare(b.name);
-      case 'name-desc':
-        return b.name.localeCompare(a.name);
-      case 'rating':
-        return b.rating - a.rating;
-      case 'newest':
-        return new Date(b._id).getTime() - new Date(a._id).getTime();
-      default:
-        return 0;
-    }
-  });
+  const sortedProducts = useMemo(() => {
+    return [...products].sort((a, b) => {
+      switch (sortBy) {
+        case 'price-low':
+          return a.finalPrice - b.finalPrice;
+        case 'price-high':
+          return b.finalPrice - a.finalPrice;
+        case 'name-asc':
+          return a.name.localeCompare(b.name);
+        case 'name-desc':
+          return b.name.localeCompare(a.name);
+        case 'rating':
+          return b.rating - a.rating;
+        case 'newest':
+          return String(b._id).localeCompare(String(a._id));
+        default:
+          return 0;
+      }
+    });
+  }, [products, sortBy]);
 
-  // Filter products
-  const filteredProducts = sortedProducts.filter((product) => {
-    const inPriceRange = product.finalPrice >= filters.priceRange[0] && product.finalPrice <= filters.priceRange[1];
-    const meetsRating = product.rating >= filters.rating;
-    const inStock = !filters.inStock || product.stock > 0;
+  const filteredProducts = useMemo(() => {
+    return sortedProducts.filter((product) => {
+      const inPriceRange = product.finalPrice >= filters.priceRange[0] && product.finalPrice <= filters.priceRange[1];
+      const meetsRating = product.rating >= filters.rating;
+      const inStock = !filters.inStock || product.stock > 0;
 
-    return inPriceRange && meetsRating && inStock;
-  });
+      return inPriceRange && meetsRating && inStock;
+    });
+  }, [sortedProducts, filters]);
 
   const gridColsClass = {
-    2: 'grid-cols-1 md:grid-cols-2',
-    3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
-    4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
+    2: 'grid-cols-2',
+    3: 'grid-cols-2 md:grid-cols-2 lg:grid-cols-3',
+    4: 'grid-cols-2 md:grid-cols-2 lg:grid-cols-4'
   };
 
   return (

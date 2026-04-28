@@ -7,6 +7,7 @@ export const generateSampleTemplate = () => {
       'Names': 'Monstera Deliciosa',
       'Category': 'Indoor Plants',
       'Subcategory': 'indoor-plants',
+      'Tags': 'indoor-plants,air-purifying,office',
       'Description': 'Beautiful split-leaf plant',
       'Benefits': 'Improves air quality, Low maintenance',
       'Care': 'Water weekly, Indirect sunlight',
@@ -23,6 +24,7 @@ export const generateSampleTemplate = () => {
       'Names': 'Pothos Golden',
       'Category': 'Indoor Plants',
       'Subcategory': 'hanging-plants',
+      'Tags': 'hanging-plants,indoor-plants,low-light',
       'Description': 'Golden creeping vine',
       'Benefits': 'Tolerates low light, Quick growing',
       'Care': 'Water when soil is dry, Any light',
@@ -39,6 +41,7 @@ export const generateSampleTemplate = () => {
       'Names': 'Snake Plant',
       'Category': 'Indoor Plants',
       'Subcategory': 'low-maintenance',
+      'Tags': 'low-maintenance,indoor-plants,air-purifying',
       'Description': 'Hardy succulent plant',
       'Benefits': 'Extremely hardy, Air purifying',
       'Care': 'Minimal watering, Low light tolerant',
@@ -61,6 +64,7 @@ export const generateSampleTemplate = () => {
     { wch: 20 },  // Names
     { wch: 18 },  // Category
     { wch: 20 },  // Subcategory
+    { wch: 30 },  // Tags
     { wch: 25 },  // Description
     { wch: 30 },  // Benefits
     { wch: 25 },  // Care
@@ -83,7 +87,7 @@ export const generateSampleTemplate = () => {
     alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
   };
 
-  const headerCells = ['A1', 'B1', 'C1', 'D1', 'E1', 'F1', 'G1', 'H1', 'I1', 'J1', 'K1', 'L1', 'M1', 'N1'];
+  const headerCells = ['A1', 'B1', 'C1', 'D1', 'E1', 'F1', 'G1', 'H1', 'I1', 'J1', 'K1', 'L1', 'M1', 'N1', 'O1'];
   headerCells.forEach(cell => {
     if (worksheet[cell]) {
       worksheet[cell].s = headerStyle;
@@ -120,8 +124,14 @@ export const getColumnInstructions = () => {
     {
       column: 'Subcategory',
       required: true,
-      format: 'Comma-separated subcategory slugs (creates product per slug, auto-resolved to ID)',
-      example: 'indoor-plants,flowering-plants'
+      format: 'Single subcategory slug',
+      example: 'indoor-plants'
+    },
+    {
+      column: 'Tags',
+      required: false,
+      format: 'Comma-separated tag slugs for cross-listing',
+      example: 'indoor-plants,air-purifying,office'
     },
     {
       column: 'Description',

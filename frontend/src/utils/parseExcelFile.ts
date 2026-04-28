@@ -9,6 +9,7 @@ interface ParsedProduct {
   name: string;
   category: string;
   subcategory: string;
+  tags?: string[];
   originalPrice: number;
   finalPrice: number;
   discount?: number;
@@ -112,6 +113,13 @@ export const parseCSVFile = (csvText: string): ParseResult => {
 const transformData = (rawData: any[]): ParseResult => {
   const products: ParsedProduct[] = [];
   const errors: string[] = [];
+  const toSlug = (value: string) => String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
 
   // Helper to get column value with multiple fallbacks (case-insensitive)
   const getColumnValue = (row: any, ...columnNames: (string | number)[]): any => {
@@ -133,7 +141,8 @@ const transformData = (rawData: any[]): ParseResult => {
       // Required fields - use helper to get values
       const name = String(getColumnValue(row, 'Names', 'name') || '').trim();
       const category = String(getColumnValue(row, 'Category', 'category') || '').trim();
-      const subcategoriesRaw = String(getColumnValue(row, 'Subcategory', 'subcategory') || '').trim();
+      const subcategoryRaw = String(getColumnValue(row, 'Subcategory', 'subcategory') || '').trim();
+      const tagsRaw = String(getColumnValue(row, 'Tags', 'tags') || '').trim();
       const discountRaw = getColumnValue(row, 'Discount', 'discount');
       const discount = parseFloat(String(discountRaw)) || 0;
       const ratingRaw = getColumnValue(row, 'Rating', 'rating');
@@ -152,21 +161,30 @@ const transformData = (rawData: any[]): ParseResult => {
         errors.push(`Row ${index + 2}: Category is required`);
         return;
       }
-      if (!subcategoriesRaw) {
+      if (!subcategoryRaw) {
         errors.push(`Row ${index + 2}: Subcategory is required`);
         return;
       }
 
-      // Parse multiple subcategories (comma-separated)
-      const subcategoriesList = subcategoriesRaw
-        .split(',')
-        .map(s => s.trim())
-        .filter(s => s.length > 0);
+      if (subcategoryRaw.includes(',')) {
+        errors.push(`Row ${index + 2}: Subcategory must be a single value. Use Tags column for additional mappings.`);
+        return;
+      }
 
-      if (subcategoriesList.length === 0) {
+      const subcategory = toSlug(subcategoryRaw);
+      if (!subcategory) {
         errors.push(`Row ${index + 2}: Subcategory is required`);
         return;
       }
+
+      const parsedTags = tagsRaw
+        ? tagsRaw
+          .split(',')
+          .map((tag) => toSlug(tag))
+          .filter(Boolean)
+        : [];
+
+      const tags = Array.from(new Set([subcategory, ...parsedTags]));
 
       // Parse images - accepts multiple column name variations
       const imageUrlsRaw = 
@@ -233,29 +251,27 @@ const transformData = (rawData: any[]): ParseResult => {
         return;
       }
 
-      // Create a product entry for EACH subcategory
-      subcategoriesList.forEach(subcategory => {
-        const product: ParsedProduct = {
-          name,
-          category,
-          subcategory, // One subcategory per product entry
-          originalPrice,
-          finalPrice,
-          discount: discount > 0 ? discount : undefined,
-          stock: stock > 0 ? stock : undefined,
-          rating: isNaN(rating) || rating < 0 || rating > 5 ? 4.5 : rating,
-          reviews: isNaN(reviews) || reviews < 0 ? 0 : reviews,
-          images,
-          description: description || undefined,
-          benefits: benefits || undefined,
-          care: care || undefined,
-          sizeVariants,
-          potVariants,
-          status: status as any
-        };
+      const product: ParsedProduct = {
+        name,
+        category,
+        subcategory,
+        tags,
+        originalPrice,
+        finalPrice,
+        discount: discount > 0 ? discount : undefined,
+        stock: stock > 0 ? stock : undefined,
+        rating: isNaN(rating) || rating < 0 || rating > 5 ? 4.5 : rating,
+        reviews: isNaN(reviews) || reviews < 0 ? 0 : reviews,
+        images,
+        description: description || undefined,
+        benefits: benefits || undefined,
+        care: care || undefined,
+        sizeVariants,
+        potVariants,
+        status: status as any
+      };
 
-        products.push(product);
-      });
+      products.push(product);
     } catch (error: any) {
       errors.push(`Row ${index + 2}: ${error.message}`);
     }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { fetchWithStore } from '@/lib/storeConfig';
 import {
   FiEdit2,
@@ -36,6 +37,54 @@ interface ProductsTableProps {
 type SortField = 'name' | 'category' | 'finalPrice' | 'rating' | 'createdAt';
 type SortOrder = 'asc' | 'desc';
 
+const PRODUCTS_TABLE_CACHE_KEY = 'store_admin_products_table_state_v1';
+const PRODUCTS_TABLE_CACHE_TTL_MS = 30 * 60 * 1000;
+
+interface ProductsTableCacheState {
+  timestamp: number;
+  products: Product[];
+  searchQuery: string;
+  filterStatus: 'all' | 'active' | 'inactive' | 'draft';
+  sortField: SortField;
+  sortOrder: SortOrder;
+  pagination: {
+    currentPage: number;
+    pageSize: number;
+    totalPages: number;
+    total: number;
+  };
+  topPicksProductIds: string[];
+  topPicksConfig: {
+    title: string;
+    subheading: string;
+    productCount: number;
+  };
+}
+
+const normalizeProductId = (value: unknown): string => {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object' && value !== null) {
+    const asAny = value as Record<string, unknown>;
+    if (typeof asAny.$oid === 'string') return asAny.$oid;
+    if (typeof asAny._id === 'string') return asAny._id;
+    if (typeof asAny.toString === 'function') {
+      const parsed = asAny.toString();
+      if (parsed && parsed !== '[object Object]') return parsed;
+    }
+  }
+  return '';
+};
+
+const normalizeProductIdList = (ids: unknown[]): string[] =>
+  Array.from(
+    new Set(
+      ids
+        .map((id) => normalizeProductId(id))
+        .filter(Boolean)
+    )
+  );
+
 export const ProductsTable: React.FC<ProductsTableProps> = ({
   onEdit,
   onDelete,
@@ -60,15 +109,97 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     productCount: 4,
   });
   const [updatingTopPickId, setUpdatingTopPickId] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
+  const [skipInitialFetch, setSkipInitialFetch] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      setInitialized(true);
+      return;
+    }
+
+    try {
+      const raw = sessionStorage.getItem(PRODUCTS_TABLE_CACHE_KEY);
+      if (!raw) {
+        setInitialized(true);
+        return;
+      }
+
+      const parsed: ProductsTableCacheState = JSON.parse(raw);
+      if (!parsed?.timestamp || Date.now() - parsed.timestamp > PRODUCTS_TABLE_CACHE_TTL_MS) {
+        sessionStorage.removeItem(PRODUCTS_TABLE_CACHE_KEY);
+        setInitialized(true);
+        return;
+      }
+
+      setProducts(Array.isArray(parsed.products) ? parsed.products : []);
+      setSearchQuery(parsed.searchQuery || '');
+      setFilterStatus(parsed.filterStatus || 'all');
+      setSortField(parsed.sortField || 'createdAt');
+      setSortOrder(parsed.sortOrder || 'desc');
+      setPagination(parsed.pagination || {
+        currentPage: 1,
+        pageSize: 10,
+        totalPages: 1,
+        total: 0,
+      });
+      setTopPicksProductIds(Array.isArray(parsed.topPicksProductIds) ? normalizeProductIdList(parsed.topPicksProductIds) : []);
+      setTopPicksConfig(parsed.topPicksConfig || {
+        title: 'Top Picks',
+        subheading: 'Curated products selected by our store team',
+        productCount: 4,
+      });
+      setSkipInitialFetch(true);
+    } catch {
+      sessionStorage.removeItem(PRODUCTS_TABLE_CACHE_KEY);
+    } finally {
+      setInitialized(true);
+    }
+  }, []);
 
   // Fetch products
   useEffect(() => {
+    if (!initialized) return;
+
+    if (skipInitialFetch) {
+      setSkipInitialFetch(false);
+      return;
+    }
+
     fetchProducts();
-  }, [pagination.currentPage, filterStatus]);
+  }, [initialized, skipInitialFetch, pagination.currentPage, filterStatus]);
 
   useEffect(() => {
     fetchTopPicksConfig();
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !initialized) return;
+
+    const cache: ProductsTableCacheState = {
+      timestamp: Date.now(),
+      products,
+      searchQuery,
+      filterStatus,
+      sortField,
+      sortOrder,
+      pagination,
+      topPicksProductIds,
+      topPicksConfig,
+    };
+
+    sessionStorage.setItem(PRODUCTS_TABLE_CACHE_KEY, JSON.stringify(cache));
+  }, [
+    initialized,
+    products,
+    searchQuery,
+    filterStatus,
+    sortField,
+    sortOrder,
+    pagination,
+    topPicksProductIds,
+    topPicksConfig,
+  ]);
 
   const fetchProducts = async () => {
     setIsLoading(true);
@@ -84,11 +215,27 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
       if (!response.ok) throw new Error('Failed to fetch products');
 
       const data = await response.json();
+      const total = Number(data?.pagination?.total || 0);
+      const totalPages = Math.max(1, Math.ceil(total / pagination.pageSize));
+
+      // If cached/current page is now out of range (e.g. product count reduced),
+      // move back to page 1 and let the effect refetch with valid skip.
+      if (pagination.currentPage > totalPages) {
+        setPagination((prev) => ({
+          ...prev,
+          currentPage: 1,
+          total,
+          totalPages,
+        }));
+        setProducts([]);
+        return;
+      }
+
       setProducts(data.data);
       setPagination(prev => ({
         ...prev,
-        total: data.pagination.total,
-        totalPages: Math.ceil(data.pagination.total / pagination.pageSize)
+        total,
+        totalPages
       }));
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -111,7 +258,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
         subheading: config.subheading || 'Curated products selected by our store team',
         productCount: Number(config.productCount || 4),
       });
-      setTopPicksProductIds(Array.isArray(config.productIds) ? config.productIds : []);
+      setTopPicksProductIds(Array.isArray(config.productIds) ? normalizeProductIdList(config.productIds) : []);
     } catch (error) {
       console.error('Error loading top picks config:', error);
     }
@@ -124,9 +271,12 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
       return;
     }
 
-    const nextIds = topPicksProductIds.includes(productId)
-      ? topPicksProductIds.filter((id) => id !== productId)
-      : [...topPicksProductIds, productId];
+    const normalizedCurrentIds = normalizeProductIdList(topPicksProductIds);
+    const normalizedProductId = normalizeProductId(productId);
+
+    const nextIds = normalizedCurrentIds.includes(normalizedProductId)
+      ? normalizedCurrentIds.filter((id) => id !== normalizedProductId)
+      : [...normalizedCurrentIds, normalizedProductId];
 
     try {
       setUpdatingTopPickId(productId);
@@ -148,6 +298,8 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
       }
 
       setTopPicksProductIds(nextIds);
+      // Refetch config to confirm save worked
+      await fetchTopPicksConfig();
     } catch (error) {
       console.error('Error updating top picks:', error);
       alert('Failed to update top picks marker');
@@ -405,13 +557,13 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => onEdit?.(product)}
+                      <Link
+                        href={`/admin/dashboard/store-admin/products/${product._id}`}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                        title="Edit"
+                        title="View & Edit"
                       >
                         <FiEdit2 size={18} />
-                      </button>
+                      </Link>
                       <button
                         onClick={() => handleDelete(product._id)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"

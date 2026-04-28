@@ -37,6 +37,16 @@ const productSchema = new Schema(
       minlength: [2, 'Subcategory must be at least 2 characters'],
       maxlength: [50, 'Subcategory cannot exceed 50 characters']
     },
+    tags: {
+      type: [String],
+      default: [],
+      validate: {
+        validator: function(v) {
+          return Array.isArray(v) && v.every((tag) => typeof tag === 'string' && tag.trim().length > 0);
+        },
+        message: 'Tags must be an array of non-empty strings'
+      }
+    },
     originalPrice: {
       type: Number,
       required: [true, 'Original price is required'],
@@ -120,6 +130,7 @@ const productSchema = new Schema(
 
 // Index for faster queries
 productSchema.index({ category: 1, subcategory: 1 });
+productSchema.index({ tags: 1 });
 productSchema.index({ status: 1 });
 productSchema.index({ storeName: 1 });
 productSchema.index({ name: 'text' });

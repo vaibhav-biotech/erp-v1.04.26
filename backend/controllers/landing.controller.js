@@ -10,9 +10,20 @@ const {
   upsertTopPicksConfig,
   listTopPicksSelectableProducts,
   getTopPicksPublicData,
+  listPublicOffers,
+  listAdminOffers,
+  getPublicOfferById,
+  insertOffer,
+  patchOffer,
+  removeOffer,
+  listPublicOfferBackgrounds,
+  listAdminOfferBackgrounds,
+  insertOfferBackground,
+  patchOfferBackground,
+  removeOfferBackground,
 } = require('../services/landing.service');
 
-const getStoreName = (req) => req.storeName || 'plants in garden';
+const getStoreName = (req) => req.storeName || 'plantsingarden';
 
 const getPublicBanners = async (req, res) => {
   try {
@@ -230,6 +241,249 @@ const updateAdminTopPicks = async (req, res) => {
   }
 };
 
+const getPublicOffers = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const offers = await listPublicOffers(storeName);
+
+    return res.json({ success: true, data: offers });
+  } catch (error) {
+    console.error('❌ Error fetching public offers:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch offers',
+      error: error.message,
+    });
+  }
+};
+
+const getAdminOffers = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const offers = await listAdminOffers(storeName);
+
+    return res.json({ success: true, data: offers });
+  } catch (error) {
+    console.error('❌ Error fetching admin offers:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch offers',
+      error: error.message,
+    });
+  }
+};
+
+const getPublicOfferProducts = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const { offerId } = req.params;
+
+    const result = await getPublicOfferById({ storeName, offerId });
+    if (!result) {
+      return res.status(404).json({ success: false, message: 'Offer not found' });
+    }
+
+    return res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('❌ Error fetching public offer products:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch offer products',
+      error: error.message,
+    });
+  }
+};
+
+const createOffer = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const offer = await insertOffer({
+      storeName,
+      ...(req.body || {}),
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Offer created successfully',
+      data: offer,
+    });
+  } catch (error) {
+    console.error('❌ Error creating offer:', error);
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to create offer',
+    });
+  }
+};
+
+const updateOffer = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const { offerId } = req.params;
+
+    if (!toObjectId(offerId)) {
+      return res.status(400).json({ success: false, message: 'Invalid offer id' });
+    }
+
+    const updated = await patchOffer({
+      storeName,
+      offerId,
+      ...(req.body || {}),
+    });
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Offer not found' });
+    }
+
+    return res.json({ success: true, message: 'Offer updated successfully', data: updated });
+  } catch (error) {
+    console.error('❌ Error updating offer:', error);
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to update offer',
+    });
+  }
+};
+
+const deleteOffer = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const { offerId } = req.params;
+
+    if (!toObjectId(offerId)) {
+      return res.status(400).json({ success: false, message: 'Invalid offer id' });
+    }
+
+    const removed = await removeOffer({ storeName, offerId });
+
+    if (!removed || removed.deletedCount === 0) {
+      return res.status(404).json({ success: false, message: 'Offer not found' });
+    }
+
+    return res.json({ success: true, message: 'Offer deleted successfully' });
+  } catch (error) {
+    console.error('❌ Error deleting offer:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to delete offer',
+      error: error.message,
+    });
+  }
+};
+
+const getPublicOfferBackgrounds = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const items = await listPublicOfferBackgrounds(storeName);
+
+    return res.json({ success: true, data: items });
+  } catch (error) {
+    console.error('❌ Error fetching public offer backgrounds:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch offer backgrounds',
+      error: error.message,
+    });
+  }
+};
+
+const getAdminOfferBackgrounds = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const items = await listAdminOfferBackgrounds(storeName);
+
+    return res.json({ success: true, data: items });
+  } catch (error) {
+    console.error('❌ Error fetching admin offer backgrounds:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch offer backgrounds',
+      error: error.message,
+    });
+  }
+};
+
+const createOfferBackground = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const item = await insertOfferBackground({
+      storeName,
+      ...(req.body || {}),
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Offer background created successfully',
+      data: item,
+    });
+  } catch (error) {
+    console.error('❌ Error creating offer background:', error);
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to create offer background',
+    });
+  }
+};
+
+const updateOfferBackground = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const { backgroundId } = req.params;
+
+    if (!toObjectId(backgroundId)) {
+      return res.status(400).json({ success: false, message: 'Invalid background id' });
+    }
+
+    const updated = await patchOfferBackground({
+      storeName,
+      backgroundId,
+      ...(req.body || {}),
+    });
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Offer background not found' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Offer background updated successfully',
+      data: updated,
+    });
+  } catch (error) {
+    console.error('❌ Error updating offer background:', error);
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to update offer background',
+    });
+  }
+};
+
+const deleteOfferBackground = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const { backgroundId } = req.params;
+
+    if (!toObjectId(backgroundId)) {
+      return res.status(400).json({ success: false, message: 'Invalid background id' });
+    }
+
+    const removed = await removeOfferBackground({ storeName, backgroundId });
+
+    if (!removed || removed.deletedCount === 0) {
+      return res.status(404).json({ success: false, message: 'Offer background not found' });
+    }
+
+    return res.json({ success: true, message: 'Offer background deleted successfully' });
+  } catch (error) {
+    console.error('❌ Error deleting offer background:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to delete offer background',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getPublicBanners,
   getAdminBanners,
@@ -240,4 +494,15 @@ module.exports = {
   getPublicTopPicks,
   getAdminTopPicks,
   updateAdminTopPicks,
+  getPublicOffers,
+  getPublicOfferProducts,
+  getAdminOffers,
+  createOffer,
+  updateOffer,
+  deleteOffer,
+  getPublicOfferBackgrounds,
+  getAdminOfferBackgrounds,
+  createOfferBackground,
+  updateOfferBackground,
+  deleteOfferBackground,
 };

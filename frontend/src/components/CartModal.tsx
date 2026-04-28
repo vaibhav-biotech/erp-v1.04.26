@@ -113,7 +113,10 @@ export default function CartModal() {
                   {/* Cart Items */}
                   <div className="p-4 space-y-4">
                     {cartItems.map((item) => (
-                      <CartItemCard key={item.productId} item={item} />
+                      <CartItemCard
+                        key={`${item.productId}-${item.sizeVariant.id}-${item.potVariant.id}`}
+                        item={item}
+                      />
                     ))}
                   </div>
 

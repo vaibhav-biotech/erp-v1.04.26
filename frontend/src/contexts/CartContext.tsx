@@ -24,7 +24,7 @@ interface CartContextType {
   cartItems: CartItem[];
   cartOpen: boolean;
   cartCount: number;
-  addToCart: (item: CartItem) => void;
+  addToCart: (item: CartItem, silent?: boolean) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -65,7 +65,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  const addToCart = useCallback((item: CartItem) => {
+  const addToCart = useCallback((item: CartItem, silent = false) => {
     setCartItems((prevItems) => {
       const existingItem = prevItems.find(
         (i) =>
@@ -88,7 +88,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
       return [...prevItems, item];
     });
-    setCartOpen(true);
+    if (!silent) setCartOpen(true);
   }, []);
 
   const removeFromCart = useCallback((productId: string) => {

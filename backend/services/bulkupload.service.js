@@ -4,6 +4,46 @@ const { uploadImageToS3 } = require('./s3.service');
 const { downloadFromGoogleDrive } = require('./drive.service');
 const { validateProduct, validateBulkProducts, parseVariants } = require('./validation.service');
 
+const toSlug = (value) => String(value || '')
+  .toLowerCase()
+  .trim()
+  .replace(/[^a-z0-9\s-]/g, '')
+  .replace(/\s+/g, '-')
+  .replace(/-+/g, '-')
+  .replace(/^-|-$/g, '');
+
+const normalizeTags = (input, fallbackSubcategory) => {
+  const rawTags = Array.isArray(input)
+    ? input
+    : typeof input === 'string'
+      ? input.split(',')
+      : [];
+
+  const tags = rawTags
+    .map((tag) => toSlug(tag))
+    .filter(Boolean);
+
+  const subcategorySlug = toSlug(fallbackSubcategory);
+  if (subcategorySlug && !tags.includes(subcategorySlug)) tags.unshift(subcategorySlug);
+
+  return Array.from(new Set(tags));
+};
+
+const buildStoreNameAliases = (value) => {
+  const raw = String(value || '').toLowerCase().trim();
+  const compact = raw.replace(/\s+/g, '');
+  const aliases = new Set([raw, compact]);
+
+  if (raw === 'plants in garden' || raw === 'plants-in-garden' || raw === 'plantingarden' || compact === 'plantsingarden') {
+    aliases.add('plantsingarden');
+    aliases.add('plants in garden');
+    aliases.add('plants-in-garden');
+    aliases.add('plantingarden');
+  }
+
+  return Array.from(aliases).filter(Boolean);
+};
+
 /**
  * Resolve subcategory slug to subcategory ID
  */
@@ -183,7 +223,7 @@ const processBulkUpload = async (products) => {
 
       // Step 2c2: Verify subcategory slug exists in category (don't convert to ID, keep slug for filtering)
       const categoryForSubcat = await Category.findById(resolvedCategoryId);
-      const subcategorySlug = product.subcategory.toLowerCase();
+      const subcategorySlug = toSlug(product.subcategory);
       
       const subcategoryExists = categoryForSubcat.subcategories.some(
         (sub) => sub.slug.toLowerCase() === subcategorySlug
@@ -215,6 +255,7 @@ const processBulkUpload = async (products) => {
         category: resolvedCategoryId, // Use resolved category ID
         categoryName: categoryName, // Store category name for filtering
         subcategory: subcategorySlug, // Keep slug for filtering
+        tags: normalizeTags(product.tags, subcategorySlug),
         // Apply discount to size variants (already parsed by frontend)
         sizeVariants: product.sizeVariants && Array.isArray(product.sizeVariants)
           ? product.sizeVariants.map(variant => ({
@@ -246,6 +287,7 @@ const processBulkUpload = async (products) => {
       // Debug logging
       console.log(`  📝 Product data being saved:`);
       console.log(`     sizeVariants: ${JSON.stringify(productData.sizeVariants)}`);
+      console.log(`     Tags: ${JSON.stringify(productData.tags)}`);
       console.log(`     Description: ${productData.description ? productData.description.substring(0, 50) + '...' : 'EMPTY'}`);
       console.log(`     Benefits: ${JSON.stringify(productData.benefits)}`);
       console.log(`     Care: ${JSON.stringify(productData.care)}`);
@@ -293,9 +335,9 @@ const getAllProducts = async (filters) => {
     let query = {};
 
     if (filters?.storeName) {
-      const normalizedStoreName = String(filters.storeName).toLowerCase().trim();
+      const storeAliases = buildStoreNameAliases(filters.storeName);
       query.$or = [
-        { storeName: normalizedStoreName },
+        { storeName: { $in: storeAliases } },
         { storeName: { $exists: false } },
         { storeName: null },
         { storeName: '' },

@@ -4,6 +4,7 @@ import PublicLayout from '@/components/PublicLayout';
 import LandingBannerHero from '@/components/LandingBannerHero';
 import TopPicksSection from '@/components/TopPicksSection';
 import WhyChooseUsSection from '@/components/WhyChooseUsSection';
+import OffersSection from '@/components/OffersSection';
 
 export default function Home() {
   return (
@@ -14,6 +15,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <TopPicksSection />
           <WhyChooseUsSection />
+          <OffersSection />
 
           <div className="text-center mt-8 sm:mt-10">
             <p className="text-lg text-gray-700">Fresh plants, seeds & garden supplies</p>

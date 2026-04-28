@@ -27,11 +27,25 @@
  * - plantsingarden.com → 'plantsingarden'
  * - store2.com → 'store2'
  */
+const normalizeStoreName = (value: string): string => {
+  const normalized = String(value || '').toLowerCase().trim();
+
+  if (
+    normalized === 'plants in garden'
+    || normalized === 'plants-in-garden'
+    || normalized === 'plantingarden'
+  ) {
+    return 'plantsingarden';
+  }
+
+  return normalized.replace(/\s+/g, '');
+};
+
 export const getStoreFromDomain = (): string => {
   if (typeof window === 'undefined') {
     // Server-side (during SSR/build)
-    const store = process.env.NEXT_PUBLIC_STORE_NAME || 'plants in garden';
-    return store.toLowerCase();
+    const store = process.env.NEXT_PUBLIC_STORE_NAME || 'plantsingarden';
+    return normalizeStoreName(store);
   }
 
   try {
@@ -39,7 +53,7 @@ export const getStoreFromDomain = (): string => {
     
     // For localhost development, use the env variable or default
     if (hostname.includes('localhost')) {
-      const storeName = (process.env.NEXT_PUBLIC_STORE_NAME || 'plants in garden').toLowerCase();
+      const storeName = normalizeStoreName(process.env.NEXT_PUBLIC_STORE_NAME || 'plantsingarden');
       console.log(`[storeConfig] Development mode - using store: ${storeName}`);
       return storeName;
     }
@@ -56,17 +70,14 @@ export const getStoreFromDomain = (): string => {
       storeName = parts[1];
     }
     
-    // Normalize known legacy/branding aliases to canonical store key
-    if (storeName === 'plantingarden' || storeName === 'plants-in-garden') {
-      storeName = 'plantsingarden';
-    }
+    storeName = normalizeStoreName(storeName);
 
     // Validate store name (alphanumeric, hyphen, underscore)
     const isValid = /^[a-z0-9-_]+$/.test(storeName);
     
     if (!isValid) {
       console.warn(`[storeConfig] Invalid store name detected: ${storeName}, using default`);
-      return (process.env.NEXT_PUBLIC_STORE_NAME || 'plantsingarden').toLowerCase().replace(/\s+/g, '');
+      return normalizeStoreName(process.env.NEXT_PUBLIC_STORE_NAME || 'plantsingarden');
     }
     
     if (process.env.NODE_ENV === 'development') {
@@ -76,7 +87,7 @@ export const getStoreFromDomain = (): string => {
     return storeName;
   } catch (error) {
     console.error(`[storeConfig] Error detecting store:`, error);
-    return (process.env.NEXT_PUBLIC_STORE_NAME || 'plantsingarden').toLowerCase().replace(/\s+/g, '');
+    return normalizeStoreName(process.env.NEXT_PUBLIC_STORE_NAME || 'plantsingarden');
   }
 };
 
@@ -88,7 +99,7 @@ const getAdminStoreFromLocalStorage = (): string | null => {
     if (!rawAdmin || rawAdmin === 'undefined' || rawAdmin === 'null') return null;
 
     const parsedAdmin = JSON.parse(rawAdmin) as { storeName?: string | null };
-    const adminStore = parsedAdmin?.storeName ? String(parsedAdmin.storeName).trim().toLowerCase() : '';
+    const adminStore = parsedAdmin?.storeName ? normalizeStoreName(String(parsedAdmin.storeName)) : '';
 
     if (!adminStore) return null;
     return adminStore;

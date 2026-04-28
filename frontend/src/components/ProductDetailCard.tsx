@@ -112,7 +112,7 @@ export default function ProductDetailCard({
   };
 
   return (
-    <div className="min-h-screen bg-transparent">
+    <div className="min-h-screen bg-transparent pb-24 lg:pb-0">
       {/* Breadcrumb */}
       <div className="py-1 sm:py-1.5 px-4 sm:px-6 lg:px-8">
         <Breadcrumb items={breadcrumbs} />
@@ -181,21 +181,23 @@ export default function ProductDetailCard({
 
             {/* Action Buttons - Stacked */}
             <div className="space-y-4">
-              <AddToCartButton
-                productId={product.id}
-                productName={product.name}
-                productImage={product.images?.[0] || '/placeholder.jpg'}
-                sizeVariant={{
-                  id: String(activeSize),
-                  name: selectedSize.name,
-                  price: selectedSize.price,
-                }}
-                potVariant={{
-                  id: String(activePot),
-                  name: selectedPot.name,
-                  price: selectedPot.price,
-                }}
-              />
+              <div className="hidden lg:block">
+                <AddToCartButton
+                  productId={product.id}
+                  productName={product.name}
+                  productImage={product.images?.[0] || '/placeholder.jpg'}
+                  sizeVariant={{
+                    id: String(activeSize),
+                    name: selectedSize.name,
+                    price: selectedSize.price,
+                  }}
+                  potVariant={{
+                    id: String(activePot),
+                    name: selectedPot.name,
+                    price: selectedPot.price,
+                  }}
+                />
+              </div>
               <button
                 onClick={handleBuyNow}
                 className="w-full bg-white border-2 border-green-600 hover:bg-green-50 text-green-600 font-normal py-3 px-4 rounded-lg transition-all"
@@ -214,6 +216,35 @@ export default function ProductDetailCard({
                 />
               </div>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile/Tablet Sticky Bottom Bar */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 backdrop-blur lg:hidden">
+        <div className="max-w-7xl mx-auto px-4 py-3" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
+          <div className="flex items-center gap-3">
+            <div className="min-w-0">
+              <p className="text-xs text-gray-500">Selected Price</p>
+              <p className="text-base font-semibold text-gray-900">₹{displayFinalPrice.toLocaleString('en-IN')}</p>
+            </div>
+            <div className="flex-1">
+              <AddToCartButton
+                productId={product.id}
+                productName={product.name}
+                productImage={product.images?.[0] || '/placeholder.jpg'}
+                sizeVariant={{
+                  id: String(activeSize),
+                  name: selectedSize.name,
+                  price: selectedSize.price,
+                }}
+                potVariant={{
+                  id: String(activePot),
+                  name: selectedPot.name,
+                  price: selectedPot.price,
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>

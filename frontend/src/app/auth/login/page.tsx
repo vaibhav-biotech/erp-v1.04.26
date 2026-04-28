@@ -1,17 +1,25 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
 
-export default function AuthPage() {
+function AuthPageContent() {
   const router = useRouter();
-  const { loginCustomer, registerCustomer } = useAuth();
+  const searchParams = useSearchParams();
+  const { loginCustomer, registerCustomer, customerAuthenticated } = useAuth();
+  const redirectPath = searchParams.get('redirect') || '/customer';
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (customerAuthenticated) {
+      router.replace(redirectPath);
+    }
+  }, [customerAuthenticated, redirectPath, router]);
 
   // Login form
   const [loginForm, setLoginForm] = useState({
@@ -56,7 +64,7 @@ export default function AuthPage() {
       }
 
       await loginCustomer(loginForm.email, loginForm.password);
-      router.push('/customer');
+      router.push(redirectPath);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
@@ -114,7 +122,7 @@ export default function AuthPage() {
         phone: signupForm.phone,
       });
 
-      router.push('/customer');
+      router.push(redirectPath);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed');
     } finally {
@@ -351,5 +359,13 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <AuthPageContent />
+    </Suspense>
   );
 }

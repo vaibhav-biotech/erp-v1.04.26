@@ -64,7 +64,7 @@ export default function LandingBannerHero() {
     <section className="w-full">
       <div className="w-full aspect-[16/5] bg-white overflow-hidden relative">
         {isLoading ? (
-          <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">Loading banners...</div>
+          <div className="w-full h-full bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse" />
         ) : !hasBanners ? (
           <div className="w-full h-full flex items-center justify-center text-sm text-gray-500 bg-gray-50">
             No hero banners yet. Add from Store Admin → Landing Page
@@ -81,6 +81,8 @@ export default function LandingBannerHero() {
                     src={banner.imageUrl}
                     alt={banner.title || 'Hero banner'}
                     className="w-full h-full object-cover"
+                    loading="eager"
+                    fetchPriority="high"
                   />
                 );
 

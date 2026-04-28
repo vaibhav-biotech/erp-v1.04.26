@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { buildApiUrl, getApiHeaders, getStoreForApi } from '@/lib/storeConfig';
 import { useAuth } from '@/contexts/AuthContext';
 import BannerParserUploader, { ParsedBannerFile } from '@/components/BannerParserUploader';
+import OffersManager from '@/components/pages/OffersManager';
+import OfferBackgroundManager from '@/components/pages/OfferBackgroundManager';
 
 interface Banner {
   _id: string;
@@ -489,92 +491,99 @@ export default function LandingPageManager() {
         </div>
         </div>
 
-        <div
-          className="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col min-h-0"
-          style={addBannerCardHeight ? { height: addBannerCardHeight } : undefined}
-        >
-          <div className="px-5 py-3 border-b border-gray-200">
-            <h3 className="font-semibold text-gray-900">Existing Banners</h3>
-            <p className="text-xs text-gray-500 mt-1">Edit title for SEO and drag rows to reorder</p>
+        <div className="space-y-6">
+          <div
+            className="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col min-h-0"
+            style={addBannerCardHeight ? { height: addBannerCardHeight } : undefined}
+          >
+            <div className="px-5 py-3 border-b border-gray-200">
+              <h3 className="font-semibold text-gray-900">Existing Banners</h3>
+              <p className="text-xs text-gray-500 mt-1">Edit title for SEO and drag rows to reorder</p>
+            </div>
+
+            {isLoading ? (
+              <div className="p-6 text-gray-600 text-sm">Loading banners...</div>
+            ) : banners.length === 0 ? (
+              <div className="p-6 text-gray-600 text-sm">No banners added yet.</div>
+            ) : (
+              <div className="flex-1 min-h-0 overflow-auto">
+                <table className="w-full min-w-[680px]">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs uppercase font-semibold text-gray-600">Title</th>
+                      <th className="px-4 py-2 text-left text-xs uppercase font-semibold text-gray-600">Order</th>
+                      <th className="px-4 py-2 text-left text-xs uppercase font-semibold text-gray-600">Status</th>
+                      <th className="px-4 py-2 text-left text-xs uppercase font-semibold text-gray-600">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {banners.map((banner, index) => (
+                      <tr
+                        key={banner._id}
+                        draggable
+                        onDragStart={() => handleDragStart(banner._id)}
+                        onDragOver={handleDragOver}
+                        onDrop={() => handleDrop(banner._id)}
+                        className="border-b border-gray-100 hover:bg-gray-50 cursor-move"
+                      >
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          <input
+                            value={titleDrafts[banner._id] ?? ''}
+                            onChange={(e) =>
+                              setTitleDrafts((prev) => ({
+                                ...prev,
+                                [banner._id]: e.target.value,
+                              }))
+                            }
+                            placeholder={`Banner ${index + 1}`}
+                            className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm"
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700">{index}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${banner.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                            {banner.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => saveBannerTitle(banner)}
+                              disabled={titleSavingId === banner._id || (titleDrafts[banner._id] || '').trim() === (banner.title || '').trim()}
+                              className="px-2.5 py-1 border border-blue-300 rounded text-xs text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+                            >
+                              {titleSavingId === banner._id ? 'Saving...' : 'Save Title'}
+                            </button>
+                            <button
+                              onClick={() => toggleBanner(banner)}
+                              className="px-2.5 py-1 border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-50"
+                            >
+                              {banner.isActive ? 'Disable' : 'Enable'}
+                            </button>
+                            <button
+                              onClick={() => deleteBanner(banner)}
+                              className="px-2.5 py-1 border border-red-300 rounded text-xs text-red-700 hover:bg-red-50"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {reorderLoading && <div className="px-4 py-2 text-xs text-blue-600 border-t border-gray-200">Saving banner order...</div>}
           </div>
 
-          {isLoading ? (
-            <div className="p-6 text-gray-600 text-sm">Loading banners...</div>
-          ) : banners.length === 0 ? (
-            <div className="p-6 text-gray-600 text-sm">No banners added yet.</div>
-          ) : (
-            <div className="flex-1 min-h-0 overflow-auto">
-              <table className="w-full min-w-[680px]">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs uppercase font-semibold text-gray-600">Title</th>
-                    <th className="px-4 py-2 text-left text-xs uppercase font-semibold text-gray-600">Order</th>
-                    <th className="px-4 py-2 text-left text-xs uppercase font-semibold text-gray-600">Status</th>
-                    <th className="px-4 py-2 text-left text-xs uppercase font-semibold text-gray-600">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {banners.map((banner, index) => (
-                    <tr
-                      key={banner._id}
-                      draggable
-                      onDragStart={() => handleDragStart(banner._id)}
-                      onDragOver={handleDragOver}
-                      onDrop={() => handleDrop(banner._id)}
-                      className="border-b border-gray-100 hover:bg-gray-50 cursor-move"
-                    >
-                      <td className="px-4 py-3 text-sm text-gray-900">
-                        <input
-                          value={titleDrafts[banner._id] ?? ''}
-                          onChange={(e) =>
-                            setTitleDrafts((prev) => ({
-                              ...prev,
-                              [banner._id]: e.target.value,
-                            }))
-                          }
-                          placeholder={`Banner ${index + 1}`}
-                          className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm"
-                        />
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-700">{index}</td>
-                      <td className="px-4 py-3 text-sm">
-                        <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${banner.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                          {banner.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => saveBannerTitle(banner)}
-                            disabled={titleSavingId === banner._id || (titleDrafts[banner._id] || '').trim() === (banner.title || '').trim()}
-                            className="px-2.5 py-1 border border-blue-300 rounded text-xs text-blue-700 hover:bg-blue-50 disabled:opacity-50"
-                          >
-                            {titleSavingId === banner._id ? 'Saving...' : 'Save Title'}
-                          </button>
-                          <button
-                            onClick={() => toggleBanner(banner)}
-                            className="px-2.5 py-1 border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-50"
-                          >
-                            {banner.isActive ? 'Disable' : 'Enable'}
-                          </button>
-                          <button
-                            onClick={() => deleteBanner(banner)}
-                            className="px-2.5 py-1 border border-red-300 rounded text-xs text-red-700 hover:bg-red-50"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {reorderLoading && <div className="px-4 py-2 text-xs text-blue-600 border-t border-gray-200">Saving banner order...</div>}
+          <OfferBackgroundManager />
         </div>
+
       </div>
+
+      <OffersManager />
     </div>
   );
 }

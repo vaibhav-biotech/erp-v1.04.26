@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FiHeart } from 'react-icons/fi';
 import Button from './Button';
+import { useCart } from '@/contexts/CartContext';
 
 interface Product {
   _id: string;
@@ -24,6 +26,23 @@ interface ProductGridCardProps {
 export default function ProductGridCard({ product }: ProductGridCardProps) {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const { addToCart, clearCart } = useCart();
+  const router = useRouter();
+
+  const handleBuyNow = () => {
+    clearCart();
+    addToCart({
+      productId: product._id,
+      name: product.name,
+      image: product.images?.[0] || '',
+      sizeVariant: { id: 'default', name: 'Standard', price: 0 },
+      potVariant: { id: 'default', name: 'Standard', price: 0 },
+      quantity: 1,
+      totalPrice: product.finalPrice,
+    }, true);
+    router.push('/checkout');
+  };
 
   const discount = product.discount || Math.round(((product.originalPrice - product.finalPrice) / product.originalPrice) * 100);
   const mainImage = product.images?.[0] || '';
@@ -45,10 +64,20 @@ export default function ProductGridCard({ product }: ProductGridCardProps) {
               src={mainImage}
               alt={product.name}
               onLoad={() => setImageLoaded(true)}
+              onError={() => { setImageLoaded(true); setImageError(true); }}
+              loading="lazy"
+              decoding="async"
               className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${
-                imageLoaded ? 'opacity-100' : 'opacity-0'
+                imageLoaded && !imageError ? 'opacity-100' : 'opacity-0'
               }`}
             />
+          )}
+
+          {/* Fallback placeholder when image errors */}
+          {imageError && (
+            <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+              <span className="text-gray-400 text-xs">No image</span>
+            </div>
           )}
 
           {/* Loading skeleton */}
@@ -133,15 +162,16 @@ export default function ProductGridCard({ product }: ProductGridCardProps) {
         </div>
 
         {/* Buy Now Button */}
-        <Link href={`/products/${product._id}`} className="mt-auto">
+        <div className="mt-auto">
           <Button
             variant="success"
             size="md"
             fullWidth
+            onClick={handleBuyNow}
           >
             BUY NOW
           </Button>
-        </Link>
+        </div>
       </div>
     </div>
   );
