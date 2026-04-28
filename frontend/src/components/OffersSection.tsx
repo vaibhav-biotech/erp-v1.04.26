@@ -38,6 +38,9 @@ interface OfferBackgroundPayload {
   data: OfferBackground[];
 }
 
+const OFFERS_CACHE_KEY = 'landing_offers_v1';
+const OFFERS_CACHE_TTL_MS = 10 * 60 * 1000;
+
 export default function OffersSection() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [backgroundImageUrl, setBackgroundImageUrl] = useState('');
@@ -70,6 +73,28 @@ export default function OffersSection() {
   useEffect(() => {
     const loadOffers = async () => {
       try {
+        if (typeof window !== 'undefined') {
+          const raw = sessionStorage.getItem(OFFERS_CACHE_KEY);
+          if (raw) {
+            try {
+              const parsed = JSON.parse(raw) as {
+                timestamp: number;
+                offers: Offer[];
+                backgroundImageUrl: string;
+              };
+
+              if (Array.isArray(parsed?.offers) && Date.now() - Number(parsed.timestamp || 0) < OFFERS_CACHE_TTL_MS) {
+                setOffers(parsed.offers);
+                setBackgroundImageUrl(parsed.backgroundImageUrl || '');
+                setIsLoading(false);
+                return;
+              }
+            } catch {
+              sessionStorage.removeItem(OFFERS_CACHE_KEY);
+            }
+          }
+        }
+
         const [offersResponse, backgroundsResponse] = await Promise.all([
           fetch(buildApiUrl('/api/landing/offers'), {
             headers: getApiHeaders(),
@@ -83,7 +108,24 @@ export default function OffersSection() {
         const backgroundsPayload: OfferBackgroundPayload = await backgroundsResponse.json();
 
         if (offersResponse.ok && offersPayload.success) {
-          setOffers((offersPayload.data || []).sort((a, b) => a.displayOrder - b.displayOrder));
+          const nextOffers = (offersPayload.data || []).sort((a, b) => a.displayOrder - b.displayOrder);
+          setOffers(nextOffers);
+
+          const nextBackgroundImage =
+            backgroundsResponse.ok && backgroundsPayload.success && Array.isArray(backgroundsPayload.data) && backgroundsPayload.data.length > 0
+              ? (backgroundsPayload.data[0]?.imageUrl || '')
+              : '';
+
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(
+              OFFERS_CACHE_KEY,
+              JSON.stringify({
+                timestamp: Date.now(),
+                offers: nextOffers,
+                backgroundImageUrl: nextBackgroundImage,
+              })
+            );
+          }
         } else {
           setOffers([]);
         }

@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import PublicLayout from '@/components/PublicLayout';
 import ProductDetailCard from '@/components/ProductDetailCard';
 import { useCart } from '@/contexts/CartContext';
-import { buildApiUrl } from '@/lib/storeConfig';
+import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 
 interface Product {
   _id: string;
@@ -43,16 +43,34 @@ export default function ProductDetailPage({ params }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const cacheKey = `product_detail_${id}`;
+
   useEffect(() => {
     if (!id) return;
     const controller = new AbortController();
 
+    // Instant paint from cache (if available), then refresh in background
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = sessionStorage.getItem(cacheKey);
+        if (raw) {
+          const cached = JSON.parse(raw) as { timestamp: number; data: Product };
+          if (cached?.data && Date.now() - Number(cached.timestamp || 0) < 10 * 60 * 1000) {
+            setProduct(cached.data);
+            setLoading(false);
+          }
+        }
+      } catch {
+        // ignore cache parse issues
+      }
+    }
+
     const fetchProduct = async () => {
       try {
-        const [res, catRes] = await Promise.all([
-          fetch(buildApiUrl(`/api/products/${id}`), { signal: controller.signal }),
-          fetch(buildApiUrl('/api/categories'), { signal: controller.signal }),
-        ]);
+        const res = await fetch(buildApiUrl(`/api/products/${id}`), {
+          signal: controller.signal,
+          headers: getApiHeaders(),
+        });
 
         if (!res.ok) {
           throw new Error('Product not found');
@@ -65,25 +83,11 @@ export default function ProductDetailPage({ params }: Props) {
           throw new Error('No product data received');
         }
 
-        if (catRes.ok) {
-          const catData = await catRes.json();
-          const categories = catData.data || [];
-
-          // Find category and subcategory names
-          for (const cat of categories) {
-            if (cat._id === productData.category) {
-              productData.categoryName = cat.name;
-              const sub = cat.subcategories?.find(
-                (s: { slug: string }) => s.slug === productData.subcategory
-              );
-              if (sub) {
-                productData.subcategoryName = sub.name;
-              }
-              break;
-            }
-          }
-        }
         setProduct(productData);
+
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: productData }));
+        }
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;
         console.error('Error fetching product:', err);
@@ -96,7 +100,7 @@ export default function ProductDetailPage({ params }: Props) {
     fetchProduct();
 
     return () => controller.abort();
-  }, [id]);
+  }, [id, cacheKey]);
 
   if (loading) {
     return (

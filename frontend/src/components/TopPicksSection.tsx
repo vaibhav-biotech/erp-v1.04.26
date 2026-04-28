@@ -23,6 +23,9 @@ interface TopPicksPayload {
   products: TopPickProduct[];
 }
 
+const TOP_PICKS_CACHE_KEY = 'landing_top_picks_v1';
+const TOP_PICKS_CACHE_TTL_MS = 10 * 60 * 1000;
+
 export default function TopPicksSection() {
   const [data, setData] = useState<TopPicksPayload | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,13 +33,33 @@ export default function TopPicksSection() {
   useEffect(() => {
     const loadTopPicks = async () => {
       try {
+        if (typeof window !== 'undefined') {
+          const raw = sessionStorage.getItem(TOP_PICKS_CACHE_KEY);
+          if (raw) {
+            try {
+              const parsed = JSON.parse(raw) as { timestamp: number; data: TopPicksPayload };
+              if (parsed?.data && Date.now() - Number(parsed.timestamp || 0) < TOP_PICKS_CACHE_TTL_MS) {
+                setData(parsed.data);
+                setIsLoading(false);
+                return;
+              }
+            } catch {
+              sessionStorage.removeItem(TOP_PICKS_CACHE_KEY);
+            }
+          }
+        }
+
         const response = await fetch(buildApiUrl('/api/landing/top-picks'), {
           headers: getApiHeaders(),
         });
         const payload = await response.json();
 
         if (response.ok && payload.success) {
-          setData(payload.data || null);
+          const nextData = payload.data || null;
+          setData(nextData);
+          if (nextData && typeof window !== 'undefined') {
+            sessionStorage.setItem(TOP_PICKS_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: nextData }));
+          }
         }
       } catch {
         setData(null);
