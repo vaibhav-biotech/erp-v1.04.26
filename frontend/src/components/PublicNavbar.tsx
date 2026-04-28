@@ -23,6 +23,9 @@ interface Category {
   subcategories: Subcategory[];
 }
 
+const CATEGORIES_CACHE_KEY = 'public_nav_categories_v1';
+const CATEGORIES_CACHE_TTL = 15 * 60 * 1000;
+
 export default function PublicNavbar() {
   const router = useRouter();
   const { customerAuthenticated, logoutCustomer } = useAuth();
@@ -37,20 +40,39 @@ export default function PublicNavbar() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
+        if (typeof window !== 'undefined') {
+          const raw = sessionStorage.getItem(CATEGORIES_CACHE_KEY);
+          if (raw) {
+            try {
+              const parsed = JSON.parse(raw) as { timestamp: number; data: Category[] };
+              if (Array.isArray(parsed?.data) && Date.now() - Number(parsed.timestamp || 0) < CATEGORIES_CACHE_TTL) {
+                setCategories(parsed.data);
+                setLoading(false);
+                return;
+              }
+            } catch {
+              sessionStorage.removeItem(CATEGORIES_CACHE_KEY);
+            }
+          }
+        }
+
         const headers = getApiHeaders();
-        console.log('🔗 Fetching categories from:', buildApiUrl('/api/categories'));
         const res = await fetch(buildApiUrl('/api/categories'), { headers });
-        console.log('📥 Categories response status:', res.status);
         if (res.ok) {
           const data = await res.json();
-          console.log('✅ Categories fetched:', data.data?.length);
-          setCategories(data.data || []);
+          const nextCategories = data.data || [];
+          setCategories(nextCategories);
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(
+              CATEGORIES_CACHE_KEY,
+              JSON.stringify({ timestamp: Date.now(), data: nextCategories })
+            );
+          }
         } else {
-          console.error('❌ Failed to fetch categories:', res.status, res.statusText);
           setCategories([]);
         }
       } catch (err) {
-        console.error('❌ Error fetching categories:', err);
+        console.error('Error fetching categories:', err);
         setCategories([]);
       } finally {
         setLoading(false);

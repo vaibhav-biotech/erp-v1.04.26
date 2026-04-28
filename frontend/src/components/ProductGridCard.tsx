@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FiHeart } from 'react-icons/fi';
 import Button from './Button';
@@ -60,13 +61,13 @@ export default function ProductGridCard({ product }: ProductGridCardProps) {
         <div className="relative overflow-hidden rounded-lg bg-gray-100 aspect-square flex items-center justify-center group">
           {/* Image */}
           {mainImage && (
-            <img
+            <Image
               src={mainImage}
               alt={product.name}
+              fill
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
               onLoad={() => setImageLoaded(true)}
               onError={() => { setImageLoaded(true); setImageError(true); }}
-              loading="lazy"
-              decoding="async"
               className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${
                 imageLoaded && !imageError ? 'opacity-100' : 'opacity-0'
               }`}

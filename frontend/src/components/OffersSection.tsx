@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface Offer {
   _id: string;
@@ -152,12 +153,12 @@ export default function OffersSection() {
                 <Link href={getOfferHref(offer)} className="block h-full">
                   <div className="relative w-full aspect-square md:w-full md:h-full md:aspect-auto bg-gray-200">
                     {offer.bannerImage ? (
-                      <img
+                      <Image
                         src={offer.bannerImage}
                         alt={offer.title}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 280px"
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                        loading="lazy"
-                        decoding="async"
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-green-100 to-green-50 flex items-center justify-center">
@@ -198,12 +199,12 @@ export default function OffersSection() {
               <Link href={getOfferHref(offerBySlot[3])} className="block h-full">
                 <div className="relative w-full aspect-square md:w-full md:h-full md:aspect-auto bg-gray-200">
                   {offerBySlot[3].bannerImage ? (
-                    <img
+                    <Image
                       src={offerBySlot[3].bannerImage}
                       alt={offerBySlot[3].title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 584px"
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      loading="lazy"
-                      decoding="async"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-green-100 to-green-50 flex items-center justify-center">
@@ -246,12 +247,12 @@ export default function OffersSection() {
               <Link href={getOfferHref(offerBySlot[2])} className="block h-full">
                 <div className="relative w-full aspect-[2/1] md:w-full md:h-full md:aspect-auto bg-gray-200">
                   {offerBySlot[2].bannerImage ? (
-                    <img
+                    <Image
                       src={offerBySlot[2].bannerImage}
                       alt={offerBySlot[2].title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 584px"
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      loading="lazy"
-                      decoding="async"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-green-100 to-green-50 flex items-center justify-center">

@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 
 interface LandingBanner {
@@ -11,23 +12,57 @@ interface LandingBanner {
   linkUrl?: string;
 }
 
+const HERO_BANNERS_CACHE_KEY = 'landing_hero_banners_v1';
+const HERO_BANNERS_CACHE_TTL_MS = 10 * 60 * 1000;
+
 export default function LandingBannerHero() {
   const [banners, setBanners] = useState<LandingBanner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
+  const hasFetchedRef = useRef(false);
 
   useEffect(() => {
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
+
+    const controller = new AbortController();
+
     const loadBanners = async () => {
       try {
+        if (typeof window !== 'undefined') {
+          const raw = sessionStorage.getItem(HERO_BANNERS_CACHE_KEY);
+          if (raw) {
+            try {
+              const parsed = JSON.parse(raw) as { timestamp: number; data: LandingBanner[] };
+              if (Array.isArray(parsed?.data) && Date.now() - Number(parsed.timestamp || 0) < HERO_BANNERS_CACHE_TTL_MS) {
+                setBanners(parsed.data);
+                setIsLoading(false);
+                return;
+              }
+            } catch {
+              sessionStorage.removeItem(HERO_BANNERS_CACHE_KEY);
+            }
+          }
+        }
+
         const response = await fetch(buildApiUrl('/api/landing/banners'), {
           headers: getApiHeaders(),
+          signal: controller.signal,
         });
         const payload = await response.json();
 
         if (response.ok && payload.success) {
-          setBanners(payload.data || []);
+          const nextBanners = payload.data || [];
+          setBanners(nextBanners);
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(
+              HERO_BANNERS_CACHE_KEY,
+              JSON.stringify({ timestamp: Date.now(), data: nextBanners })
+            );
+          }
         }
-      } catch {
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') return;
         setBanners([]);
       } finally {
         setIsLoading(false);
@@ -35,6 +70,8 @@ export default function LandingBannerHero() {
     };
 
     loadBanners();
+
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
@@ -77,23 +114,24 @@ export default function LandingBannerHero() {
             >
               {banners.map((banner) => {
                 const content = (
-                  <img
+                  <Image
                     src={banner.imageUrl}
                     alt={banner.title || 'Hero banner'}
+                    fill
+                    sizes="100vw"
                     className="w-full h-full object-cover"
-                    loading="eager"
-                    fetchPriority="high"
+                    priority={activeIndex === 0}
                   />
                 );
 
                 return (
-                  <div key={banner._id} className="w-full h-full shrink-0">
+                  <div key={banner._id} className="w-full h-full shrink-0 relative">
                     {banner.linkUrl ? (
-                      <Link href={banner.linkUrl} className="block w-full h-full">
+                      <Link href={banner.linkUrl} className="block w-full h-full relative">
                         {content}
                       </Link>
                     ) : (
-                      content
+                      <div className="w-full h-full relative">{content}</div>
                     )}
                   </div>
                 );

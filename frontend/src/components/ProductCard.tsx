@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { FiShoppingCart, FiHeart } from 'react-icons/fi';
 
 interface Product {
@@ -35,9 +36,11 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div className="relative overflow-hidden rounded-lg bg-gray-100 aspect-square mb-4 flex items-center justify-center">
           {/* Image */}
           {mainImage && (
-            <img
+            <Image
               src={mainImage}
               alt={product.name}
+              fill
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
               onLoad={() => setImageLoaded(true)}
               className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-300 ${
                 imageLoaded ? 'opacity-100' : 'opacity-0'
