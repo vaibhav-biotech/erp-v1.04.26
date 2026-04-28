@@ -170,7 +170,7 @@ export default function ProductGrid({
           className={`grid ${gridColsClass[gridColumns]} gap-6 lg:gap-8`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.15 }}
+          transition={{ duration: 0.22 }}
         >
           {filteredProducts.map((product, index) => (
             <motion.div
@@ -178,8 +178,8 @@ export default function ProductGrid({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{
-                duration: 0.3,
-                delay: 0.15 + index * 0.05,
+                duration: 0.2,
+                delay: Math.min(index, 8) * 0.01,
                 ease: 'easeOut'
               }}
             >

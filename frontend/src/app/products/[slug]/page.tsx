@@ -39,6 +39,8 @@ interface Props {
 
 export default function ProductsPage({ params }: Props) {
   const { slug } = use(params);
+  const PRODUCTS_PAGE_CACHE_TTL_MS = 5 * 60 * 1000;
+  const cacheKey = `products_page_${slug}`;
   const normalizeSlug = (value: string) => String(value || '')
     .toLowerCase()
     .trim()
@@ -57,6 +59,33 @@ export default function ProductsPage({ params }: Props) {
   useEffect(() => {
     if (!slug) return;
     const controller = new AbortController();
+
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = sessionStorage.getItem(cacheKey);
+        if (raw) {
+          const cached = JSON.parse(raw) as {
+            timestamp: number;
+            subcategory: Subcategory | null;
+            category: { name: string; _id: string } | null;
+            products: Product[];
+            categoryName: string;
+            displayName: string;
+          };
+
+          if (cached && Date.now() - Number(cached.timestamp || 0) < PRODUCTS_PAGE_CACHE_TTL_MS) {
+            setSubcategory(cached.subcategory || null);
+            setCategory(cached.category || null);
+            setProducts(Array.isArray(cached.products) ? cached.products : []);
+            setCategoryName(cached.categoryName || '');
+            setDisplayName(cached.displayName || '');
+            setLoading(false);
+          }
+        }
+      } catch {
+        // ignore cache parse issues
+      }
+    }
 
     const fetchCategoriesAndProducts = async () => {
       try {
@@ -107,17 +136,13 @@ export default function ProductsPage({ params }: Props) {
         }
 
         const prodRes = await fetch(
-          buildApiUrl(`/api/products?status=active&category=${encodeURIComponent(foundCategoryId)}&limit=400`),
+          buildApiUrl(`/api/products?status=active&category=${encodeURIComponent(foundCategoryId)}&limit=120`),
           { signal: controller.signal, headers: getApiHeaders() }
         );
 
         if (!prodRes.ok) throw new Error('Failed to fetch products');
 
         const prodData = await prodRes.json();
-
-        console.log(`🔍 Total products from API: ${prodData.data?.length || 0}`);
-        console.log(`📍 Page slug: ${slug}, normalized: ${normalizeSlug(slug)}`);
-        console.log(`🏢 Is main category: ${isMainCategory}`);
 
         // Filter client-side only for subcategory if needed
         const filtered = (prodData.data || []).filter((p: Product) => {
@@ -128,17 +153,11 @@ export default function ProductsPage({ params }: Props) {
             const productSubcategory = normalizeSlug(p.subcategory || '');
             const productTags = Array.isArray(p.tags) ? p.tags.map((tag) => normalizeSlug(tag)).filter(Boolean) : [];
             const matchesSubcategoryOrTag = productSubcategory === normalizedPageSlug || productTags.includes(normalizedPageSlug);
-            
-            if (!matchesSubcategoryOrTag) {
-              console.log(`❌ ${p.name}: subcat="${productSubcategory}", tags=[${productTags.join(', ')}], page="${normalizedPageSlug}"`);
-            }
-            
+
             return matchesCategory && matchesSubcategoryOrTag;
           }
           return matchesCategory;
         });
-
-        console.log(`✅ Filtered products: ${filtered.length}`);
 
         // Deduplicate by _id
         const seen = new Set<string>();
@@ -149,6 +168,20 @@ export default function ProductsPage({ params }: Props) {
         });
 
         setProducts(deduplicatedProducts);
+
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(
+            cacheKey,
+            JSON.stringify({
+              timestamp: Date.now(),
+              subcategory: foundSubcategory,
+              category: foundCategory || null,
+              products: deduplicatedProducts,
+              categoryName: resolvedCategoryName,
+              displayName: isMainCategory ? (foundCategory?.name || '') : (foundSubcategory?.name || ''),
+            })
+          );
+        }
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;
         console.error('Error fetching data:', err);
@@ -223,9 +256,7 @@ export default function ProductsPage({ params }: Props) {
           <ProductGrid
             products={products}
             categoryName={categoryName}
-            onFilterChange={(filters) => {
-              console.log('Filters applied:', filters);
-            }}
+            onFilterChange={() => {}}
           />
         </motion.div>
       </div>
