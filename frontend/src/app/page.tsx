@@ -5,6 +5,7 @@ import PublicLayout from '@/components/PublicLayout';
 import LandingBannerHero from '@/components/LandingBannerHero';
 import CategoryCircleSection from '@/components/CategoryCircleSection';
 import TopPicksSection from '@/components/TopPicksSection';
+import FeaturedCollectionsSection from '@/components/FeaturedCollectionsSection';
 import WhyChooseUsSection from '@/components/WhyChooseUsSection';
 import OffersSection from '@/components/OffersSection';
 
@@ -20,7 +21,7 @@ const fadeInUp: any = {
 export default function Home() {
   return (
     <PublicLayout>
-      <div className="pt-0 pb-4 sm:pb-6">
+      <div className="pt-0 pb-10 sm:pb-12 lg:pb-16">
         <motion.div
           variants={fadeInUp}
           initial="hidden"
@@ -30,6 +31,7 @@ export default function Home() {
         </motion.div>
 
         <motion.div
+          className="mt-10 sm:mt-12 lg:mt-16"
           variants={fadeInUp}
           initial="hidden"
           whileInView="show"
@@ -38,7 +40,7 @@ export default function Home() {
           <CategoryCircleSection />
         </motion.div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mt-10 sm:mt-12 lg:mt-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             variants={fadeInUp}
             initial="hidden"
@@ -47,35 +49,48 @@ export default function Home() {
           >
             <TopPicksSection />
           </motion.div>
-
-          <motion.div
-            variants={fadeInUp}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
-          >
-            <WhyChooseUsSection />
-          </motion.div>
-
-          <motion.div
-            variants={fadeInUp}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
-          >
-            <OffersSection />
-          </motion.div>
-
-          <motion.div
-            className="text-center mt-8 sm:mt-10"
-            variants={fadeInUp}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true }}
-          >
-            <p className="text-lg text-gray-700">Fresh plants, seeds & garden supplies</p>
-          </motion.div>
         </div>
+
+        <motion.div
+          className="mt-10 sm:mt-12 lg:mt-16"
+          variants={fadeInUp}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
+        >
+          <FeaturedCollectionsSection />
+        </motion.div>
+
+        <motion.div
+          className="mt-10 sm:mt-12 lg:mt-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+          variants={fadeInUp}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
+        >
+          <WhyChooseUsSection />
+        </motion.div>
+
+        <motion.div
+          className="mt-10 sm:mt-12 lg:mt-16"
+          variants={fadeInUp}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
+        >
+          <OffersSection />
+        </motion.div>
+
+        <motion.div
+          className="mt-10 sm:mt-12 lg:mt-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center"
+          variants={fadeInUp}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true }}
+        >
+          <p className="text-lg text-gray-700">Fresh plants, seeds & garden supplies</p>
+        </motion.div>
+
       </div>
     </PublicLayout>
   );

@@ -130,6 +130,12 @@ export default function GroupedSidebar() {
       roles: ['store_admin'],
     },
     {
+      id: 'featured-collections',
+      label: 'Featured Collections',
+      route: '/admin/dashboard/store-admin?page=featured-collections',
+      roles: ['store_admin'],
+    },
+    {
       id: 'landing',
       label: 'Landing Page',
       route: '/admin/dashboard/store-admin?page=landing',

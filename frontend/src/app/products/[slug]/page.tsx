@@ -130,7 +130,50 @@ export default function ProductsPage({ params }: Props) {
         }
 
         if (!isMainCategory && !foundSubcategory) {
-          setError('Category not found');
+          const prodRes = await fetch(
+            buildApiUrl('/api/products?status=active&limit=120'),
+            { signal: controller.signal, headers: getApiHeaders() }
+          );
+
+          if (!prodRes.ok) throw new Error('Failed to fetch products');
+
+          const prodData = await prodRes.json();
+          const normalizedPageSlug = normalizeSlug(slug);
+          const filteredByTag = (prodData.data || []).filter((p: Product) => {
+            const productTags = Array.isArray(p.tags)
+              ? p.tags.map((tag) => normalizeSlug(tag)).filter(Boolean)
+              : [];
+            return productTags.includes(normalizedPageSlug);
+          });
+
+          setCategoryName('');
+          setDisplayName(
+            slug
+              .split('-')
+              .filter(Boolean)
+              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ')
+          );
+          setProducts(filteredByTag);
+
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(
+              cacheKey,
+              JSON.stringify({
+                timestamp: Date.now(),
+                subcategory: null,
+                category: null,
+                products: filteredByTag,
+                categoryName: '',
+                displayName: slug
+                  .split('-')
+                  .filter(Boolean)
+                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(' '),
+              })
+            );
+          }
+
           setLoading(false);
           return;
         }
@@ -217,7 +260,7 @@ export default function ProductsPage({ params }: Props) {
     );
   }
 
-  if (error || (!subcategory && !category)) {
+  if (error || (!subcategory && !category && products.length === 0)) {
     return (
       <>
         <PublicNavbar />

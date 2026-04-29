@@ -7,6 +7,8 @@ const getTopPicksCollection = () => mongoose.connection.db.collection('landing_t
 const getOffersCollection = () => mongoose.connection.db.collection('landing_offers');
 const getOfferBackgroundsCollection = () => mongoose.connection.db.collection('landing_offer_backgrounds');
 const getCategorySectionsCollection = () => mongoose.connection.db.collection('landing_category_sections');
+const getFeaturedCollectionsCollection = () => mongoose.connection.db.collection('landing_featured_collections');
+const getFeaturedCollectionBackgroundsCollection = () => mongoose.connection.db.collection('landing_featured_collection_backgrounds');
 
 const slugify = (value) => String(value || '')
   .toLowerCase()
@@ -803,6 +805,187 @@ const patchCategorySection = async ({
   );
 };
 
+const listPublicFeaturedCollections = async (storeName) => {
+  return getFeaturedCollectionsCollection()
+    .find({
+      storeName: { $in: getStoreNameAliases(storeName) },
+      isActive: true,
+    })
+    .sort({ displayOrder: 1, createdAt: -1 })
+    .toArray();
+};
+
+const listAdminFeaturedCollections = async (storeName) => {
+  return getFeaturedCollectionsCollection()
+    .find({
+      storeName: { $in: getStoreNameAliases(storeName) },
+    })
+    .sort({ displayOrder: 1, createdAt: -1 })
+    .toArray();
+};
+
+const insertFeaturedCollection = async ({
+  storeName,
+  title,
+  subtitle,
+  tag,
+  imageUrl,
+  isActive,
+  displayOrder,
+}) => {
+  const safeTitle = String(title || '').trim();
+  const safeTag = slugify(tag || title || '');
+
+  if (!safeTitle) throw new Error('Title is required');
+  if (!safeTag) throw new Error('Tag is required');
+
+  const now = new Date();
+  const payload = {
+    _id: new mongoose.Types.ObjectId(),
+    storeName: normalizeStoreName(storeName),
+    title: safeTitle,
+    subtitle: String(subtitle || '').trim(),
+    tag: safeTag,
+    imageUrl: String(imageUrl || '').trim(),
+    isActive: typeof isActive === 'boolean' ? isActive : true,
+    displayOrder: Number.isFinite(Number(displayOrder)) ? Number(displayOrder) : 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await getFeaturedCollectionsCollection().insertOne(payload);
+  return payload;
+};
+
+const patchFeaturedCollection = async ({
+  storeName,
+  itemId,
+  title,
+  subtitle,
+  tag,
+  imageUrl,
+  isActive,
+  displayOrder,
+}) => {
+  const objectId = toObjectId(itemId);
+  if (!objectId) return null;
+
+  const existing = await getFeaturedCollectionsCollection().findOne({
+    _id: objectId,
+    storeName: { $in: getStoreNameAliases(storeName) },
+  });
+
+  if (!existing) return null;
+
+  const payload = { updatedAt: new Date() };
+  if (title !== undefined) {
+    const safeTitle = String(title || '').trim();
+    if (!safeTitle) throw new Error('Title is required');
+    payload.title = safeTitle;
+  }
+  if (subtitle !== undefined) payload.subtitle = String(subtitle || '').trim();
+  if (tag !== undefined) {
+    const safeTag = slugify(tag || '');
+    if (!safeTag) throw new Error('Tag is required');
+    payload.tag = safeTag;
+  }
+  if (imageUrl !== undefined) payload.imageUrl = String(imageUrl || '').trim();
+  if (isActive !== undefined) payload.isActive = !!isActive;
+  if (displayOrder !== undefined) payload.displayOrder = Number.isFinite(Number(displayOrder)) ? Number(displayOrder) : 0;
+
+  return getFeaturedCollectionsCollection().findOneAndUpdate(
+    {
+      _id: objectId,
+      storeName: { $in: getStoreNameAliases(storeName) },
+    },
+    { $set: payload },
+    { returnDocument: 'after' }
+  );
+};
+
+const listPublicFeaturedCollectionBackgrounds = async (storeName) => {
+  return getFeaturedCollectionBackgroundsCollection()
+    .find({
+      storeName: { $in: getStoreNameAliases(storeName) },
+      isActive: true,
+    })
+    .sort({ displayOrder: 1, createdAt: -1 })
+    .toArray();
+};
+
+const listAdminFeaturedCollectionBackgrounds = async (storeName) => {
+  return getFeaturedCollectionBackgroundsCollection()
+    .find({
+      storeName: { $in: getStoreNameAliases(storeName) },
+    })
+    .sort({ displayOrder: 1, createdAt: -1 })
+    .toArray();
+};
+
+const insertFeaturedCollectionBackground = async ({ storeName, title, imageUrl, isActive, displayOrder }) => {
+  const now = new Date();
+  const item = {
+    _id: new mongoose.Types.ObjectId(),
+    storeName: normalizeStoreName(storeName),
+    title: title ? String(title).trim() : '',
+    imageUrl: String(imageUrl).trim(),
+    isActive: typeof isActive === 'boolean' ? isActive : true,
+    displayOrder: Number.isFinite(Number(displayOrder)) ? Number(displayOrder) : 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  if (item.isActive) {
+    await getFeaturedCollectionBackgroundsCollection().updateMany(
+      { storeName: { $in: getStoreNameAliases(storeName) } },
+      { $set: { isActive: false, updatedAt: now } }
+    );
+  }
+
+  await getFeaturedCollectionBackgroundsCollection().insertOne(item);
+  return item;
+};
+
+const patchFeaturedCollectionBackground = async ({ storeName, backgroundId, title, imageUrl, isActive, displayOrder }) => {
+  const objectId = toObjectId(backgroundId);
+  if (!objectId) return null;
+
+  const existing = await getFeaturedCollectionBackgroundsCollection().findOne({
+    _id: objectId,
+    storeName: { $in: getStoreNameAliases(storeName) },
+  });
+  if (!existing) return null;
+
+  const payload = { updatedAt: new Date() };
+  if (title !== undefined) payload.title = String(title || '').trim();
+  if (imageUrl !== undefined) payload.imageUrl = String(imageUrl || '').trim();
+  if (displayOrder !== undefined) payload.displayOrder = Number.isFinite(Number(displayOrder)) ? Number(displayOrder) : 0;
+  if (isActive !== undefined) payload.isActive = !!isActive;
+
+  if (payload.isActive === true) {
+    await getFeaturedCollectionBackgroundsCollection().updateMany(
+      { _id: { $ne: objectId }, storeName: { $in: getStoreNameAliases(storeName) } },
+      { $set: { isActive: false, updatedAt: payload.updatedAt } }
+    );
+  }
+
+  return getFeaturedCollectionBackgroundsCollection().findOneAndUpdate(
+    { _id: objectId, storeName: { $in: getStoreNameAliases(storeName) } },
+    { $set: payload },
+    { returnDocument: 'after' }
+  );
+};
+
+const removeFeaturedCollectionBackground = async ({ storeName, backgroundId }) => {
+  const objectId = toObjectId(backgroundId);
+  if (!objectId) return null;
+
+  return getFeaturedCollectionBackgroundsCollection().deleteOne({
+    _id: objectId,
+    storeName: { $in: getStoreNameAliases(storeName) },
+  });
+};
+
 module.exports = {
   toObjectId,
   listPublicBanners,
@@ -830,4 +1013,13 @@ module.exports = {
   listAdminCategorySections,
   insertCategorySection,
   patchCategorySection,
+  listPublicFeaturedCollections,
+  listAdminFeaturedCollections,
+  insertFeaturedCollection,
+  patchFeaturedCollection,
+  listPublicFeaturedCollectionBackgrounds,
+  listAdminFeaturedCollectionBackgrounds,
+  insertFeaturedCollectionBackground,
+  patchFeaturedCollectionBackground,
+  removeFeaturedCollectionBackground,
 };

@@ -25,6 +25,15 @@ const {
   listAdminCategorySections,
   insertCategorySection,
   patchCategorySection,
+  listPublicFeaturedCollections,
+  listAdminFeaturedCollections,
+  insertFeaturedCollection,
+  patchFeaturedCollection,
+  listPublicFeaturedCollectionBackgrounds,
+  listAdminFeaturedCollectionBackgrounds,
+  insertFeaturedCollectionBackground,
+  patchFeaturedCollectionBackground,
+  removeFeaturedCollectionBackground,
 } = require('../services/landing.service');
 
 const getStoreName = (req) => req.storeName || 'plantsingarden';
@@ -580,6 +589,166 @@ const updateCategorySection = async (req, res) => {
   }
 };
 
+const getPublicFeaturedCollections = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const data = await listPublicFeaturedCollections(storeName);
+
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error('❌ Error fetching public featured collections:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch featured collections',
+      error: error.message,
+    });
+  }
+};
+
+const getAdminFeaturedCollections = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const data = await listAdminFeaturedCollections(storeName);
+
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error('❌ Error fetching admin featured collections:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch featured collections settings',
+      error: error.message,
+    });
+  }
+};
+
+const createFeaturedCollection = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const data = await insertFeaturedCollection({
+      storeName,
+      ...(req.body || {}),
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Featured collection created successfully',
+      data,
+    });
+  } catch (error) {
+    console.error('❌ Error creating featured collection:', error);
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to create featured collection',
+    });
+  }
+};
+
+const updateFeaturedCollection = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const { itemId } = req.params;
+
+    if (!toObjectId(itemId)) {
+      return res.status(400).json({ success: false, message: 'Invalid item id' });
+    }
+
+    const updated = await patchFeaturedCollection({
+      storeName,
+      itemId,
+      ...(req.body || {}),
+    });
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Featured collection not found' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Featured collection updated successfully',
+      data: updated,
+    });
+  } catch (error) {
+    console.error('❌ Error updating featured collection:', error);
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to update featured collection',
+    });
+  }
+};
+
+const getPublicFeaturedCollectionBackgrounds = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const data = await listPublicFeaturedCollectionBackgrounds(storeName);
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error('❌ Error fetching public featured collection backgrounds:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch featured collection backgrounds', error: error.message });
+  }
+};
+
+const getAdminFeaturedCollectionBackgrounds = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const data = await listAdminFeaturedCollectionBackgrounds(storeName);
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error('❌ Error fetching admin featured collection backgrounds:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch featured collection backgrounds', error: error.message });
+  }
+};
+
+const createFeaturedCollectionBackground = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const { title, imageUrl, isActive, displayOrder } = req.body || {};
+    if (!imageUrl || !String(imageUrl).trim()) {
+      return res.status(400).json({ success: false, message: 'imageUrl is required' });
+    }
+    const data = await insertFeaturedCollectionBackground({ storeName, title, imageUrl, isActive, displayOrder });
+    return res.status(201).json({ success: true, message: 'Featured collections background created successfully', data });
+  } catch (error) {
+    console.error('❌ Error creating featured collection background:', error);
+    return res.status(500).json({ success: false, message: 'Failed to create featured collection background', error: error.message });
+  }
+};
+
+const updateFeaturedCollectionBackground = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const { backgroundId } = req.params;
+    if (!toObjectId(backgroundId)) {
+      return res.status(400).json({ success: false, message: 'Invalid background id' });
+    }
+    const updated = await patchFeaturedCollectionBackground({ storeName, backgroundId, ...(req.body || {}) });
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Featured collection background not found' });
+    }
+    return res.json({ success: true, message: 'Featured collection background updated successfully', data: updated });
+  } catch (error) {
+    console.error('❌ Error updating featured collection background:', error);
+    return res.status(400).json({ success: false, message: error.message || 'Failed to update featured collection background' });
+  }
+};
+
+const deleteFeaturedCollectionBackground = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const { backgroundId } = req.params;
+    if (!toObjectId(backgroundId)) {
+      return res.status(400).json({ success: false, message: 'Invalid background id' });
+    }
+    const removed = await removeFeaturedCollectionBackground({ storeName, backgroundId });
+    if (!removed || removed.deletedCount === 0) {
+      return res.status(404).json({ success: false, message: 'Featured collection background not found' });
+    }
+    return res.json({ success: true, message: 'Featured collection background deleted successfully' });
+  } catch (error) {
+    console.error('❌ Error deleting featured collection background:', error);
+    return res.status(500).json({ success: false, message: 'Failed to delete featured collection background', error: error.message });
+  }
+};
+
 module.exports = {
   getPublicBanners,
   getAdminBanners,
@@ -605,4 +774,13 @@ module.exports = {
   getAdminCategorySections,
   createCategorySection,
   updateCategorySection,
+  getPublicFeaturedCollections,
+  getAdminFeaturedCollections,
+  createFeaturedCollection,
+  updateFeaturedCollection,
+  getPublicFeaturedCollectionBackgrounds,
+  getAdminFeaturedCollectionBackgrounds,
+  createFeaturedCollectionBackground,
+  updateFeaturedCollectionBackground,
+  deleteFeaturedCollectionBackground,
 };

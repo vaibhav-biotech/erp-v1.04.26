@@ -25,6 +25,15 @@ const {
   getAdminCategorySections,
   createCategorySection,
   updateCategorySection,
+  getPublicFeaturedCollections,
+  getAdminFeaturedCollections,
+  createFeaturedCollection,
+  updateFeaturedCollection,
+  getPublicFeaturedCollectionBackgrounds,
+  getAdminFeaturedCollectionBackgrounds,
+  createFeaturedCollectionBackground,
+  updateFeaturedCollectionBackground,
+  deleteFeaturedCollectionBackground,
 } = require('../controllers/landing.controller');
 
 const router = express.Router();
@@ -49,6 +58,15 @@ router.get('/category-section', getPublicCategorySections);
 router.get('/category-section/admin', verifyAdminToken, getAdminCategorySections);
 router.post('/category-section/admin', verifyAdminToken, createCategorySection);
 router.patch('/category-section/admin/:itemId', verifyAdminToken, updateCategorySection);
+router.get('/featured-collections', getPublicFeaturedCollections);
+router.get('/featured-collections/admin', verifyAdminToken, getAdminFeaturedCollections);
+router.post('/featured-collections/admin', verifyAdminToken, createFeaturedCollection);
+router.patch('/featured-collections/admin/:itemId', verifyAdminToken, updateFeaturedCollection);
+router.get('/featured-collections/backgrounds', getPublicFeaturedCollectionBackgrounds);
+router.get('/featured-collections/backgrounds/admin', verifyAdminToken, getAdminFeaturedCollectionBackgrounds);
+router.post('/featured-collections/backgrounds', verifyAdminToken, createFeaturedCollectionBackground);
+router.patch('/featured-collections/backgrounds/:backgroundId', verifyAdminToken, updateFeaturedCollectionBackground);
+router.delete('/featured-collections/backgrounds/:backgroundId', verifyAdminToken, deleteFeaturedCollectionBackground);
 router.get('/offers/:offerId', getPublicOfferProducts);
 router.post('/offers', verifyAdminToken, createOffer);
 router.put('/offers/:offerId', verifyAdminToken, updateOffer);

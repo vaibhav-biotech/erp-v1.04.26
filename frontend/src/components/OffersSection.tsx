@@ -149,7 +149,7 @@ export default function OffersSection() {
   if (isLoading) {
     return (
       <section
-        className="mt-6 sm:mt-8 relative left-1/2 right-1/2 ml-[calc(-50vw+50%)] mr-[calc(-50vw+50%)] w-screen bg-stone-50 bg-cover bg-center"
+        className="w-full bg-stone-50 bg-cover bg-center"
         style={backgroundImageUrl ? { backgroundImage: `url(${backgroundImageUrl})` } : undefined}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
@@ -169,7 +169,7 @@ export default function OffersSection() {
 
   return (
     <section
-      className="mt-8 sm:mt-12 w-screen -ml-[calc(50vw-50%)] bg-cover bg-center"
+      className="w-full bg-cover bg-center"
       style={backgroundImageUrl ? { backgroundImage: `url(${backgroundImageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : { backgroundColor: '#f5f5f0' }}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 relative z-10">
