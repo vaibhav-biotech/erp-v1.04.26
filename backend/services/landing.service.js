@@ -6,6 +6,7 @@ const getCollection = () => mongoose.connection.db.collection('landing_banners')
 const getTopPicksCollection = () => mongoose.connection.db.collection('landing_top_picks');
 const getOffersCollection = () => mongoose.connection.db.collection('landing_offers');
 const getOfferBackgroundsCollection = () => mongoose.connection.db.collection('landing_offer_backgrounds');
+const getCategorySectionsCollection = () => mongoose.connection.db.collection('landing_category_sections');
 
 const slugify = (value) => String(value || '')
   .toLowerCase()
@@ -702,6 +703,106 @@ const removeOfferBackground = async ({ storeName, backgroundId }) => {
   });
 };
 
+const listPublicCategorySections = async (storeName) => {
+  const items = await getCategorySectionsCollection()
+    .find({
+      storeName: { $in: getStoreNameAliases(storeName) },
+      isActive: true,
+    })
+    .sort({ displayOrder: 1, createdAt: -1 })
+    .toArray();
+
+  return items;
+};
+
+const listAdminCategorySections = async (storeName) => {
+  const items = await getCategorySectionsCollection()
+    .find({
+      storeName: { $in: getStoreNameAliases(storeName) },
+    })
+    .sort({ displayOrder: 1, createdAt: -1 })
+    .toArray();
+
+  return items;
+};
+
+const insertCategorySection = async ({
+  storeName,
+  categoryId,
+  imageUrl,
+  isActive,
+  displayOrder,
+}) => {
+  const objectId = toObjectId(categoryId);
+  if (!objectId) throw new Error('Valid categoryId is required');
+
+  const category = await Category.findById(objectId).lean();
+  if (!category) throw new Error('Category not found');
+
+  const now = new Date();
+  const payload = {
+    _id: new mongoose.Types.ObjectId(),
+    storeName: normalizeStoreName(storeName),
+    categoryId: String(category._id),
+    categoryName: String(category.name || '').trim(),
+    categorySlug: String(category.slug || '').trim(),
+    imageUrl: String(imageUrl || '').trim(),
+    isActive: typeof isActive === 'boolean' ? isActive : true,
+    displayOrder: Number.isFinite(Number(displayOrder)) ? Number(displayOrder) : 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await getCategorySectionsCollection().insertOne(payload);
+  return payload;
+};
+
+const patchCategorySection = async ({
+  storeName,
+  itemId,
+  categoryId,
+  imageUrl,
+  isActive,
+  displayOrder,
+}) => {
+  const objectId = toObjectId(itemId);
+  if (!objectId) return null;
+
+  const existing = await getCategorySectionsCollection().findOne({
+    _id: objectId,
+    storeName: { $in: getStoreNameAliases(storeName) },
+  });
+  if (!existing) return null;
+
+  const payload = { updatedAt: new Date() };
+
+  if (categoryId !== undefined) {
+    const categoryObjectId = toObjectId(categoryId);
+    if (!categoryObjectId) throw new Error('Valid categoryId is required');
+    const category = await Category.findById(categoryObjectId).lean();
+    if (!category) throw new Error('Category not found');
+
+    payload.categoryId = String(category._id);
+    payload.categoryName = String(category.name || '').trim();
+    payload.categorySlug = String(category.slug || '').trim();
+  }
+
+  if (imageUrl !== undefined) payload.imageUrl = String(imageUrl || '').trim();
+  if (isActive !== undefined) payload.isActive = !!isActive;
+  if (displayOrder !== undefined) {
+    payload.displayOrder = Number.isFinite(Number(displayOrder)) ? Number(displayOrder) : 0;
+  }
+
+  return getCategorySectionsCollection().findOneAndUpdate(
+    {
+      _id: objectId,
+      storeName: { $in: getStoreNameAliases(storeName) },
+    },
+    { $set: payload },
+    { returnDocument: 'after' }
+  );
+};
+
 module.exports = {
   toObjectId,
   listPublicBanners,
@@ -725,4 +826,8 @@ module.exports = {
   insertOfferBackground,
   patchOfferBackground,
   removeOfferBackground,
+  listPublicCategorySections,
+  listAdminCategorySections,
+  insertCategorySection,
+  patchCategorySection,
 };

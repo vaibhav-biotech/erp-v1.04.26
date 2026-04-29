@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import PublicLayout from '@/components/PublicLayout';
 import LandingBannerHero from '@/components/LandingBannerHero';
+import CategoryCircleSection from '@/components/CategoryCircleSection';
 import TopPicksSection from '@/components/TopPicksSection';
 import WhyChooseUsSection from '@/components/WhyChooseUsSection';
 import OffersSection from '@/components/OffersSection';
@@ -26,6 +27,15 @@ export default function Home() {
           animate="show"
         >
           <LandingBannerHero />
+        </motion.div>
+
+        <motion.div
+          variants={fadeInUp}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
+        >
+          <CategoryCircleSection />
         </motion.div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

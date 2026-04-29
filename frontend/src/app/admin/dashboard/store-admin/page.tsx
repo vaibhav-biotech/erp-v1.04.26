@@ -11,6 +11,8 @@ import CategoriesPage from '@/components/pages/CategoriesPage';
 import StoreAdminOrdersListPage from '@/components/pages/StoreAdminOrdersListPage';
 import CustomersPage from '@/components/pages/CustomersPage';
 import LandingPageManager from '@/components/pages/LandingPageManager';
+import NotificationBarPage from '@/components/pages/NotificationBarPage';
+import CategorySectionSettingsPage from '@/components/pages/CategorySectionSettingsPage';
 
 interface DashboardStats {
   totalProducts: number;
@@ -174,7 +176,18 @@ export default function StoreAdminDashboard() {
                 </div>
               </div>
             </div>
-            <ProductsTable key={refreshKey} onRefresh={handleRefresh} />
+            {(() => {
+              const categoryId = searchParams.get('category');
+              const categoryName = searchParams.get('categoryName');
+              return (
+                <ProductsTable
+                  key={`${refreshKey}-${categoryId}-${categoryName}`}
+                  categoryId={categoryId}
+                  categoryName={categoryName}
+                  onRefresh={handleRefresh}
+                />
+              );
+            })()}
             <BulkUploadModal
               isOpen={showBulkUploadModal}
               onClose={() => setShowBulkUploadModal(false)}
@@ -190,6 +203,10 @@ export default function StoreAdminDashboard() {
         return <CustomersPage />;
       case 'landing':
         return <LandingPageManager />;
+      case 'notification-bar':
+        return <NotificationBarPage />;
+      case 'category-section':
+        return <CategorySectionSettingsPage />;
       default:
         return (
           <div className="max-w-4xl mx-auto">

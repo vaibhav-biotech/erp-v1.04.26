@@ -23,6 +23,22 @@ interface Category {
   subcategories: Subcategory[];
 }
 
+interface NotificationConfig {
+  message: string;
+  bgColor: string;
+  textColor: string;
+  fontWeight: 'regular' | 'bold';
+  isActive: boolean;
+}
+
+const DEFAULT_NOTIFICATION: NotificationConfig = {
+  message: '🌿 Free shipping on orders above ₹499',
+  bgColor: '#fef08a',
+  textColor: '#713f12',
+  fontWeight: 'regular',
+  isActive: true,
+};
+
 const CATEGORIES_CACHE_KEY = 'public_nav_categories_v1';
 const CATEGORIES_CACHE_TTL = 15 * 60 * 1000;
 
@@ -36,6 +52,9 @@ export default function PublicNavbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
+  const [isNavVisible, setIsNavVisible] = useState(true);
+  const [activeNotifications, setActiveNotifications] = useState<NotificationConfig[]>([DEFAULT_NOTIFICATION]);
+  const [currentNotificationIndex, setCurrentNotificationIndex] = useState(0);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -86,6 +105,90 @@ export default function PublicNavbar() {
     fetchCategories();
   }, []);
 
+  useEffect(() => {
+    const fetchNotificationConfig = async () => {
+      try {
+        const headers = getApiHeaders();
+        const res = await fetch(buildApiUrl('/api/notification-bar'), { headers });
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const fromList = Array.isArray(data?.notifications) ? data.notifications : [];
+
+        if (fromList.length > 0) {
+          const parsed = fromList
+            .filter((item: any) => item?.isActive !== false)
+            .map((item: any) => ({
+              message: item?.message || DEFAULT_NOTIFICATION.message,
+              bgColor: item?.bgColor || DEFAULT_NOTIFICATION.bgColor,
+              textColor: item?.textColor || DEFAULT_NOTIFICATION.textColor,
+              fontWeight: item?.fontWeight === 'bold' ? 'bold' : 'regular',
+              isActive: true,
+            } as NotificationConfig));
+
+          setActiveNotifications(parsed.length > 0 ? parsed : [DEFAULT_NOTIFICATION]);
+          setCurrentNotificationIndex(0);
+          return;
+        }
+
+        const config = data?.data;
+        if (config && config.isActive !== false) {
+          setActiveNotifications([
+            {
+              message: config.message || DEFAULT_NOTIFICATION.message,
+              bgColor: config.bgColor || DEFAULT_NOTIFICATION.bgColor,
+              textColor: config.textColor || DEFAULT_NOTIFICATION.textColor,
+              fontWeight: config.fontWeight === 'bold' ? 'bold' : 'regular',
+              isActive: true,
+            },
+          ]);
+          setCurrentNotificationIndex(0);
+        }
+      } catch {
+        // keep defaults silently
+      }
+    };
+
+    fetchNotificationConfig();
+  }, []);
+
+  useEffect(() => {
+    if (activeNotifications.length <= 1) return;
+
+    const id = window.setInterval(() => {
+      setCurrentNotificationIndex((prev) => (prev + 1) % activeNotifications.length);
+    }, 3000);
+
+    return () => window.clearInterval(id);
+  }, [activeNotifications]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let lastScrollY = window.scrollY;
+
+    const onScroll = () => {
+      const currentY = window.scrollY;
+
+      if (currentY <= 10) {
+        setIsNavVisible(true);
+        lastScrollY = currentY;
+        return;
+      }
+
+      if (currentY > lastScrollY + 4) {
+        setIsNavVisible(false);
+      } else if (currentY < lastScrollY - 4) {
+        setIsNavVisible(true);
+      }
+
+      lastScrollY = currentY;
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   // Listen for storage changes (logout from other components)
   useEffect(() => {
     const handleStorageChange = () => {
@@ -107,8 +210,40 @@ export default function PublicNavbar() {
     };
   }, []);
 
+  const currentNotification = activeNotifications[currentNotificationIndex] || DEFAULT_NOTIFICATION;
+  const hasNotificationBar = Boolean(currentNotification?.isActive && currentNotification?.message);
+
   return (
-    <nav className="bg-white sticky top-0 z-40">
+    <div
+      className={`sticky top-0 z-40 transition-transform duration-300 ${
+        isNavVisible ? 'translate-y-0' : '-translate-y-full'
+      }`}
+    >
+      {hasNotificationBar && (
+        <div
+          className="border-b text-center text-xs sm:text-sm px-3 py-2"
+          style={{
+            backgroundColor: currentNotification.bgColor,
+            color: currentNotification.textColor,
+            borderColor: currentNotification.bgColor,
+            fontWeight: currentNotification.fontWeight === 'bold' ? 700 : 500,
+          }}
+        >
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={`${currentNotificationIndex}-${currentNotification.message}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
+            >
+              {currentNotification.message}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      )}
+
+      <nav className="bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex justify-between items-center">
           {/* Logo */}
@@ -218,7 +353,7 @@ export default function PublicNavbar() {
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div 
-              className="fixed top-16 left-0 right-0 bottom-0 bg-white z-40 lg:hidden overflow-y-auto shadow-xl"
+              className={`fixed ${hasNotificationBar ? 'top-24' : 'top-16'} left-0 right-0 bottom-0 bg-white z-40 lg:hidden overflow-y-auto shadow-xl`}
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -289,6 +424,7 @@ export default function PublicNavbar() {
           )}
         </AnimatePresence>
       </div>
-    </nav>
+      </nav>
+    </div>
   );
 }

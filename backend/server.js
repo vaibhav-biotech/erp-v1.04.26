@@ -10,6 +10,7 @@ const ordersRouter = require('./routes/orders');
 const adminRouter = require('./routes/admin');
 const landingRouter = require('./routes/landing');
 const storeRouter = require('./middleware/storeRouter'); // NEW: Store detection middleware
+const verifyAdminToken = require('./middleware/verifyAdminToken');
 
 const app = express();
 
@@ -136,6 +137,205 @@ app.get('/api/test', (req, res) => {
     success: true,
     timestamp: new Date().toISOString()
   });
+});
+
+// Notification Bar Routes
+const getNotificationCollection = () => mongoose.connection.db.collection('notification_bars');
+
+const toObjectId = (value) => {
+  if (!value) return null;
+  return mongoose.Types.ObjectId.isValid(value)
+    ? new mongoose.Types.ObjectId(value)
+    : null;
+};
+
+const sanitizeHexColor = (value, fallback) => {
+  const next = String(value || '').trim();
+  return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(next) ? next : fallback;
+};
+
+const sanitizeFontWeight = (value) => (String(value || '').toLowerCase() === 'bold' ? 'bold' : 'regular');
+
+const defaultNotificationConfig = {
+  message: '🌿 Free shipping on orders above ₹499',
+  bgColor: '#fef08a',
+  textColor: '#713f12',
+  fontWeight: 'regular',
+  isActive: true,
+};
+
+app.get('/api/notification-bar', async (req, res) => {
+  try {
+    const storeName = req.storeName || 'plantsingarden';
+
+    const activeDocs = await getNotificationCollection()
+      .find({ storeName, isActive: true })
+      .sort({ updatedAt: -1, createdAt: -1 })
+      .toArray();
+
+    const fallbackDoc = activeDocs[0] || await getNotificationCollection().findOne(
+      { storeName },
+      { sort: { updatedAt: -1, createdAt: -1 } }
+    );
+
+    const notifications = activeDocs.map((doc) => ({
+      _id: doc._id,
+      message: doc.message || defaultNotificationConfig.message,
+      bgColor: doc.bgColor || defaultNotificationConfig.bgColor,
+      textColor: doc.textColor || defaultNotificationConfig.textColor,
+      fontWeight: sanitizeFontWeight(doc.fontWeight),
+      isActive: true,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: fallbackDoc
+        ? {
+            _id: fallbackDoc._id,
+            message: fallbackDoc.message || defaultNotificationConfig.message,
+            bgColor: fallbackDoc.bgColor || defaultNotificationConfig.bgColor,
+            textColor: fallbackDoc.textColor || defaultNotificationConfig.textColor,
+            fontWeight: sanitizeFontWeight(fallbackDoc.fontWeight),
+            isActive: fallbackDoc.isActive !== false,
+          }
+        : defaultNotificationConfig,
+      notifications,
+    });
+  } catch (error) {
+    console.error('Error fetching notification bar:', error);
+    return res.status(500).json({ success: false, error: 'Failed to fetch notification bar' });
+  }
+});
+
+app.get('/api/notification-bar/admin', verifyAdminToken, async (req, res) => {
+  try {
+    const storeName = req.storeName || 'plantsingarden';
+
+    const docs = await getNotificationCollection()
+      .find({ storeName })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    const data = docs.map((doc) => ({
+      _id: doc._id,
+      message: doc.message || defaultNotificationConfig.message,
+      bgColor: doc.bgColor || defaultNotificationConfig.bgColor,
+      textColor: doc.textColor || defaultNotificationConfig.textColor,
+      fontWeight: sanitizeFontWeight(doc.fontWeight),
+      isActive: Boolean(doc.isActive),
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    }));
+
+    return res.status(200).json({ success: true, data });
+  } catch (error) {
+    console.error('Error listing notification bars:', error);
+    return res.status(500).json({ success: false, error: 'Failed to fetch notification bars' });
+  }
+});
+
+app.post('/api/notification-bar/admin', verifyAdminToken, async (req, res) => {
+  try {
+    const storeName = req.storeName || 'plantsingarden';
+    const { message, bgColor, textColor, fontWeight, isActive } = req.body || {};
+
+    const safeMessage = String(message || '').trim();
+    if (!safeMessage) {
+      return res.status(400).json({ success: false, error: 'Message is required' });
+    }
+
+    const safeBgColor = sanitizeHexColor(bgColor, defaultNotificationConfig.bgColor);
+    const safeTextColor = sanitizeHexColor(textColor, defaultNotificationConfig.textColor);
+    const safeFontWeight = sanitizeFontWeight(fontWeight);
+    const shouldActivate = typeof isActive === 'boolean' ? isActive : true;
+
+    const now = new Date();
+
+    const doc = {
+      storeName,
+      message: safeMessage,
+      bgColor: safeBgColor,
+      textColor: safeTextColor,
+      fontWeight: safeFontWeight,
+      isActive: shouldActivate,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const result = await getNotificationCollection().insertOne(doc);
+
+    return res.status(201).json({
+      success: true,
+      data: {
+        _id: result.insertedId,
+        ...doc,
+      },
+    });
+  } catch (error) {
+    console.error('Error creating notification bar:', error);
+    return res.status(500).json({ success: false, error: 'Failed to create notification bar' });
+  }
+});
+
+app.patch('/api/notification-bar/admin/:id', verifyAdminToken, async (req, res) => {
+  try {
+    const storeName = req.storeName || 'plantsingarden';
+    const objectId = toObjectId(req.params.id);
+
+    if (!objectId) {
+      return res.status(400).json({ success: false, error: 'Invalid notification id' });
+    }
+
+    const existing = await getNotificationCollection().findOne({ _id: objectId, storeName });
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Notification not found' });
+    }
+
+    const now = new Date();
+    const patch = {
+      updatedAt: now,
+    };
+
+    if (req.body?.message !== undefined) {
+      const safeMessage = String(req.body.message || '').trim();
+      if (!safeMessage) {
+        return res.status(400).json({ success: false, error: 'Message is required' });
+      }
+      patch.message = safeMessage;
+    }
+
+    if (req.body?.bgColor !== undefined) {
+      patch.bgColor = sanitizeHexColor(req.body.bgColor, existing.bgColor || defaultNotificationConfig.bgColor);
+    }
+
+    if (req.body?.textColor !== undefined) {
+      patch.textColor = sanitizeHexColor(req.body.textColor, existing.textColor || defaultNotificationConfig.textColor);
+    }
+
+    if (req.body?.fontWeight !== undefined) {
+      patch.fontWeight = sanitizeFontWeight(req.body.fontWeight);
+    }
+
+    if (req.body?.isActive !== undefined) {
+      const shouldActivate = Boolean(req.body.isActive);
+      patch.isActive = shouldActivate;
+    }
+
+    await getNotificationCollection().updateOne(
+      { _id: objectId, storeName },
+      { $set: patch }
+    );
+
+    const updated = await getNotificationCollection().findOne({ _id: objectId, storeName });
+
+    return res.status(200).json({
+      success: true,
+      data: updated,
+    });
+  } catch (error) {
+    console.error('Error saving notification bar:', error);
+    return res.status(500).json({ success: false, error: 'Failed to update notification bar' });
+  }
 });
 
 // Category Routes

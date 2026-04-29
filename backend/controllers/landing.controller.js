@@ -21,6 +21,10 @@ const {
   insertOfferBackground,
   patchOfferBackground,
   removeOfferBackground,
+  listPublicCategorySections,
+  listAdminCategorySections,
+  insertCategorySection,
+  patchCategorySection,
 } = require('../services/landing.service');
 
 const getStoreName = (req) => req.storeName || 'plantsingarden';
@@ -484,6 +488,98 @@ const deleteOfferBackground = async (req, res) => {
   }
 };
 
+const getPublicCategorySections = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const data = await listPublicCategorySections(storeName);
+
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error('❌ Error fetching public category section:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch category section',
+      error: error.message,
+    });
+  }
+};
+
+const getAdminCategorySections = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const data = await listAdminCategorySections(storeName);
+
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error('❌ Error fetching admin category section:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch category section settings',
+      error: error.message,
+    });
+  }
+};
+
+const createCategorySection = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const { categoryId, imageUrl, isActive, displayOrder } = req.body || {};
+
+    const data = await insertCategorySection({
+      storeName,
+      categoryId,
+      imageUrl,
+      isActive,
+      displayOrder,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Category section item created successfully',
+      data,
+    });
+  } catch (error) {
+    console.error('❌ Error creating category section:', error);
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to create category section item',
+    });
+  }
+};
+
+const updateCategorySection = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const { itemId } = req.params;
+
+    if (!toObjectId(itemId)) {
+      return res.status(400).json({ success: false, message: 'Invalid item id' });
+    }
+
+    const updated = await patchCategorySection({
+      storeName,
+      itemId,
+      ...(req.body || {}),
+    });
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Category section item not found' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Category section item updated successfully',
+      data: updated,
+    });
+  } catch (error) {
+    console.error('❌ Error updating category section:', error);
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to update category section item',
+    });
+  }
+};
+
 module.exports = {
   getPublicBanners,
   getAdminBanners,
@@ -505,4 +601,8 @@ module.exports = {
   createOfferBackground,
   updateOfferBackground,
   deleteOfferBackground,
+  getPublicCategorySections,
+  getAdminCategorySections,
+  createCategorySection,
+  updateCategorySection,
 };

@@ -34,10 +34,19 @@ interface ProductsTableProps {
   onRefresh?: () => void;
 }
 
+interface ProductsTableProps {
+  onEdit?: (product: Product) => void;
+  onDelete?: (productId: string) => void;
+  onRefresh?: () => void;
+  categoryId?: string | null;
+  categoryName?: string | null;
+}
+
 type SortField = 'name' | 'category' | 'finalPrice' | 'rating' | 'createdAt';
 type SortOrder = 'asc' | 'desc';
 
-const PRODUCTS_TABLE_CACHE_KEY = 'store_admin_products_table_state_v1';
+const getProductsTableCacheKey = (categoryId?: string | null) =>
+  `store_admin_products_table_state_v2_${categoryId || 'all'}`;
 const PRODUCTS_TABLE_CACHE_TTL_MS = 30 * 60 * 1000;
 
 interface ProductsTableCacheState {
@@ -88,8 +97,11 @@ const normalizeProductIdList = (ids: unknown[]): string[] =>
 export const ProductsTable: React.FC<ProductsTableProps> = ({
   onEdit,
   onDelete,
-  onRefresh
+  onRefresh,
+  categoryId,
+  categoryName,
 }) => {
+  const cacheKey = getProductsTableCacheKey(categoryId);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -119,7 +131,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     }
 
     try {
-      const raw = sessionStorage.getItem(PRODUCTS_TABLE_CACHE_KEY);
+      const raw = sessionStorage.getItem(cacheKey);
       if (!raw) {
         setInitialized(true);
         return;
@@ -127,7 +139,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
 
       const parsed: ProductsTableCacheState = JSON.parse(raw);
       if (!parsed?.timestamp || Date.now() - parsed.timestamp > PRODUCTS_TABLE_CACHE_TTL_MS) {
-        sessionStorage.removeItem(PRODUCTS_TABLE_CACHE_KEY);
+        sessionStorage.removeItem(cacheKey);
         setInitialized(true);
         return;
       }
@@ -151,7 +163,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
       });
       setSkipInitialFetch(true);
     } catch {
-      sessionStorage.removeItem(PRODUCTS_TABLE_CACHE_KEY);
+      sessionStorage.removeItem(cacheKey);
     } finally {
       setInitialized(true);
     }
@@ -167,7 +179,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     }
 
     fetchProducts();
-  }, [initialized, skipInitialFetch, pagination.currentPage, filterStatus]);
+  }, [initialized, skipInitialFetch, pagination.currentPage, filterStatus, categoryId, categoryName]);
 
   useEffect(() => {
     fetchTopPicksConfig();
@@ -188,8 +200,9 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
       topPicksConfig,
     };
 
-    sessionStorage.setItem(PRODUCTS_TABLE_CACHE_KEY, JSON.stringify(cache));
+    sessionStorage.setItem(cacheKey, JSON.stringify(cache));
   }, [
+    cacheKey,
     initialized,
     products,
     searchQuery,
@@ -209,6 +222,10 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
 
       if (filterStatus !== 'all') {
         url += `&status=${filterStatus}`;
+      }
+
+      if (categoryId) {
+        url += `&category=${categoryId}`;
       }
 
       const response = await fetchWithStore(url, { token: adminToken });
@@ -231,11 +248,23 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
         return;
       }
 
-      setProducts(data.data);
+      const rawProducts = Array.isArray(data?.data) ? data.data : [];
+      const normalizedCategoryName = (categoryName || '').trim().toLowerCase();
+
+      const filteredProducts = normalizedCategoryName
+        ? rawProducts.filter((product: Product) => {
+            const name = String(product?.categoryName || product?.category || '').trim().toLowerCase();
+            return name === normalizedCategoryName;
+          })
+        : rawProducts;
+
+      setProducts(filteredProducts);
       setPagination(prev => ({
         ...prev,
-        total,
-        totalPages
+        total: normalizedCategoryName ? filteredProducts.length : total,
+        totalPages: normalizedCategoryName
+          ? Math.max(1, Math.ceil(filteredProducts.length / pagination.pageSize))
+          : totalPages
       }));
     } catch (error) {
       console.error('Error fetching products:', error);

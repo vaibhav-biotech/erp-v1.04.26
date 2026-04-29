@@ -21,6 +21,10 @@ const {
   createOfferBackground,
   updateOfferBackground,
   deleteOfferBackground,
+  getPublicCategorySections,
+  getAdminCategorySections,
+  createCategorySection,
+  updateCategorySection,
 } = require('../controllers/landing.controller');
 
 const router = express.Router();
@@ -41,6 +45,10 @@ router.get('/offers/backgrounds/admin', verifyAdminToken, getAdminOfferBackgroun
 router.post('/offers/backgrounds', verifyAdminToken, createOfferBackground);
 router.patch('/offers/backgrounds/:backgroundId', verifyAdminToken, updateOfferBackground);
 router.delete('/offers/backgrounds/:backgroundId', verifyAdminToken, deleteOfferBackground);
+router.get('/category-section', getPublicCategorySections);
+router.get('/category-section/admin', verifyAdminToken, getAdminCategorySections);
+router.post('/category-section/admin', verifyAdminToken, createCategorySection);
+router.patch('/category-section/admin/:itemId', verifyAdminToken, updateCategorySection);
 router.get('/offers/:offerId', getPublicOfferProducts);
 router.post('/offers', verifyAdminToken, createOffer);
 router.put('/offers/:offerId', verifyAdminToken, updateOffer);
