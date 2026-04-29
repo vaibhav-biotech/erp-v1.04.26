@@ -9,6 +9,7 @@ const getOfferBackgroundsCollection = () => mongoose.connection.db.collection('l
 const getCategorySectionsCollection = () => mongoose.connection.db.collection('landing_category_sections');
 const getFeaturedCollectionsCollection = () => mongoose.connection.db.collection('landing_featured_collections');
 const getFeaturedCollectionBackgroundsCollection = () => mongoose.connection.db.collection('landing_featured_collection_backgrounds');
+const getGiftBannersCollection = () => mongoose.connection.db.collection('landing_gift_banners');
 
 const slugify = (value) => String(value || '')
   .toLowerCase()
@@ -986,6 +987,207 @@ const removeFeaturedCollectionBackground = async ({ storeName, backgroundId }) =
   });
 };
 
+const listPublicGiftBanners = async (storeName) => {
+  return getGiftBannersCollection()
+    .find({
+      storeName: { $in: getStoreNameAliases(storeName) },
+      isActive: true,
+    })
+    .sort({ displayOrder: 1, createdAt: -1 })
+    .toArray();
+};
+
+const listAdminGiftBanners = async (storeName) => {
+  return getGiftBannersCollection()
+    .find({
+      storeName: { $in: getStoreNameAliases(storeName) },
+    })
+    .sort({ displayOrder: 1, createdAt: -1 })
+    .toArray();
+};
+
+const insertGiftBanner = async ({
+  storeName,
+  title,
+  desktopImageUrl,
+  mobileImageUrl,
+  tag,
+  isActive,
+  displayOrder,
+}) => {
+  const safeTitle = String(title || '').trim();
+  const safeDesktopImageUrl = String(desktopImageUrl || '').trim();
+  const safeMobileImageUrl = String(mobileImageUrl || '').trim();
+  const safeTag = slugify(tag || 'gifts');
+
+  if (!safeTitle) throw new Error('Banner name is required');
+  if (!safeDesktopImageUrl) throw new Error('desktopImageUrl is required');
+  if (!safeMobileImageUrl) throw new Error('mobileImageUrl is required');
+  if (!safeTag) throw new Error('tag is required');
+
+  const now = new Date();
+  const item = {
+    _id: new mongoose.Types.ObjectId(),
+    storeName: normalizeStoreName(storeName),
+    title: safeTitle,
+    desktopImageUrl: safeDesktopImageUrl,
+    mobileImageUrl: safeMobileImageUrl,
+    tag: safeTag,
+    isActive: typeof isActive === 'boolean' ? isActive : true,
+    displayOrder: Number.isFinite(Number(displayOrder)) ? Number(displayOrder) : 0,
+    desktopWidth: 1920,
+    desktopHeight: 1080,
+    mobileWidth: 1080,
+    mobileHeight: 1350,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  if (item.isActive) {
+    await getGiftBannersCollection().updateMany(
+      { storeName: { $in: getStoreNameAliases(storeName) } },
+      { $set: { isActive: false, updatedAt: now } }
+    );
+  }
+
+  await getGiftBannersCollection().insertOne(item);
+  return item;
+};
+
+const patchGiftBanner = async ({
+  storeName,
+  itemId,
+  title,
+  desktopImageUrl,
+  mobileImageUrl,
+  tag,
+  isActive,
+  displayOrder,
+}) => {
+  const objectId = toObjectId(itemId);
+  if (!objectId) return null;
+
+  const existing = await getGiftBannersCollection().findOne({
+    _id: objectId,
+    storeName: { $in: getStoreNameAliases(storeName) },
+  });
+  if (!existing) return null;
+
+  const payload = { updatedAt: new Date() };
+  if (title !== undefined) {
+    const safeTitle = String(title || '').trim();
+    if (!safeTitle) throw new Error('Banner name is required');
+    payload.title = safeTitle;
+  }
+  if (desktopImageUrl !== undefined) payload.desktopImageUrl = String(desktopImageUrl || '').trim();
+  if (mobileImageUrl !== undefined) payload.mobileImageUrl = String(mobileImageUrl || '').trim();
+  if (tag !== undefined) {
+    const safeTag = slugify(tag || '');
+    if (!safeTag) throw new Error('tag is required');
+    payload.tag = safeTag;
+  }
+  if (isActive !== undefined) payload.isActive = !!isActive;
+  if (displayOrder !== undefined) payload.displayOrder = Number.isFinite(Number(displayOrder)) ? Number(displayOrder) : 0;
+
+  if (payload.isActive === true) {
+    await getGiftBannersCollection().updateMany(
+      { _id: { $ne: objectId }, storeName: { $in: getStoreNameAliases(storeName) } },
+      { $set: { isActive: false, updatedAt: payload.updatedAt } }
+    );
+  }
+
+  return getGiftBannersCollection().findOneAndUpdate(
+    {
+      _id: objectId,
+      storeName: { $in: getStoreNameAliases(storeName) },
+    },
+    { $set: payload },
+    { returnDocument: 'after' }
+  );
+};
+
+// ─── Care Section ────────────────────────────────────────────────────────────
+
+const getCareImagesCollection = () =>
+  mongoose.connection.db.collection('landing_care_images');
+
+const listPublicCareImages = async (storeName) => {
+  return getCareImagesCollection()
+    .find({
+      storeName: { $in: getStoreNameAliases(storeName) },
+      isActive: true,
+    })
+    .sort({ displayOrder: 1, createdAt: -1 })
+    .limit(3)
+    .toArray();
+};
+
+const listAdminCareImages = async (storeName) => {
+  return getCareImagesCollection()
+    .find({ storeName: { $in: getStoreNameAliases(storeName) } })
+    .sort({ displayOrder: 1, createdAt: -1 })
+    .toArray();
+};
+
+const insertCareImage = async ({ storeName, imageUrl, displayOrder, isActive }) => {
+  const safeImageUrl = String(imageUrl || '').trim();
+  if (!safeImageUrl) throw new Error('imageUrl is required');
+
+  if (isActive) {
+    const activeCount = await getCareImagesCollection().countDocuments({
+      storeName: { $in: getStoreNameAliases(storeName) },
+      isActive: true,
+    });
+    if (activeCount >= 3) throw new Error('Max 3 active images allowed. Deactivate one first.');
+  }
+
+  const now = new Date();
+  const item = {
+    _id: new mongoose.Types.ObjectId(),
+    storeName: normalizeStoreName(storeName),
+    imageUrl: safeImageUrl,
+    isActive: typeof isActive === 'boolean' ? isActive : false,
+    displayOrder: Number.isFinite(Number(displayOrder)) ? Number(displayOrder) : 0,
+    width: 640,
+    height: 800,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await getCareImagesCollection().insertOne(item);
+  return item;
+};
+
+const patchCareImage = async ({ storeName, itemId, imageUrl, isActive, displayOrder }) => {
+  const objectId = toObjectId(itemId);
+  if (!objectId) return null;
+
+  const existing = await getCareImagesCollection().findOne({
+    _id: objectId,
+    storeName: { $in: getStoreNameAliases(storeName) },
+  });
+  if (!existing) return null;
+
+  if (isActive === true && !existing.isActive) {
+    const activeCount = await getCareImagesCollection().countDocuments({
+      storeName: { $in: getStoreNameAliases(storeName) },
+      isActive: true,
+    });
+    if (activeCount >= 3) throw new Error('Max 3 active images allowed. Deactivate one first.');
+  }
+
+  const payload = { updatedAt: new Date() };
+  if (imageUrl !== undefined) payload.imageUrl = String(imageUrl || '').trim();
+  if (isActive !== undefined) payload.isActive = !!isActive;
+  if (displayOrder !== undefined) payload.displayOrder = Number.isFinite(Number(displayOrder)) ? Number(displayOrder) : 0;
+
+  return getCareImagesCollection().findOneAndUpdate(
+    { _id: objectId, storeName: { $in: getStoreNameAliases(storeName) } },
+    { $set: payload },
+    { returnDocument: 'after' }
+  );
+};
+
 module.exports = {
   toObjectId,
   listPublicBanners,
@@ -1022,4 +1224,12 @@ module.exports = {
   insertFeaturedCollectionBackground,
   patchFeaturedCollectionBackground,
   removeFeaturedCollectionBackground,
+  listPublicGiftBanners,
+  listAdminGiftBanners,
+  insertGiftBanner,
+  patchGiftBanner,
+  listPublicCareImages,
+  listAdminCareImages,
+  insertCareImage,
+  patchCareImage,
 };

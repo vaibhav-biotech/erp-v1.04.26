@@ -34,6 +34,14 @@ const {
   insertFeaturedCollectionBackground,
   patchFeaturedCollectionBackground,
   removeFeaturedCollectionBackground,
+  listPublicGiftBanners,
+  listAdminGiftBanners,
+  insertGiftBanner,
+  patchGiftBanner,
+  listPublicCareImages,
+  listAdminCareImages,
+  insertCareImage,
+  patchCareImage,
 } = require('../services/landing.service');
 
 const getStoreName = (req) => req.storeName || 'plantsingarden';
@@ -749,6 +757,132 @@ const deleteFeaturedCollectionBackground = async (req, res) => {
   }
 };
 
+const getPublicGiftSection = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const data = await listPublicGiftBanners(storeName);
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error('❌ Error fetching public gift section:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch gift section',
+      error: error.message,
+    });
+  }
+};
+
+const getAdminGiftSection = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const data = await listAdminGiftBanners(storeName);
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error('❌ Error fetching admin gift section:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch gift section settings',
+      error: error.message,
+    });
+  }
+};
+
+const createGiftSection = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const data = await insertGiftBanner({
+      storeName,
+      ...(req.body || {}),
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Gift banner created successfully',
+      data,
+    });
+  } catch (error) {
+    console.error('❌ Error creating gift section banner:', error);
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to create gift banner',
+    });
+  }
+};
+
+const updateGiftSection = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const { itemId } = req.params;
+
+    if (!toObjectId(itemId)) {
+      return res.status(400).json({ success: false, message: 'Invalid item id' });
+    }
+
+    const updated = await patchGiftBanner({
+      storeName,
+      itemId,
+      ...(req.body || {}),
+    });
+
+    if (!updated) {
+      return res.status(404).json({ success: false, message: 'Gift banner not found' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Gift banner updated successfully',
+      data: updated,
+    });
+  } catch (error) {
+    console.error('❌ Error updating gift section banner:', error);
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to update gift banner',
+    });
+  }
+};
+
+const getPublicCareSection = async (req, res) => {
+  try {
+    const images = await listPublicCareImages(getStoreName(req));
+    return res.json({ success: true, data: images });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getAdminCareSection = async (req, res) => {
+  try {
+    const images = await listAdminCareImages(getStoreName(req));
+    return res.json({ success: true, data: images });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const createCareImage = async (req, res) => {
+  try {
+    const item = await insertCareImage({ storeName: getStoreName(req), ...(req.body || {}) });
+    return res.status(201).json({ success: true, data: item });
+  } catch (error) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+const updateCareImage = async (req, res) => {
+  try {
+    const updated = await patchCareImage({
+      storeName: getStoreName(req),
+      itemId: req.params.itemId,
+      ...(req.body || {}),
+    });
+    if (!updated) return res.status(404).json({ success: false, message: 'Care image not found' });
+    return res.json({ success: true, data: updated });
+  } catch (error) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getPublicBanners,
   getAdminBanners,
@@ -783,4 +917,12 @@ module.exports = {
   createFeaturedCollectionBackground,
   updateFeaturedCollectionBackground,
   deleteFeaturedCollectionBackground,
+  getPublicGiftSection,
+  getAdminGiftSection,
+  createGiftSection,
+  updateGiftSection,
+  getPublicCareSection,
+  getAdminCareSection,
+  createCareImage,
+  updateCareImage,
 };

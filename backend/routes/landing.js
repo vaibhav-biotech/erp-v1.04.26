@@ -34,6 +34,14 @@ const {
   createFeaturedCollectionBackground,
   updateFeaturedCollectionBackground,
   deleteFeaturedCollectionBackground,
+  getPublicGiftSection,
+  getAdminGiftSection,
+  createGiftSection,
+  updateGiftSection,
+  getPublicCareSection,
+  getAdminCareSection,
+  createCareImage,
+  updateCareImage,
 } = require('../controllers/landing.controller');
 
 const router = express.Router();
@@ -67,6 +75,14 @@ router.get('/featured-collections/backgrounds/admin', verifyAdminToken, getAdmin
 router.post('/featured-collections/backgrounds', verifyAdminToken, createFeaturedCollectionBackground);
 router.patch('/featured-collections/backgrounds/:backgroundId', verifyAdminToken, updateFeaturedCollectionBackground);
 router.delete('/featured-collections/backgrounds/:backgroundId', verifyAdminToken, deleteFeaturedCollectionBackground);
+router.get('/gift-section', getPublicGiftSection);
+router.get('/gift-section/admin', verifyAdminToken, getAdminGiftSection);
+router.post('/gift-section/admin', verifyAdminToken, createGiftSection);
+router.patch('/gift-section/admin/:itemId', verifyAdminToken, updateGiftSection);
+router.get('/care-section', getPublicCareSection);
+router.get('/care-section/admin', verifyAdminToken, getAdminCareSection);
+router.post('/care-section/admin', verifyAdminToken, createCareImage);
+router.patch('/care-section/admin/:itemId', verifyAdminToken, updateCareImage);
 router.get('/offers/:offerId', getPublicOfferProducts);
 router.post('/offers', verifyAdminToken, createOffer);
 router.put('/offers/:offerId', verifyAdminToken, updateOffer);

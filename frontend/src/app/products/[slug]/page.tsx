@@ -48,6 +48,17 @@ export default function ProductsPage({ params }: Props) {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
+  const getSlugAliases = (value: string) => {
+    const normalized = normalizeSlug(value);
+    const aliases = new Set<string>([normalized]);
+
+    if (normalized === 'gift' || normalized === 'gifts') {
+      aliases.add('gift');
+      aliases.add('gifts');
+    }
+
+    return Array.from(aliases);
+  };
   const [subcategory, setSubcategory] = useState<Subcategory | null>(null);
   const [category, setCategory] = useState<{ name: string; _id: string } | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -139,16 +150,19 @@ export default function ProductsPage({ params }: Props) {
 
           const prodData = await prodRes.json();
           const normalizedPageSlug = normalizeSlug(slug);
+          const pageSlugAliases = getSlugAliases(slug);
           const filteredByTag = (prodData.data || []).filter((p: Product) => {
             const productTags = Array.isArray(p.tags)
               ? p.tags.map((tag) => normalizeSlug(tag)).filter(Boolean)
               : [];
-            return productTags.includes(normalizedPageSlug);
+            return productTags.some((tag) => pageSlugAliases.includes(tag));
           });
 
           setCategoryName('');
           setDisplayName(
-            slug
+            normalizedPageSlug === 'gift' || normalizedPageSlug === 'gifts'
+              ? 'Gifts'
+              : slug
               .split('-')
               .filter(Boolean)
               .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -165,11 +179,13 @@ export default function ProductsPage({ params }: Props) {
                 category: null,
                 products: filteredByTag,
                 categoryName: '',
-                displayName: slug
-                  .split('-')
-                  .filter(Boolean)
-                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                  .join(' '),
+                displayName: normalizedPageSlug === 'gift' || normalizedPageSlug === 'gifts'
+                  ? 'Gifts'
+                  : slug
+                    .split('-')
+                    .filter(Boolean)
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' '),
               })
             );
           }
@@ -193,9 +209,10 @@ export default function ProductsPage({ params }: Props) {
             || p.categoryName?.toLowerCase() === resolvedCategoryName.toLowerCase();
           if (!isMainCategory) {
             const normalizedPageSlug = normalizeSlug(slug);
+            const pageSlugAliases = getSlugAliases(slug);
             const productSubcategory = normalizeSlug(p.subcategory || '');
             const productTags = Array.isArray(p.tags) ? p.tags.map((tag) => normalizeSlug(tag)).filter(Boolean) : [];
-            const matchesSubcategoryOrTag = productSubcategory === normalizedPageSlug || productTags.includes(normalizedPageSlug);
+            const matchesSubcategoryOrTag = pageSlugAliases.includes(productSubcategory) || productTags.some((tag) => pageSlugAliases.includes(tag));
 
             return matchesCategory && matchesSubcategoryOrTag;
           }

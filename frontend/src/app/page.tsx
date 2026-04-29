@@ -8,6 +8,8 @@ import TopPicksSection from '@/components/TopPicksSection';
 import FeaturedCollectionsSection from '@/components/FeaturedCollectionsSection';
 import WhyChooseUsSection from '@/components/WhyChooseUsSection';
 import OffersSection from '@/components/OffersSection';
+import GiftSection from '@/components/GiftSection';
+import CraftedWithCareSection from '@/components/CraftedWithCareSection';
 
 const fadeInUp: any = {
   hidden: { opacity: 0, y: 18 },
@@ -79,6 +81,26 @@ export default function Home() {
           viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
         >
           <OffersSection />
+        </motion.div>
+
+        <motion.div
+          className="mt-20 sm:mt-24 lg:mt-32"
+          variants={fadeInUp}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
+        >
+          <GiftSection />
+        </motion.div>
+
+        <motion.div
+          className="mt-10 sm:mt-12 lg:mt-16"
+          variants={fadeInUp}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
+        >
+          <CraftedWithCareSection />
         </motion.div>
 
         <motion.div

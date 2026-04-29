@@ -14,6 +14,8 @@ import LandingPageManager from '@/components/pages/LandingPageManager';
 import NotificationBarPage from '@/components/pages/NotificationBarPage';
 import CategorySectionSettingsPage from '@/components/pages/CategorySectionSettingsPage';
 import FeaturedCollectionsSettingsPage from '@/components/pages/FeaturedCollectionsSettingsPage';
+import GiftSectionSettingsPage from '@/components/pages/GiftSectionSettingsPage';
+import CareSectionSettingsPage from '@/components/pages/CareSectionSettingsPage';
 
 interface DashboardStats {
   totalProducts: number;
@@ -210,6 +212,10 @@ export default function StoreAdminDashboard() {
         return <CategorySectionSettingsPage />;
       case 'featured-collections':
         return <FeaturedCollectionsSettingsPage />;
+      case 'gift-section':
+        return <GiftSectionSettingsPage />;
+      case 'care-section':
+        return <CareSectionSettingsPage />;
       default:
         return (
           <div className="max-w-4xl mx-auto">

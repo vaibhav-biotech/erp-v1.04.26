@@ -136,6 +136,18 @@ export default function GroupedSidebar() {
       roles: ['store_admin'],
     },
     {
+      id: 'gift-section',
+      label: 'Gift Section',
+      route: '/admin/dashboard/store-admin?page=gift-section',
+      roles: ['store_admin'],
+    },
+    {
+      id: 'care-section',
+      label: 'Care Section',
+      route: '/admin/dashboard/store-admin?page=care-section',
+      roles: ['store_admin'],
+    },
+    {
       id: 'landing',
       label: 'Landing Page',
       route: '/admin/dashboard/store-admin?page=landing',
