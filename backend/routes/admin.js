@@ -101,7 +101,7 @@ router.get('/profile', verifyAdminToken, async (req, res) => {
 });
 
 // Get gift wrap options for store
-router.get('/gift-wrap-options', verifyAdminToken, async (req, res) => {
+router.get('/gift-wrap-options', async (req, res) => {
   try {
     const Store = require('../models/Store');
     const storeName = req.storeName;

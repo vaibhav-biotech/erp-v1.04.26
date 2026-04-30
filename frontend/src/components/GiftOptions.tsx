@@ -2,8 +2,7 @@
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import VariantCard from "./VariantCard";
-import { buildApiUrl, getApiHeaders } from "@/lib/storeConfig";
-import { useAuth } from "@/contexts/AuthContext";
+import { fetchWithStore } from "@/lib/storeConfig";
 
 interface GiftOption {
   _id: string;
@@ -21,18 +20,13 @@ export function GiftOptions({ onGiftSelected }: GiftOptionsProps) {
   const [selectedGift, setSelectedGift] = useState<string | null>(null);
   const [giftOptions, setGiftOptions] = useState<GiftOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { adminToken } = useAuth();
 
   // Fetch gift wrap options from API
   useEffect(() => {
     const fetchGiftOptions = async () => {
       try {
         setIsLoading(true);
-        const res = await fetch(buildApiUrl('/api/admin/gift-wrap-options'), {
-          headers: {
-            ...getApiHeaders(adminToken || undefined),
-          }
-        });
+        const res = await fetchWithStore('/api/admin/gift-wrap-options');
 
         if (res.ok) {
           const payload = await res.json();
@@ -50,7 +44,7 @@ export function GiftOptions({ onGiftSelected }: GiftOptionsProps) {
     };
 
     fetchGiftOptions();
-  }, [adminToken]);
+  }, []);
 
   const handleGiftChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newState = e.target.checked;
