@@ -16,6 +16,8 @@ const app = express();
 
 
 // Middleware
+const isCorsOpenMode = String(process.env.CORS_DYNAMIC_OPEN || '').toLowerCase() === 'true';
+
 const allowedExactOrigins = [
   'https://erp-v1-04-26-cwfl.vercel.app',
   'https://plantingarden.vercel.app',
@@ -28,11 +30,33 @@ const allowedExactOrigins = [
 
 const allowedOriginPatterns = [
   /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,
+  /^http:\/\/\d{1,3}(?:\.\d{1,3}){3}(?::\d+)?$/,
+  /^https?:\/\/.*\.exp\.direct$/,
+  /^exp:\/\/.+$/,
+  /^capacitor:\/\/localhost$/,
+  /^ionic:\/\/localhost$/,
   /^https:\/\/erp-v1-04-26.*\.vercel\.app$/,
   /^https:\/\/plantingarden.*\.vercel\.app$/,
+  ...(process.env.CORS_ORIGIN_REGEX
+    ? process.env.CORS_ORIGIN_REGEX
+        .split(',')
+        .map((pattern) => pattern.trim())
+        .filter(Boolean)
+        .map((pattern) => {
+          try {
+            return new RegExp(pattern);
+          } catch (error) {
+            console.warn(`[CORS] Invalid regex in CORS_ORIGIN_REGEX: ${pattern}`);
+            return null;
+          }
+        })
+        .filter(Boolean)
+    : []),
 ];
 
 const isOriginAllowed = (origin) => {
+  if (isCorsOpenMode) return true;
+  if (origin === 'null') return true;
   return allowedExactOrigins.includes(origin) || allowedOriginPatterns.some((pattern) => pattern.test(origin));
 };
 
@@ -51,7 +75,10 @@ const corsOptions = {
 
     console.warn(`[CORS] ✗ Blocked: ${origin}`);
     console.warn(`[CORS] Allowed exact: ${allowedExactOrigins.join(' | ')}`);
-    return callback(new Error('CORS not allowed'));
+    // Do not throw hard errors for unknown origins.
+    // Browsers will still block due to missing CORS headers,
+    // while native/mobile clients can continue to work.
+    return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
