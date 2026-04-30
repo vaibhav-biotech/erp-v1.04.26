@@ -80,7 +80,7 @@ const corsOptions = {
     // while native/mobile clients can continue to work.
     return callback(null, false);
   },
-  credentials: true,
+  credentials: false,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Store-Name', 'Accept', 'X-Requested-With'],
   exposedHeaders: ['X-Total-Count', 'Content-Length'],
