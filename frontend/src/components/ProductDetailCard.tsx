@@ -7,7 +7,6 @@ import Breadcrumb from '@/components/Breadcrumb';
 import { ProductInfo } from '@/components/productinfo';
 import { DeliveryChecker } from '@/components/deliveryChecker';
 import { GiftOptions } from '@/components/GiftOptions';
-import ActionButtons from '@/components/ActionButtons';
 import ProductDetails from '@/components/ProductDetails';
 import AddToCartButton from '@/components/AddToCartButton';
 
@@ -70,7 +69,8 @@ export default function ProductDetailCard({
 }: ProductDetailCardProps) {
   const [activeSize, setActiveSize] = useState(1);
   const [activePot, setActivePot] = useState(1);
-  const [isGift, setIsGift] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+  const [selectedGiftOption, setSelectedGiftOption] = useState<{ _id: string; name: string; price: number } | null>(null);
 
   // Debug: Log what we're receiving
   console.log('🔍 ProductDetailCard received:', {
@@ -96,19 +96,20 @@ export default function ProductDetailCard({
   // Calculate prices
   const plantPrice = selectedSize?.price || 0;
   const potPrice = selectedPot?.price || 0;
-  const totalPrice = plantPrice + potPrice;
+  const giftPrice = selectedGiftOption?.price || 0;
+  const totalPrice = plantPrice + potPrice + giftPrice;
 
   // For display (use variant's originalPrice if available, else use product's originalPrice)
   const displayFinalPrice = totalPrice;
   const variantOriginalPrice = selectedSize?.originalPrice || product.originalPrice;
-  const displayOriginalPrice = variantOriginalPrice + (selectedPot?.price || 0);
+  const displayOriginalPrice = variantOriginalPrice + (selectedPot?.price || 0) + (selectedGiftOption?.price || 0);
 
   const handleAddToCart = () => {
-    onAddToCart?.(1, activeSize, activePot, isGift);
+    onAddToCart?.(quantity, activeSize, activePot, !!selectedGiftOption);
   };
 
   const handleBuyNow = () => {
-    onBuyNow?.(1, activeSize, activePot, isGift);
+    onBuyNow?.(quantity, activeSize, activePot, !!selectedGiftOption);
   };
 
   return (
@@ -177,15 +178,36 @@ export default function ProductDetailCard({
             <DeliveryChecker />
 
             {/* Gift Options */}
-            <GiftOptions />
+            <GiftOptions onGiftSelected={setSelectedGiftOption} />
 
-            {/* Action Buttons - Stacked */}
-            <div className="space-y-4">
-              <div className="hidden lg:block">
+            {/* Quantity + Action Buttons (single row) */}
+            <div className="flex items-stretch gap-2">
+              <div className="inline-flex items-center border border-gray-300 rounded-lg overflow-hidden h-[52px] shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  className="px-3 py-1.5 text-gray-700 hover:bg-gray-100 transition h-full"
+                >
+                  -
+                </button>
+                <span className="px-3 py-1.5 text-sm font-medium text-gray-900 min-w-[42px] text-center">
+                  {quantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setQuantity((q) => q + 1)}
+                  className="px-3 py-1.5 text-gray-700 hover:bg-gray-100 transition h-full"
+                >
+                  +
+                </button>
+              </div>
+
+              <div className="flex-1 min-w-0">
                 <AddToCartButton
                   productId={product.id}
                   productName={product.name}
                   productImage={product.images?.[0] || '/placeholder.jpg'}
+                  quantity={quantity}
                   sizeVariant={{
                     id: String(activeSize),
                     name: selectedSize.name,
@@ -196,11 +218,17 @@ export default function ProductDetailCard({
                     name: selectedPot.name,
                     price: selectedPot.price,
                   }}
+                  giftWrap={selectedGiftOption ? {
+                    _id: selectedGiftOption._id,
+                    name: selectedGiftOption.name,
+                    price: selectedGiftOption.price,
+                  } : undefined}
                 />
               </div>
+
               <button
                 onClick={handleBuyNow}
-                className="w-full bg-white border-2 border-green-600 hover:bg-green-50 text-green-600 font-normal py-3 px-4 rounded-lg transition-all"
+                className="min-w-[120px] bg-white border-2 border-green-600 hover:bg-green-50 text-green-600 text-sm font-medium px-4 rounded-lg transition-all h-[52px] shrink-0"
               >
                 Buy Now
               </button>
@@ -233,6 +261,7 @@ export default function ProductDetailCard({
                 productId={product.id}
                 productName={product.name}
                 productImage={product.images?.[0] || '/placeholder.jpg'}
+                quantity={quantity}
                 sizeVariant={{
                   id: String(activeSize),
                   name: selectedSize.name,
@@ -243,6 +272,11 @@ export default function ProductDetailCard({
                   name: selectedPot.name,
                   price: selectedPot.price,
                 }}
+                giftWrap={selectedGiftOption ? {
+                  _id: selectedGiftOption._id,
+                  name: selectedGiftOption.name,
+                  price: selectedGiftOption.price,
+                } : undefined}
               />
             </div>
           </div>

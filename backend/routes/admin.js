@@ -22,6 +22,7 @@ const verifyAdminToken = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-super-secret-key-change-in-production');
     req.adminId = decoded.id;
     req.adminRole = decoded.role;
+    req.storeName = decoded.storeName;
     next();
   } catch (error) {
     return res.status(401).json({ success: false, error: 'Invalid or expired token' });
@@ -95,6 +96,176 @@ router.get('/profile', verifyAdminToken, async (req, res) => {
     });
   } catch (error) {
     console.error('[Admin Profile]', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get gift wrap options for store
+router.get('/gift-wrap-options', verifyAdminToken, async (req, res) => {
+  try {
+    const Store = require('../models/Store');
+    const storeName = req.storeName;
+
+    if (!storeName) {
+      return res.status(400).json({ success: false, error: 'Store name required' });
+    }
+
+    const store = await Store.findOne({ storeName: storeName.toLowerCase() });
+    if (!store) {
+      return res.status(404).json({ success: false, error: 'Store not found' });
+    }
+
+    const options = (store.giftWrapOptions || []).sort((a, b) => a.displayOrder - b.displayOrder);
+    
+    res.json({
+      success: true,
+      data: options
+    });
+  } catch (error) {
+    console.error('[Get Gift Wrap Options]', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Add gift wrap option
+router.post('/gift-wrap-options', verifyAdminToken, async (req, res) => {
+  try {
+    const Store = require('../models/Store');
+    const { name, price } = req.body;
+    const storeName = req.storeName;
+
+    if (!storeName || !name || price === undefined) {
+      return res.status(400).json({ success: false, error: 'Store name, name, and price required' });
+    }
+
+    const store = await Store.findOne({ storeName: storeName.toLowerCase() });
+    if (!store) {
+      return res.status(404).json({ success: false, error: 'Store not found' });
+    }
+
+    console.log('📦 Store found:', { storeName, hasName: !!store.name, giftOptionsCount: store.giftWrapOptions?.length || 0 });
+
+    // Ensure store.name exists
+    if (!store.name) {
+      console.warn('⚠️ Store missing name field, using storeName:', storeName);
+      store.name = storeName;
+    }
+
+    const maxOrder = Math.max(...(store.giftWrapOptions || []).map(o => o.displayOrder || 0), -1);
+    const newOption = {
+      _id: new (require('mongoose')).Types.ObjectId(),
+      name,
+      price: Number(price),
+      displayOrder: maxOrder + 1
+    };
+
+    store.giftWrapOptions = store.giftWrapOptions || [];
+    store.giftWrapOptions.push(newOption);
+    store.markModified('giftWrapOptions');
+    
+    console.log('💾 Saving store with new option:', newOption);
+    await store.save();
+
+    console.log('✅ Gift wrap option added successfully');
+    res.json({
+      success: true,
+      data: newOption,
+      message: 'Gift wrap option added'
+    });
+  } catch (error) {
+    console.error('[Add Gift Wrap Option] ERROR:', error.message, error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update gift wrap option
+router.put('/gift-wrap-options/:optionId', verifyAdminToken, async (req, res) => {
+  try {
+    const Store = require('../models/Store');
+    const { name, price, displayOrder } = req.body;
+    const { optionId } = req.params;
+    const storeName = req.storeName;
+
+    if (!storeName) {
+      return res.status(400).json({ success: false, error: 'Store name required' });
+    }
+
+    const store = await Store.findOne({ storeName: storeName.toLowerCase() });
+    if (!store) {
+      return res.status(404).json({ success: false, error: 'Store not found' });
+    }
+
+    // Ensure store.name exists
+    if (!store.name) {
+      console.warn('⚠️ Store missing name field, using storeName:', storeName);
+      store.name = storeName;
+    }
+
+    const option = store.giftWrapOptions?.find(o => o._id.toString() === optionId);
+    if (!option) {
+      return res.status(404).json({ success: false, error: 'Gift wrap option not found' });
+    }
+
+    console.log('📦 Updating gift wrap option:', optionId, 'with:', { name, price, displayOrder });
+
+    if (name) option.name = name;
+    if (price !== undefined) option.price = Number(price);
+    if (displayOrder !== undefined) option.displayOrder = displayOrder;
+
+    store.markModified('giftWrapOptions');
+    
+    console.log('💾 Saving updated store');
+    await store.save();
+
+    console.log('✅ Gift wrap option updated successfully');
+    res.json({
+      success: true,
+      data: option,
+      message: 'Gift wrap option updated'
+    });
+  } catch (error) {
+    console.error('[Update Gift Wrap Option] ERROR:', error.message, error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Delete gift wrap option
+router.delete('/gift-wrap-options/:optionId', verifyAdminToken, async (req, res) => {
+  try {
+    const Store = require('../models/Store');
+    const { optionId } = req.params;
+    const storeName = req.storeName;
+
+    if (!storeName) {
+      return res.status(400).json({ success: false, error: 'Store name required' });
+    }
+
+    const store = await Store.findOne({ storeName: storeName.toLowerCase() });
+    if (!store) {
+      return res.status(404).json({ success: false, error: 'Store not found' });
+    }
+
+    // Ensure store.name exists
+    if (!store.name) {
+      console.warn('⚠️ Store missing name field, using storeName:', storeName);
+      store.name = storeName;
+    }
+
+    console.log('📦 Deleting gift wrap option:', optionId);
+
+    store.giftWrapOptions = (store.giftWrapOptions || []).filter(o => o._id.toString() !== optionId);
+    store.markModified('giftWrapOptions');
+    
+    console.log('💾 Saving store after deletion');
+    await store.save();
+
+    console.log('✅ Gift wrap option deleted successfully');
+    res.json({
+      success: true,
+      message: 'Gift wrap option deleted'
+    });
+  } catch (error) {
+    console.error('[Delete Gift Wrap Option] ERROR:', error.message, error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

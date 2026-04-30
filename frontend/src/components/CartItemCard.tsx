@@ -40,6 +40,7 @@ export default function CartItemCard({ item }: CartItemCardProps) {
         {/* Variant Info */}
         <p className="font-montserrat text-xs text-gray-600 mb-2">
           Size: {item.sizeVariant.name} · Pot: {item.potVariant.name}
+          {item.giftWrap?.isGift && ` · Gift: ₹${item.giftWrap.price}`}
         </p>
 
         {/* Price */}

@@ -18,6 +18,11 @@ export interface CartItem {
   };
   quantity: number;
   totalPrice: number;
+  giftWrap?: {
+    isGift: boolean;
+    price: number;
+    message?: string;
+  };
 }
 
 interface CartContextType {
@@ -67,6 +72,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const addToCart = useCallback((item: CartItem, silent = false) => {
     setCartItems((prevItems) => {
+      const incomingUnitPrice = item.quantity > 0 ? item.totalPrice / item.quantity : item.totalPrice;
+
       const existingItem = prevItems.find(
         (i) =>
           i.productId === item.productId &&
@@ -75,18 +82,28 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       );
 
       if (existingItem) {
+        const existingUnitPrice = existingItem.quantity > 0
+          ? existingItem.totalPrice / existingItem.quantity
+          : incomingUnitPrice;
+
         return prevItems.map((i) =>
           i === existingItem
             ? {
                 ...i,
                 quantity: i.quantity + item.quantity,
-                totalPrice: (i.quantity + item.quantity) * item.totalPrice,
+                totalPrice: (i.quantity + item.quantity) * existingUnitPrice,
               }
             : i
         );
       }
 
-      return [...prevItems, item];
+      return [
+        ...prevItems,
+        {
+          ...item,
+          totalPrice: incomingUnitPrice * item.quantity,
+        },
+      ];
     });
     if (!silent) setCartOpen(true);
   }, []);

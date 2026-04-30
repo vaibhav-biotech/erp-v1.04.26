@@ -39,7 +39,18 @@ const StoreSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Admin',
       default: null
-    }
+    },
+    giftWrapOptions: [
+      {
+        _id: mongoose.Schema.Types.ObjectId,
+        name: String,
+        price: Number,
+        displayOrder: {
+          type: Number,
+          default: 0
+        }
+      }
+    ]
   },
   {
     timestamps: true,

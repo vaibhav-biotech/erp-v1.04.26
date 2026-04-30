@@ -8,6 +8,7 @@ interface AddToCartButtonProps {
   productId: string;
   productName: string;
   productImage: string;
+  quantity?: number;
   sizeVariant: {
     id: string;
     name: string;
@@ -18,19 +19,26 @@ interface AddToCartButtonProps {
     name: string;
     price: number;
   };
+  giftWrap?: {
+    _id: string;
+    name: string;
+    price: number;
+  };
 }
 
 export default function AddToCartButton({
   productId,
   productName,
   productImage,
+  quantity = 1,
   sizeVariant,
   potVariant,
+  giftWrap,
 }: AddToCartButtonProps) {
   const { addToCart } = useCart();
   const [isAdded, setIsAdded] = React.useState(false);
 
-  const totalPrice = sizeVariant.price + potVariant.price;
+  const totalPrice = sizeVariant.price + potVariant.price + (giftWrap?.price || 0);
 
   const handleAddToCart = () => {
     addToCart({
@@ -39,8 +47,12 @@ export default function AddToCartButton({
       image: productImage,
       sizeVariant,
       potVariant,
-      quantity: 1,
-      totalPrice,
+      quantity,
+      totalPrice: totalPrice * quantity,
+      giftWrap: giftWrap ? {
+        isGift: true,
+        price: giftWrap.price,
+      } : undefined,
     });
 
     setIsAdded(true);

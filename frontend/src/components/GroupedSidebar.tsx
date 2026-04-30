@@ -136,6 +136,12 @@ export default function GroupedSidebar() {
       roles: ['store_admin'],
     },
     {
+      id: 'gift-wrap',
+      label: 'Gift Wrap Options',
+      route: '/admin/dashboard/store-admin?page=gift-wrap',
+      roles: ['store_admin'],
+    },
+    {
       id: 'gift-section',
       label: 'Gift Section',
       route: '/admin/dashboard/store-admin?page=gift-section',

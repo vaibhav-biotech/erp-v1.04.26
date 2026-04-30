@@ -43,6 +43,7 @@ export default function Sidebar({ onPageChange, currentPage }: SidebarProps) {
     { id: 'products', label: 'Products', icon: <FiShoppingCart className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=products', roles: ['store_admin'] },
     { id: 'categories', label: 'Categories', icon: <FiPackage className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=categories', roles: ['store_admin'] },
     { id: 'landing', label: 'Landing Page', icon: <FiHome className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=landing', roles: ['store_admin'] },
+    { id: 'website-settings', label: 'Website Settings', icon: <FiPackage className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=website-settings', roles: ['store_admin'] },
     { id: 'orders', label: 'Orders', icon: <FiList className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=orders', roles: ['store_admin'] },
     { id: 'customers', label: 'Customers', icon: <FiUsers className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=customers', roles: ['store_admin'] },
     { id: 'all-customers', label: 'All Customers', icon: <FiUsers className="w-5 h-5" />, route: '/admin/dashboard/super-admin?page=all-customers', roles: ['super_admin'] },
@@ -81,10 +82,10 @@ export default function Sidebar({ onPageChange, currentPage }: SidebarProps) {
     <div
       className={`${
         isOpen ? 'w-64' : 'w-20'
-      } bg-white border-r border-gray-200 transition-all duration-300 min-h-screen flex flex-col fixed left-0 top-0 z-50`}
+      } bg-white border-r border-gray-200 transition-all duration-300 h-screen flex flex-col fixed left-0 top-0 z-50 overflow-hidden`}
     >
       {/* Header */}
-      <div className="px-6 py-6 border-b border-gray-200 flex items-center justify-between">
+      <div className="px-6 py-6 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
         {isOpen && (
           <h1 className="text-xl font-bold text-black">🌿 Menu</h1>
         )}
@@ -101,7 +102,7 @@ export default function Sidebar({ onPageChange, currentPage }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {filteredMenuItems.map((item) => (
           <button
             key={item.id}
@@ -120,7 +121,7 @@ export default function Sidebar({ onPageChange, currentPage }: SidebarProps) {
       </nav>
 
       {/* Logout */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-gray-200 flex-shrink-0">
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors font-medium"
