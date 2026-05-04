@@ -19,6 +19,8 @@ import CareSectionSettingsPage from '@/components/pages/CareSectionSettingsPage'
 import WebsiteSettingsPage from '@/components/pages/WebsiteSettingsPage';
 import GiftWrapSettingsPage from '@/components/pages/GiftWrapSettingsPage';
 import AccountTaxSettingsPage from '@/components/pages/AccountTaxSettingsPage';
+import OffersManager from '@/components/pages/OffersManager';
+import OfferBackgroundManager from '@/components/pages/OfferBackgroundManager';
 
 interface DashboardStats {
   totalProducts: number;
@@ -209,6 +211,13 @@ export default function StoreAdminDashboard() {
         return <CustomersPage />;
       case 'landing':
         return <LandingPageManager />;
+      case 'offers':
+        return (
+          <div className="space-y-6">
+            <OfferBackgroundManager />
+            <OffersManager />
+          </div>
+        );
       case 'notification-bar':
         return <NotificationBarPage />;
       case 'category-section':

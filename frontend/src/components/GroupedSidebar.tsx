@@ -165,6 +165,12 @@ export default function GroupedSidebar() {
       route: '/admin/dashboard/store-admin?page=landing',
       roles: ['store_admin'],
     },
+    {
+      id: 'offers',
+      label: 'Offers',
+      route: '/admin/dashboard/store-admin?page=offers',
+      roles: ['store_admin'],
+    },
   ];
 
   // Top-level navigation items
