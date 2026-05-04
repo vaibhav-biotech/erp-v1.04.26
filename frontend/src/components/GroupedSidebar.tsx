@@ -42,7 +42,7 @@ interface MenuItem {
 export default function GroupedSidebar() {
   const [isOpen, setIsOpen] = useState(true);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
-    new Set(['products', 'settings'])
+    new Set(['products', 'settings', 'account'])
   );
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
@@ -115,6 +115,12 @@ export default function GroupedSidebar() {
       id: 'categories',
       label: 'Manage Categories',
       route: '/admin/dashboard/store-admin?page=categories',
+      roles: ['store_admin'],
+    },
+    {
+      id: 'website-settings',
+      label: 'Website Settings',
+      route: '/admin/dashboard/store-admin?page=website-settings',
       roles: ['store_admin'],
     },
     {
@@ -201,6 +207,20 @@ export default function GroupedSidebar() {
       items: settingsItems,
       isCollapsible: true,
     },
+    {
+      id: 'account',
+      label: 'Account',
+      icon: <FiPackage className="w-5 h-5" />,
+      items: [
+        {
+          id: 'account-tax',
+          label: 'Tax Settings',
+          route: '/admin/dashboard/store-admin?page=account-tax',
+          roles: ['store_admin'],
+        },
+      ],
+      isCollapsible: true,
+    },
   ];
 
   const isActive = (itemId: string, itemRoute: string): boolean => {
@@ -223,7 +243,7 @@ export default function GroupedSidebar() {
     <div
       className={`${
         isOpen ? 'w-64' : 'w-20'
-      } bg-white border-r border-gray-200 transition-all duration-300 min-h-screen flex flex-col fixed left-0 top-0 z-50`}
+      } bg-white border-r border-gray-200 transition-all duration-300 h-screen max-h-screen flex flex-col z-50 overflow-hidden`}
     >
       {/* Header */}
       <div className="px-6 py-6 border-b border-gray-200 flex items-center justify-between">
@@ -241,7 +261,10 @@ export default function GroupedSidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+      <nav
+        className="flex-1 min-h-0 p-4 space-y-2 overflow-y-auto overscroll-contain"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         {/* Top-level items */}
         {topLevelItems.map((item) => (
           <button

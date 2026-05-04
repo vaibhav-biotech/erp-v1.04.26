@@ -124,7 +124,12 @@ export default function ProductDetailPage({ params }: Props) {
     );
   }
 
-  const handleBuyNow = (quantity: number, size: number, pot: number, _isGift: boolean) => {
+  const handleBuyNow = (
+    quantity: number,
+    size: number,
+    pot: number,
+    giftOption: { _id: string; name: string; price: number } | null
+  ) => {
     if (!product) return;
 
     const selectedSize = product.sizeVariants?.find((v) => v.id === size);
@@ -142,7 +147,7 @@ export default function ProductDetailPage({ params }: Props) {
       price: selectedPot?.price ?? 0,
     };
 
-    const unitPrice = sizeVariant.price + potVariant.price;
+    const unitPrice = sizeVariant.price + potVariant.price + (giftOption?.price || 0);
 
     clearCart();
     addToCart(
@@ -154,6 +159,12 @@ export default function ProductDetailPage({ params }: Props) {
         potVariant,
         quantity,
         totalPrice: unitPrice,
+        giftWrap: giftOption
+          ? {
+              isGift: true,
+              price: giftOption.price,
+            }
+          : undefined,
       },
       true
     );

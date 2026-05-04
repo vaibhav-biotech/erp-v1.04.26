@@ -23,6 +23,12 @@ interface Variant {
   tag?: string;
 }
 
+interface GiftOption {
+  _id: string;
+  name: string;
+  price: number;
+}
+
 interface ProductDetailCardProps {
   product: {
     id: string;
@@ -42,8 +48,8 @@ interface ProductDetailCardProps {
   breadcrumbs?: BreadcrumbItem[];
   sizeVariants?: Variant[];
   potVariants?: Variant[];
-  onAddToCart?: (quantity: number, size: number, pot: number, isGift: boolean) => void;
-  onBuyNow?: (quantity: number, size: number, pot: number, isGift: boolean) => void;
+  onAddToCart?: (quantity: number, size: number, pot: number, giftOption: GiftOption | null) => void;
+  onBuyNow?: (quantity: number, size: number, pot: number, giftOption: GiftOption | null) => void;
 }
 
 export default function ProductDetailCard({
@@ -70,7 +76,7 @@ export default function ProductDetailCard({
   const [activeSize, setActiveSize] = useState(1);
   const [activePot, setActivePot] = useState(1);
   const [quantity, setQuantity] = useState(1);
-  const [selectedGiftOption, setSelectedGiftOption] = useState<{ _id: string; name: string; price: number } | null>(null);
+  const [selectedGiftOption, setSelectedGiftOption] = useState<GiftOption | null>(null);
 
   // Debug: Log what we're receiving
   console.log('🔍 ProductDetailCard received:', {
@@ -105,11 +111,11 @@ export default function ProductDetailCard({
   const displayOriginalPrice = variantOriginalPrice + (selectedPot?.price || 0) + (selectedGiftOption?.price || 0);
 
   const handleAddToCart = () => {
-    onAddToCart?.(quantity, activeSize, activePot, !!selectedGiftOption);
+    onAddToCart?.(quantity, activeSize, activePot, selectedGiftOption);
   };
 
   const handleBuyNow = () => {
-    onBuyNow?.(quantity, activeSize, activePot, !!selectedGiftOption);
+    onBuyNow?.(quantity, activeSize, activePot, selectedGiftOption);
   };
 
   return (

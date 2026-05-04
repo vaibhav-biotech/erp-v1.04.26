@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
+const Store = require('../models/Store');
 
 const ORDER_STATUS_OPTIONS = ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled', 'returned'];
 const PAYMENT_STATUS_OPTIONS = ['pending', 'paid', 'failed', 'refunded', 'cod_pending'];
@@ -46,6 +47,20 @@ const formatPaymentStatusLabel = (status) =>
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
+const getStoreTaxSettings = async (storeName) => {
+  const safeStoreName = normalizeStoreName(storeName || 'plantsingarden');
+  const store = await Store.findOne({ storeName: safeStoreName });
+
+  const enabled = Boolean(store?.taxSettings?.enabled);
+  const rateRaw = Number(store?.taxSettings?.rate);
+  const rate = Number.isFinite(rateRaw) ? Math.max(0, Math.min(100, rateRaw)) : 18;
+
+  return {
+    enabled,
+    rate,
+  };
+};
+
 // Create Order
 router.post('/', async (req, res) => {
   try {
@@ -68,12 +83,14 @@ router.post('/', async (req, res) => {
 
     // Get store name from middleware
     const storeName = normalizeStoreName(req.storeName || 'plantsingarden');
+    const taxSettings = await getStoreTaxSettings(storeName);
+    const effectiveTaxRate = taxSettings.enabled ? taxSettings.rate : 0;
 
     // Calculate totals
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const tax = Math.round(subtotal * 0.18 * 100) / 100;
+    const tax = Math.round(subtotal * (effectiveTaxRate / 100) * 100) / 100;
     const shipping = subtotal >= 60 ? 0 : 50;
-    const total = subtotal + tax + shipping + (giftWrap ? 10 : 0);
+    const total = subtotal + tax + shipping;
 
     // Create order object
     const now = new Date();
@@ -98,6 +115,7 @@ router.post('/', async (req, res) => {
       orderStatus: 'pending',
       subtotal,
       tax,
+      taxRate: effectiveTaxRate,
       shipping,
       total,
       notes,

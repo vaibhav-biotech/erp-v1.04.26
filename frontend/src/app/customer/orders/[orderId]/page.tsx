@@ -294,12 +294,14 @@ export default function OrderDetailPage() {
                           ₹{order.subtotal.toLocaleString('en-IN')}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Tax (18%)</span>
-                        <span className="text-black font-bold">
-                          ₹{order.tax.toLocaleString('en-IN')}
-                        </span>
-                      </div>
+                      {Number(order.tax || 0) > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Tax ({Number(order.taxRate || 18)}%)</span>
+                          <span className="text-black font-bold">
+                            ₹{order.tax.toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex justify-between">
                         <span className="text-gray-600">Shipping</span>
                         <span className="text-black font-bold">

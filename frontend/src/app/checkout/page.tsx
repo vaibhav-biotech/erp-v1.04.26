@@ -26,11 +26,17 @@ interface OrderData {
   paymentMethod: string;
 }
 
+interface TaxSettings {
+  enabled: boolean;
+  rate: number;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { cartItems, getSubtotal, clearCart } = useCart();
   const { customer, customerToken, customerAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [taxSettings, setTaxSettings] = useState<TaxSettings>({ enabled: false, rate: 18 });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState('');
@@ -60,6 +66,29 @@ export default function CheckoutPage() {
       }));
     }
   }, [customerAuthenticated, customer]);
+
+  useEffect(() => {
+    const fetchTaxSettings = async () => {
+      try {
+        const res = await fetch(buildApiUrl('/api/admin/tax-settings'), {
+          headers: getApiHeaders(),
+        });
+
+        if (!res.ok) return;
+        const payload = await res.json();
+        const data = payload?.data || {};
+
+        setTaxSettings({
+          enabled: Boolean(data.enabled),
+          rate: Number.isFinite(Number(data.rate)) ? Number(data.rate) : 18,
+        });
+      } catch (fetchError) {
+        console.error('Failed to fetch tax settings:', fetchError);
+      }
+    };
+
+    fetchTaxSettings();
+  }, []);
 
   // Redirect if cart is empty
   useEffect(() => {
@@ -167,10 +196,11 @@ export default function CheckoutPage() {
   const pricing = useMemo(() => {
     const subtotal = getSubtotal();
     const shipping = subtotal >= 60 ? 0 : 50;
-    const tax = Math.round(subtotal * 0.18 * 100) / 100;
+    const appliedRate = taxSettings.enabled ? Math.max(0, taxSettings.rate) : 0;
+    const tax = Math.round(subtotal * (appliedRate / 100) * 100) / 100;
     const total = subtotal + shipping + tax;
-    return { subtotal, shipping, tax, total };
-  }, [getSubtotal, cartItems]);
+    return { subtotal, shipping, tax, total, appliedRate };
+  }, [getSubtotal, cartItems, taxSettings]);
 
   if (cartItems.length === 0) {
     return (
@@ -418,10 +448,12 @@ export default function CheckoutPage() {
                     <span>Subtotal</span>
                     <span>₹{pricing.subtotal.toLocaleString('en-IN')}</span>
                   </div>
-                  <div className="flex justify-between font-montserrat text-gray-600">
-                    <span>Tax (18%)</span>
-                    <span>₹{pricing.tax.toLocaleString('en-IN')}</span>
-                  </div>
+                  {pricing.appliedRate > 0 && (
+                    <div className="flex justify-between font-montserrat text-gray-600">
+                      <span>Tax ({pricing.appliedRate}%)</span>
+                      <span>₹{pricing.tax.toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between font-montserrat text-gray-600">
                     <span>Shipping</span>
                     <span className={pricing.shipping === 0 ? 'text-green-600 font-bold' : ''}>

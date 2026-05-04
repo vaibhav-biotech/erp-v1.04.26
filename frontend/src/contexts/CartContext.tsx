@@ -147,7 +147,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const getSubtotal = useCallback(() => {
     return cartItems.reduce((sum, item) => sum + item.totalPrice, 0);
-  }, [cartItems]);
+    }, [cartItems]);
 
   return (
     <CartContext.Provider

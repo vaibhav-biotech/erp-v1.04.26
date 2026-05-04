@@ -2,6 +2,25 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin');
+const Store = require('../models/Store');
+
+const getDefaultTaxSettings = () => ({
+  enabled: false,
+  rate: 18,
+});
+
+const sanitizeTaxSettings = (settings = {}) => {
+  const enabled = Boolean(settings.enabled);
+  const parsedRate = Number(settings.rate);
+  const safeRate = Number.isFinite(parsedRate)
+    ? Math.min(100, Math.max(0, parsedRate))
+    : 18;
+
+  return {
+    enabled,
+    rate: safeRate,
+  };
+};
 
 const generateAdminToken = (adminId, role, storeName) => {
   return jwt.sign(
@@ -100,10 +119,92 @@ router.get('/profile', verifyAdminToken, async (req, res) => {
   }
 });
 
+// Public: Get tax settings for current store (used by checkout)
+router.get('/tax-settings', async (req, res) => {
+  try {
+    const storeName = String(req.storeName || '').toLowerCase().trim();
+
+    if (!storeName) {
+      return res.status(200).json({
+        success: true,
+        data: getDefaultTaxSettings(),
+      });
+    }
+
+    const store = await Store.findOne({ storeName });
+    if (!store) {
+      return res.status(200).json({
+        success: true,
+        data: getDefaultTaxSettings(),
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: sanitizeTaxSettings(store.taxSettings || getDefaultTaxSettings()),
+    });
+  } catch (error) {
+    console.error('[Get Tax Settings]', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Admin: Get tax settings for current store
+router.get('/tax-settings/admin', verifyAdminToken, async (req, res) => {
+  try {
+    const storeName = String(req.storeName || '').toLowerCase().trim();
+    if (!storeName) {
+      return res.status(400).json({ success: false, error: 'Store name required' });
+    }
+
+    const store = await Store.findOne({ storeName });
+    if (!store) {
+      return res.status(404).json({ success: false, error: 'Store not found' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: sanitizeTaxSettings(store.taxSettings || getDefaultTaxSettings()),
+    });
+  } catch (error) {
+    console.error('[Get Admin Tax Settings]', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Admin: Update tax settings for current store
+router.put('/tax-settings/admin', verifyAdminToken, async (req, res) => {
+  try {
+    const storeName = String(req.storeName || '').toLowerCase().trim();
+    if (!storeName) {
+      return res.status(400).json({ success: false, error: 'Store name required' });
+    }
+
+    const { enabled, rate } = req.body || {};
+    const nextSettings = sanitizeTaxSettings({ enabled, rate });
+
+    const store = await Store.findOne({ storeName });
+    if (!store) {
+      return res.status(404).json({ success: false, error: 'Store not found' });
+    }
+
+    store.taxSettings = nextSettings;
+    await store.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Tax settings updated',
+      data: nextSettings,
+    });
+  } catch (error) {
+    console.error('[Update Tax Settings]', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Get gift wrap options for store
 router.get('/gift-wrap-options', async (req, res) => {
   try {
-    const Store = require('../models/Store');
     const storeName = req.storeName;
 
     if (!storeName) {

@@ -48,14 +48,24 @@ export default function TestingPage() {
     ]
   };
 
-  const handleAddToCart = (quantity: number, size: number, pot: number, isGift: boolean) => {
-    console.log('Add to cart:', { quantity, size, pot, isGift });
-    alert(`Added ${quantity} to cart! Size: ${size}, Pot: ${pot}, Gift: ${isGift}`);
+  const handleAddToCart = (
+    quantity: number,
+    size: number,
+    pot: number,
+    giftOption: { _id: string; name: string; price: number } | null
+  ) => {
+    console.log('Add to cart:', { quantity, size, pot, giftOption });
+    alert(`Added ${quantity} to cart! Size: ${size}, Pot: ${pot}, Gift: ${giftOption ? giftOption.name : 'No'}`);
   };
 
-  const handleBuyNow = (quantity: number, size: number, pot: number, isGift: boolean) => {
-    console.log('Buy now:', { quantity, size, pot, isGift });
-    alert(`Buy now! Quantity: ${quantity}, Size: ${size}, Pot: ${pot}, Gift: ${isGift}`);
+  const handleBuyNow = (
+    quantity: number,
+    size: number,
+    pot: number,
+    giftOption: { _id: string; name: string; price: number } | null
+  ) => {
+    console.log('Buy now:', { quantity, size, pot, giftOption });
+    alert(`Buy now! Quantity: ${quantity}, Size: ${size}, Pot: ${pot}, Gift: ${giftOption ? giftOption.name : 'No'}`);
   };
 
   return (

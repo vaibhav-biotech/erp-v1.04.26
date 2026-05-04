@@ -42,6 +42,12 @@ const {
   listAdminCareImages,
   insertCareImage,
   patchCareImage,
+  listAdminStaticPages,
+  getPublicStaticPageBySlug,
+  upsertStaticPage,
+  getPublicFooterSettings,
+  getAdminFooterSettings,
+  upsertFooterSettings,
 } = require('../services/landing.service');
 
 const getStoreName = (req) => req.storeName || 'plantsingarden';
@@ -883,6 +889,115 @@ const updateCareImage = async (req, res) => {
   }
 };
 
+const getPublicStaticPage = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const { slug } = req.params;
+    const data = await getPublicStaticPageBySlug({ storeName, slug });
+
+    return res.json({ success: true, data: data || null });
+  } catch (error) {
+    const isInvalidSlug = /Invalid static page slug/i.test(error.message || '');
+    return res.status(isInvalidSlug ? 400 : 500).json({
+      success: false,
+      message: isInvalidSlug ? 'Invalid static page slug' : 'Failed to fetch static page',
+      error: error.message,
+    });
+  }
+};
+
+const getAdminStaticPages = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const data = await listAdminStaticPages(storeName);
+    return res.json({ success: true, data });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch static page settings',
+      error: error.message,
+    });
+  }
+};
+
+const upsertAdminStaticPage = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const { slug } = req.params;
+    const { title, content, isActive } = req.body || {};
+
+    const data = await upsertStaticPage({
+      storeName,
+      slug,
+      title,
+      content,
+      isActive,
+    });
+
+    return res.json({
+      success: true,
+      message: 'Static page updated successfully',
+      data,
+    });
+  } catch (error) {
+    const isInvalidSlug = /Invalid static page slug/i.test(error.message || '');
+    return res.status(isInvalidSlug ? 400 : 500).json({
+      success: false,
+      message: isInvalidSlug ? 'Invalid static page slug' : 'Failed to update static page',
+      error: error.message,
+    });
+  }
+};
+
+const getPublicFooterSettingsConfig = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const data = await getPublicFooterSettings(storeName);
+    return res.json({ success: true, data });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch footer settings',
+      error: error.message,
+    });
+  }
+};
+
+const getAdminFooterSettingsConfig = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const data = await getAdminFooterSettings(storeName);
+    return res.json({ success: true, data });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch footer settings',
+      error: error.message,
+    });
+  }
+};
+
+const updateAdminFooterSettingsConfig = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const data = await upsertFooterSettings({
+      storeName,
+      ...(req.body || {}),
+    });
+    return res.json({
+      success: true,
+      message: 'Footer settings updated successfully',
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update footer settings',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getPublicBanners,
   getAdminBanners,
@@ -925,4 +1040,10 @@ module.exports = {
   getAdminCareSection,
   createCareImage,
   updateCareImage,
+  getPublicStaticPage,
+  getAdminStaticPages,
+  upsertAdminStaticPage,
+  getPublicFooterSettingsConfig,
+  getAdminFooterSettingsConfig,
+  updateAdminFooterSettingsConfig,
 };

@@ -14,7 +14,6 @@ export default function CartModal() {
     cartOpen,
     toggleCartModal,
     getSubtotal,
-    clearCart,
   } = useCart();
 
   const subtotal = getSubtotal();
@@ -122,19 +121,6 @@ export default function CartModal() {
 
                   {/* You May Also Like */}
                   <CartRelatedProducts />
-
-                  {/* Gift Options */}
-                  <div className="px-4 py-3 border-t border-gray-200">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 rounded border-gray-300"
-                      />
-                      <span className="font-montserrat text-sm text-gray-900">
-                        Gift wrap for ₹10.00
-                      </span>
-                    </label>
-                  </div>
 
                   {/* Order Notes */}
                   <div className="px-4 py-3 border-t border-gray-200">

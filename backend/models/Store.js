@@ -50,7 +50,19 @@ const StoreSchema = new mongoose.Schema(
           default: 0
         }
       }
-    ]
+    ],
+    taxSettings: {
+      enabled: {
+        type: Boolean,
+        default: false,
+      },
+      rate: {
+        type: Number,
+        default: 18,
+        min: 0,
+        max: 100,
+      },
+    }
   },
   {
     timestamps: true,

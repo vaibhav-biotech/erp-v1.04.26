@@ -1,9 +1,54 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { fetchWithStore } from '@/lib/storeConfig';
+
+interface FooterSettings {
+  brandDescription?: string;
+  email?: string;
+  phone?: string;
+  whatsapp?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+}
 
 export default function PublicFooter() {
   const currentYear = new Date().getFullYear();
+  const [settings, setSettings] = useState<FooterSettings | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const load = async () => {
+      try {
+        const res = await fetchWithStore('/api/landing/footer-settings');
+        if (!res.ok) return;
+
+        const payload = await res.json();
+        if (!mounted) return;
+        if (payload?.data && typeof payload.data === 'object') {
+          setSettings(payload.data as FooterSettings);
+        }
+      } catch {
+        // noop, footer will use fallback values
+      }
+    };
+
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const footerInfo = useMemo(() => ({
+    brandDescription: settings?.brandDescription || 'Your one-stop destination for premium plants and gardening solutions.',
+    email: settings?.email || 'info@plantsingarden.com',
+    phone: settings?.phone || '+91-9000000000',
+    whatsapp: settings?.whatsapp || '+91-9000000000',
+    addressLine1: settings?.addressLine1 || 'Garden Lane, Greenville',
+    addressLine2: settings?.addressLine2 || 'CA 90210',
+  }), [settings]);
 
   return (
     <footer className="bg-stone-100 border-t border-stone-300 mt-12 sm:mt-16">
@@ -15,7 +60,7 @@ export default function PublicFooter() {
               🌿 <span className="hidden sm:inline">Plants In Garden</span><span className="sm:hidden">PIG</span>
             </div>
             <p className="text-stone-600 text-xs sm:text-sm">
-              Your one-stop destination for premium plants and gardening solutions.
+              {footerInfo.brandDescription}
             </p>
           </div>
 
@@ -39,14 +84,14 @@ export default function PublicFooter() {
                 </Link>
               </li>
               <li>
-                <a href="#" className="text-stone-600 hover:text-black transition-colors">
+                <Link href="/about-us" className="text-stone-600 hover:text-black transition-colors">
                   About Us
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-stone-600 hover:text-black transition-colors">
+                <Link href="/contact-us" className="text-stone-600 hover:text-black transition-colors">
                   Contact
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -55,10 +100,11 @@ export default function PublicFooter() {
           <div>
             <h3 className="font-semibold text-black mb-3 sm:mb-4 text-sm sm:text-base">Get in Touch</h3>
             <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-stone-600">
-              <li>Email: info@plantsingarden.com</li>
-              <li>Phone: +1 (555) 123-4567</li>
-              <li className="hidden sm:block">Address: Garden Lane, Greenville, CA 90210</li>
-              <li className="sm:hidden">Garden Lane, Greenville, CA</li>
+              <li>Email: {footerInfo.email}</li>
+              <li>Phone: {footerInfo.phone}</li>
+              <li>WhatsApp: {footerInfo.whatsapp}</li>
+              <li className="hidden sm:block">Address: {footerInfo.addressLine1}, {footerInfo.addressLine2}</li>
+              <li className="sm:hidden">{footerInfo.addressLine1}</li>
             </ul>
           </div>
         </div>
@@ -69,12 +115,15 @@ export default function PublicFooter() {
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-2 text-xs sm:text-sm text-stone-600">
             <p>&copy; {currentYear} Plants In Garden. All rights reserved.</p>
             <div className="flex gap-3 sm:gap-6 text-center sm:text-left">
-              <a href="#" className="hover:text-black transition-colors">
+              <Link href="/privacy-policy" className="hover:text-black transition-colors">
                 Privacy Policy
-              </a>
-              <a href="#" className="hover:text-black transition-colors">
-                Terms of Service
-              </a>
+              </Link>
+              <Link href="/terms-and-conditions" className="hover:text-black transition-colors">
+                Terms & Conditions
+              </Link>
+              <Link href="/shipping-policy" className="hover:text-black transition-colors">
+                Shipping Policy
+              </Link>
             </div>
           </div>
         </div>

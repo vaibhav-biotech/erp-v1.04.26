@@ -18,6 +18,7 @@ import GiftSectionSettingsPage from '@/components/pages/GiftSectionSettingsPage'
 import CareSectionSettingsPage from '@/components/pages/CareSectionSettingsPage';
 import WebsiteSettingsPage from '@/components/pages/WebsiteSettingsPage';
 import GiftWrapSettingsPage from '@/components/pages/GiftWrapSettingsPage';
+import AccountTaxSettingsPage from '@/components/pages/AccountTaxSettingsPage';
 
 interface DashboardStats {
   totalProducts: number;
@@ -222,6 +223,8 @@ export default function StoreAdminDashboard() {
         return <WebsiteSettingsPage />;
       case 'gift-wrap':
         return <GiftWrapSettingsPage />;
+      case 'account-tax':
+        return <AccountTaxSettingsPage />;
       default:
         return (
           <div className="max-w-4xl mx-auto">

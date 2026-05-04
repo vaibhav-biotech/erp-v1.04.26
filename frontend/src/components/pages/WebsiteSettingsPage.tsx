@@ -6,6 +6,8 @@ import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 import Button from '@/components/Button';
 import Modal from '@/components/Modal';
 import { FiUpload, FiX } from 'react-icons/fi';
+import StaticPagesSettingsPanel from '@/components/pages/StaticPagesSettingsPanel';
+import FooterSettingsPanel from '@/components/pages/FooterSettingsPanel';
 
 interface WebsiteLogo {
   _id: string;
@@ -17,7 +19,7 @@ interface WebsiteLogo {
 }
 
 export default function WebsiteSettingsPage() {
-  const { admin, adminToken } = useAuth();
+  const { adminToken } = useAuth();
   const [logos, setLogos] = useState<WebsiteLogo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusMsg, setStatusMsg] = useState('');
@@ -194,104 +196,105 @@ export default function WebsiteSettingsPage() {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 sm:p-8">
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Website Settings</h1>
-          <p className="mt-2 text-gray-600">Manage your store logo (horizontal format)</p>
+    <>
+      <div className="bg-white rounded-lg shadow p-6 sm:p-8">
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Website Settings</h1>
+            <p className="mt-2 text-gray-600">Manage your store logo (horizontal format)</p>
+          </div>
+          <Button variant="primary" onClick={openCreate}>+ Add Logo</Button>
         </div>
-        <Button variant="primary" onClick={openCreate}>+ Add Logo</Button>
-      </div>
+ 
+        {statusMsg && (
+          <div className="mb-6 p-3 rounded-lg bg-blue-50 text-blue-700 text-sm border border-blue-200">
+            {statusMsg}
+          </div>
+        )}
 
-      {statusMsg && (
-        <div className="mb-6 p-3 rounded-lg bg-blue-50 text-blue-700 text-sm border border-blue-200">
-          {statusMsg}
-        </div>
-      )}
+        {isLoading ? (
+          <p className="text-gray-600">Loading logos...</p>
+        ) : logos.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 mb-4">No logos uploaded yet</p>
+            <Button variant="primary" onClick={openCreate}>Upload First Logo</Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {logos.map((logo) => (
+              <div key={logo._id} className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+                {/* Logo Preview */}
+                <div className="h-32 bg-white p-4 flex items-center justify-center border-b border-gray-200">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img 
+                    src={logo.logoUrl} 
+                    alt={logo.alt} 
+                    className="max-h-full max-w-full object-contain"
+                  />
+                </div>
 
-      {isLoading ? (
-        <p className="text-gray-600">Loading logos...</p>
-      ) : logos.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500 mb-4">No logos uploaded yet</p>
-          <Button variant="primary" onClick={openCreate}>Upload First Logo</Button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {logos.map((logo) => (
-            <div key={logo._id} className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
-              {/* Logo Preview */}
-              <div className="h-32 bg-white p-4 flex items-center justify-center border-b border-gray-200">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                  src={logo.logoUrl} 
-                  alt={logo.alt} 
-                  className="max-h-full max-w-full object-contain"
-                />
+                {/* Logo Info */}
+                <div className="p-4 space-y-3">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Alt Text</p>
+                    <p className="text-sm font-medium text-gray-900">{logo.alt || '-'}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Status</p>
+                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                      logo.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {logo.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Updated</p>
+                    <p className="text-xs text-gray-600">
+                      {new Date(logo.updatedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-2">
+                    <Button 
+                      size="sm" 
+                      variant="secondary" 
+                      onClick={() => openEdit(logo)}
+                    >
+                      Edit
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant={logo.isActive ? 'danger' : 'success'}
+                      onClick={() => toggleActive(logo)}
+                    >
+                      {logo.isActive ? 'Deactivate' : 'Activate'}
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="danger" 
+                      onClick={() => handleDelete(logo._id)}
+                      className="!p-1"
+                    >
+                      <FiX />
+                    </Button>
+                  </div>
+                </div>
               </div>
+            ))}
+          </div>
+        )}
 
-              {/* Logo Info */}
-              <div className="p-4 space-y-3">
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Alt Text</p>
-                  <p className="text-sm font-medium text-gray-900">{logo.alt || '-'}</p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Status</p>
-                  <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-                    logo.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                  }`}>
-                    {logo.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Updated</p>
-                  <p className="text-xs text-gray-600">
-                    {new Date(logo.updatedAt).toLocaleDateString()}
-                  </p>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-2 pt-2">
-                  <Button 
-                    size="sm" 
-                    variant="secondary" 
-                    onClick={() => openEdit(logo)}
-                  >
-                    Edit
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant={logo.isActive ? 'danger' : 'success'}
-                    onClick={() => toggleActive(logo)}
-                  >
-                    {logo.isActive ? 'Deactivate' : 'Activate'}
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="danger" 
-                    onClick={() => handleDelete(logo._id)}
-                    className="!p-1"
-                  >
-                    <FiX />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Modal */}
-      <Modal 
-        isOpen={showModal} 
-        title={editing ? 'Edit Logo' : 'Upload Logo'} 
-        onClose={closeModal} 
-        size="md"
-      >
-        <form onSubmit={handleSave} className="space-y-5 p-1">
+        {/* Modal */}
+        <Modal 
+          isOpen={showModal} 
+          title={editing ? 'Edit Logo' : 'Upload Logo'} 
+          onClose={closeModal} 
+          size="md"
+        >
+          <form onSubmit={handleSave} className="space-y-5 p-1">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Logo Image</label>
             <p className="text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded px-2 py-1 inline-block mb-2">
@@ -348,8 +351,11 @@ export default function WebsiteSettingsPage() {
               {editing ? 'Update Logo' : 'Upload Logo'}
             </Button>
           </div>
-        </form>
-      </Modal>
-    </div>
+          </form>
+        </Modal>
+      </div>
+      <StaticPagesSettingsPanel />
+      <FooterSettingsPanel />
+    </>
   );
 }

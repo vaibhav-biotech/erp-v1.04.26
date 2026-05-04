@@ -42,6 +42,12 @@ const {
   getAdminCareSection,
   createCareImage,
   updateCareImage,
+  getPublicStaticPage,
+  getAdminStaticPages,
+  upsertAdminStaticPage,
+  getPublicFooterSettingsConfig,
+  getAdminFooterSettingsConfig,
+  updateAdminFooterSettingsConfig,
 } = require('../controllers/landing.controller');
 
 const router = express.Router();
@@ -83,6 +89,12 @@ router.get('/care-section', getPublicCareSection);
 router.get('/care-section/admin', verifyAdminToken, getAdminCareSection);
 router.post('/care-section/admin', verifyAdminToken, createCareImage);
 router.patch('/care-section/admin/:itemId', verifyAdminToken, updateCareImage);
+router.get('/static-pages/admin', verifyAdminToken, getAdminStaticPages);
+router.put('/static-pages/admin/:slug', verifyAdminToken, upsertAdminStaticPage);
+router.get('/static-pages/:slug', getPublicStaticPage);
+router.get('/footer-settings', getPublicFooterSettingsConfig);
+router.get('/footer-settings/admin', verifyAdminToken, getAdminFooterSettingsConfig);
+router.put('/footer-settings/admin', verifyAdminToken, updateAdminFooterSettingsConfig);
 router.get('/offers/:offerId', getPublicOfferProducts);
 router.post('/offers', verifyAdminToken, createOffer);
 router.put('/offers/:offerId', verifyAdminToken, updateOffer);

@@ -10,6 +10,16 @@ const getCategorySectionsCollection = () => mongoose.connection.db.collection('l
 const getFeaturedCollectionsCollection = () => mongoose.connection.db.collection('landing_featured_collections');
 const getFeaturedCollectionBackgroundsCollection = () => mongoose.connection.db.collection('landing_featured_collection_backgrounds');
 const getGiftBannersCollection = () => mongoose.connection.db.collection('landing_gift_banners');
+const getStaticPagesCollection = () => mongoose.connection.db.collection('landing_static_pages');
+const getFooterSettingsCollection = () => mongoose.connection.db.collection('landing_footer_settings');
+
+const ALLOWED_STATIC_PAGE_SLUGS = new Set([
+  'about-us',
+  'contact-us',
+  'privacy-policy',
+  'terms-and-conditions',
+  'shipping-and-return-policy',
+]);
 
 const slugify = (value) => String(value || '')
   .toLowerCase()
@@ -1188,6 +1198,135 @@ const patchCareImage = async ({ storeName, itemId, imageUrl, isActive, displayOr
   );
 };
 
+const getDefaultFooterSettings = (storeName) => ({
+  storeName: normalizeStoreName(storeName),
+  brandDescription: 'Your one-stop destination for premium plants and gardening solutions.',
+  email: 'info@plantsingarden.com',
+  phone: '+91-9000000000',
+  whatsapp: '+91-9000000000',
+  addressLine1: 'Garden Lane, Greenville',
+  addressLine2: 'CA 90210',
+  updatedAt: null,
+  createdAt: null,
+});
+
+const getPublicFooterSettings = async (storeName) => {
+  const doc = await getFooterSettingsCollection().findOne({
+    storeName: { $in: getStoreNameAliases(storeName) },
+  });
+
+  if (!doc) return getDefaultFooterSettings(storeName);
+
+  return {
+    ...getDefaultFooterSettings(storeName),
+    ...doc,
+  };
+};
+
+const getAdminFooterSettings = async (storeName) => {
+  return getPublicFooterSettings(storeName);
+};
+
+const upsertFooterSettings = async ({
+  storeName,
+  brandDescription,
+  email,
+  phone,
+  whatsapp,
+  addressLine1,
+  addressLine2,
+}) => {
+  const normalizedStoreName = normalizeStoreName(storeName);
+  const now = new Date();
+
+  const payload = {
+    brandDescription: String(brandDescription || '').trim(),
+    email: String(email || '').trim(),
+    phone: String(phone || '').trim(),
+    whatsapp: String(whatsapp || '').trim(),
+    addressLine1: String(addressLine1 || '').trim(),
+    addressLine2: String(addressLine2 || '').trim(),
+    updatedAt: now,
+  };
+
+  await getFooterSettingsCollection().updateOne(
+    { storeName: { $in: getStoreNameAliases(normalizedStoreName) } },
+    {
+      $set: payload,
+      $setOnInsert: {
+        _id: new mongoose.Types.ObjectId(),
+        storeName: normalizedStoreName,
+        createdAt: now,
+      },
+    },
+    { upsert: true }
+  );
+
+  return getPublicFooterSettings(normalizedStoreName);
+};
+
+const normalizeStaticPageSlug = (slug) => String(slug || '').trim().toLowerCase();
+
+const ensureAllowedStaticPageSlug = (slug) => {
+  const nextSlug = normalizeStaticPageSlug(slug);
+  if (!ALLOWED_STATIC_PAGE_SLUGS.has(nextSlug)) {
+    throw new Error('Invalid static page slug');
+  }
+  return nextSlug;
+};
+
+const listAdminStaticPages = async (storeName) => {
+  return getStaticPagesCollection()
+    .find({ storeName: { $in: getStoreNameAliases(storeName) } })
+    .sort({ updatedAt: -1, createdAt: -1 })
+    .toArray();
+};
+
+const getPublicStaticPageBySlug = async ({ storeName, slug }) => {
+  const safeSlug = ensureAllowedStaticPageSlug(slug);
+
+  return getStaticPagesCollection().findOne({
+    storeName: { $in: getStoreNameAliases(storeName) },
+    slug: safeSlug,
+    isActive: true,
+  });
+};
+
+const upsertStaticPage = async ({ storeName, slug, title, content, isActive }) => {
+  const safeSlug = ensureAllowedStaticPageSlug(slug);
+  const normalizedStoreName = normalizeStoreName(storeName);
+  const now = new Date();
+
+  const payload = {
+    slug: safeSlug,
+    title: String(title || '').trim(),
+    content: String(content || '').trim(),
+    isActive: typeof isActive === 'boolean' ? isActive : true,
+    updatedAt: now,
+  };
+
+  await getStaticPagesCollection().updateOne(
+    {
+      storeName: { $in: getStoreNameAliases(normalizedStoreName) },
+      slug: safeSlug,
+    },
+    {
+      $set: payload,
+      $setOnInsert: {
+        _id: new mongoose.Types.ObjectId(),
+        storeName: normalizedStoreName,
+        createdAt: now,
+      },
+    },
+    { upsert: true }
+  );
+
+  return getStaticPagesCollection().findOne({
+    storeName: { $in: getStoreNameAliases(normalizedStoreName) },
+    slug: safeSlug,
+  });
+};
+
 module.exports = {
   toObjectId,
   listPublicBanners,
@@ -1232,4 +1371,10 @@ module.exports = {
   listAdminCareImages,
   insertCareImage,
   patchCareImage,
+  listAdminStaticPages,
+  getPublicStaticPageBySlug,
+  upsertStaticPage,
+  getPublicFooterSettings,
+  getAdminFooterSettings,
+  upsertFooterSettings,
 };
