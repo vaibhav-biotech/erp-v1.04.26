@@ -118,7 +118,7 @@ export default function FeaturedCollectionsSection() {
     <Link
       href={`/products/${item.tag}`}
       className="group relative overflow-hidden rounded-3xl bg-gray-900 w-full shadow-sm block"
-      style={{ minHeight: '440px' }}
+      style={{ aspectRatio: '3 / 4' }}
     >
       {item.imageUrl ? (
         <Image
@@ -126,7 +126,7 @@ export default function FeaturedCollectionsSection() {
           alt={item.title}
           fill
           className="object-cover transition-transform duration-500 group-hover:scale-105"
-          sizes="(max-width: 768px) 100vw, 33vw"
+          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 720px"
         />
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-green-200 to-emerald-400" />
