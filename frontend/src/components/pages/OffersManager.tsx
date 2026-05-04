@@ -190,10 +190,12 @@ export default function OffersManager() {
 
   const openCreateModal = () => {
     resetForm();
+    setError('');
     setIsModalOpen(true);
   };
 
   const openEditModal = async (offer: Offer) => {
+    setError('');
     await loadProductsForCategory(offer.categoryId);
 
     const normalizedPosition = String(
@@ -254,7 +256,10 @@ export default function OffersManager() {
   };
 
   const handleSave = async () => {
-    if (!adminToken) return;
+    if (!adminToken) {
+      setError('Admin session expired. Please login again.');
+      return;
+    }
 
     try {
       setError('');
@@ -484,6 +489,12 @@ export default function OffersManager() {
               </button>
             </div>
 
+            {error ? (
+              <div className="mx-5 mt-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                {error}
+              </div>
+            ) : null}
+
             <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[75vh] overflow-y-auto">
               <div>
                 <label className="block text-xs font-semibold uppercase text-gray-600 mb-1">Offer Name *</label>
@@ -703,7 +714,7 @@ export default function OffersManager() {
               <button
                 type="button"
                 onClick={handleSave}
-                disabled={isSaving || isUploading}
+                disabled={isSaving || isUploading || !adminToken}
                 className="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-black disabled:opacity-50"
               >
                 {isUploading ? 'Uploading...' : isSaving ? 'Saving...' : editingId ? 'Update Offer' : 'Create Offer'}
