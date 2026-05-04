@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import PublicLayout from '@/components/PublicLayout';
 import ProductDetailCard from '@/components/ProductDetailCard';
+import ProductHorizontalRecommendations from '@/components/ProductHorizontalRecommendations';
 import { useCart } from '@/contexts/CartContext';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 
@@ -212,6 +213,11 @@ export default function ProductDetailPage({ params }: Props) {
             ]}
           />
         </motion.div>
+
+        <ProductHorizontalRecommendations
+          currentProductId={product._id}
+          currentCategory={product.category}
+        />
       </motion.div>
     </PublicLayout>
   );

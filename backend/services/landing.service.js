@@ -150,7 +150,6 @@ const resolveCategoryAndProduct = async ({ categoryId, productId, productIds, st
 
   const products = await Product.find({
     _id: { $in: productObjectIds },
-    category: String(category._id),
     $or: getStoreNameMatchConditions(storeName),
   }).lean();
 
