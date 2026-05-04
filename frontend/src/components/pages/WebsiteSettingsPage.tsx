@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
+import { buildApiUrl, getApiHeaders, getStoreForApi } from '@/lib/storeConfig';
 import Button from '@/components/Button';
 import Modal from '@/components/Modal';
 import { FiUpload, FiX } from 'react-icons/fi';
@@ -32,8 +32,9 @@ export default function WebsiteSettingsPage() {
 
   // Fetch logos on mount
   useEffect(() => {
+    if (!adminToken) return;
     fetchLogos();
-  }, []);
+  }, [adminToken]);
 
   const fetchLogos = async () => {
     try {
@@ -92,6 +93,8 @@ export default function WebsiteSettingsPage() {
   };
 
   const uploadFile = async (file: File, folder: string): Promise<string> => {
+    if (!adminToken) throw new Error('Admin session expired. Please login again.');
+
     const formData = new FormData();
     formData.append('file', file);
     formData.append('folder', folder);
@@ -99,13 +102,18 @@ export default function WebsiteSettingsPage() {
     const res = await fetch(buildApiUrl('/api/upload'), {
       method: 'POST',
       headers: {
+        'X-Store-Name': getStoreForApi(adminToken),
         'Authorization': `Bearer ${adminToken}`
       },
       body: formData
     });
 
-    if (!res.ok) throw new Error('Upload failed');
+    if (!res.ok) {
+      const payload = await res.json().catch(() => ({}));
+      throw new Error(payload?.error || payload?.message || 'Upload failed');
+    }
     const data = await res.json();
+    if (!data?.url) throw new Error(data?.error || data?.message || 'Upload failed');
     return data.url;
   };
 
@@ -113,10 +121,7 @@ export default function WebsiteSettingsPage() {
     try {
       const res = await fetch(buildApiUrl(`/api/landing/website-logo/admin/${logo._id}`), {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
-        },
+        headers: getApiHeaders(adminToken || undefined),
         body: JSON.stringify({ isActive: !logo.isActive })
       });
 
@@ -149,10 +154,7 @@ export default function WebsiteSettingsPage() {
 
       const res = await fetch(buildApiUrl(endpoint), {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${adminToken}`
-        },
+        headers: getApiHeaders(adminToken || undefined),
         body: JSON.stringify({
           logoUrl: finalLogoUrl,
           alt: altText || 'Store Logo',
@@ -181,9 +183,7 @@ export default function WebsiteSettingsPage() {
     try {
       const res = await fetch(buildApiUrl(`/api/landing/website-logo/admin/${logoId}`), {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${adminToken}`
-        }
+        headers: getApiHeaders(adminToken || undefined)
       });
 
       if (!res.ok) throw new Error('Failed to delete logo');

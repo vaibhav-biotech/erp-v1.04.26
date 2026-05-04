@@ -90,14 +90,6 @@ export default function GiftSection() {
             sizes="100vw"
             priority={false}
           />
-
-          <div className="absolute inset-0 bg-black/25" />
-
-          <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7 lg:p-10 text-white">
-            <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] text-white/90">Gift Collection</p>
-            <h2 className="mt-2 text-2xl sm:text-4xl lg:text-5xl font-bold leading-tight">{item.title || 'Shop Gifts'}</h2>
-            <span className="mt-3 inline-flex items-center text-sm sm:text-base font-semibold">Explore gifts →</span>
-          </div>
         </div>
       </Link>
     </section>

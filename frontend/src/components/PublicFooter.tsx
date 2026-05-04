@@ -13,25 +13,50 @@ interface FooterSettings {
   addressLine2?: string;
 }
 
+interface WebsiteLogo {
+  _id: string;
+  logoUrl: string;
+  alt?: string;
+  isActive: boolean;
+}
+
 export default function PublicFooter() {
   const currentYear = new Date().getFullYear();
   const [settings, setSettings] = useState<FooterSettings | null>(null);
+  const [websiteLogo, setWebsiteLogo] = useState<WebsiteLogo | null>(null);
+  const [logoLoading, setLogoLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
 
     const load = async () => {
       try {
-        const res = await fetchWithStore('/api/landing/footer-settings');
-        if (!res.ok) return;
+        const [footerRes, logoRes] = await Promise.all([
+          fetchWithStore('/api/landing/footer-settings'),
+          fetchWithStore('/api/landing/website-logo'),
+        ]);
 
-        const payload = await res.json();
         if (!mounted) return;
-        if (payload?.data && typeof payload.data === 'object') {
-          setSettings(payload.data as FooterSettings);
+
+        if (footerRes.ok) {
+          const footerPayload = await footerRes.json();
+          if (footerPayload?.data && typeof footerPayload.data === 'object') {
+            setSettings(footerPayload.data as FooterSettings);
+          }
+        }
+
+        if (logoRes.ok) {
+          const logoPayload = await logoRes.json();
+          const items = Array.isArray(logoPayload?.data) ? logoPayload.data as WebsiteLogo[] : [];
+          const active = items.find((item) => item?.isActive) || items[0] || null;
+          setWebsiteLogo(active || null);
+        } else {
+          setWebsiteLogo(null);
         }
       } catch {
         // noop, footer will use fallback values
+      } finally {
+        if (mounted) setLogoLoading(false);
       }
     };
 
@@ -57,7 +82,20 @@ export default function PublicFooter() {
           {/* Brand Section */}
           <div>
             <div className="text-xl sm:text-2xl font-bold text-black flex items-center gap-2 mb-3 flex-wrap">
-              🌿 <span className="hidden sm:inline">Plants In Garden</span><span className="sm:hidden">PIG</span>
+              {websiteLogo?.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={websiteLogo.logoUrl}
+                  alt={websiteLogo.alt || 'Store Logo'}
+                  className="h-11 sm:h-12 w-[170px] sm:w-[240px] object-cover object-left"
+                />
+              ) : logoLoading ? (
+                <div className="h-11 sm:h-12 w-[170px] sm:w-[240px]" />
+              ) : (
+                <>
+                  🌿 <span className="hidden sm:inline">Plants In Garden</span><span className="sm:hidden">PIG</span>
+                </>
+              )}
             </div>
             <p className="text-stone-600 text-xs sm:text-sm">
               {footerInfo.brandDescription}

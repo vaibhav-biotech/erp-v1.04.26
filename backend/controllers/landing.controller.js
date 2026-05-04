@@ -42,6 +42,11 @@ const {
   listAdminCareImages,
   insertCareImage,
   patchCareImage,
+  listPublicWebsiteLogos,
+  listAdminWebsiteLogos,
+  insertWebsiteLogo,
+  patchWebsiteLogo,
+  removeWebsiteLogo,
   listAdminStaticPages,
   getPublicStaticPageBySlug,
   upsertStaticPage,
@@ -889,6 +894,60 @@ const updateCareImage = async (req, res) => {
   }
 };
 
+const getPublicWebsiteLogo = async (req, res) => {
+  try {
+    const logos = await listPublicWebsiteLogos(getStoreName(req));
+    return res.json({ success: true, data: logos });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getAdminWebsiteLogo = async (req, res) => {
+  try {
+    const logos = await listAdminWebsiteLogos(getStoreName(req));
+    return res.json({ success: true, data: logos });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const createWebsiteLogo = async (req, res) => {
+  try {
+    const created = await insertWebsiteLogo({ storeName: getStoreName(req), ...(req.body || {}) });
+    return res.status(201).json({ success: true, data: created });
+  } catch (error) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+const updateWebsiteLogo = async (req, res) => {
+  try {
+    const updated = await patchWebsiteLogo({
+      storeName: getStoreName(req),
+      logoId: req.params.logoId,
+      ...(req.body || {}),
+    });
+    if (!updated) return res.status(404).json({ success: false, message: 'Logo not found' });
+    return res.json({ success: true, data: updated });
+  } catch (error) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+const deleteWebsiteLogo = async (req, res) => {
+  try {
+    const deleted = await removeWebsiteLogo({
+      storeName: getStoreName(req),
+      logoId: req.params.logoId,
+    });
+    if (!deleted) return res.status(404).json({ success: false, message: 'Logo not found' });
+    return res.json({ success: true, message: 'Logo deleted successfully' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 const getPublicStaticPage = async (req, res) => {
   try {
     const storeName = getStoreName(req);
@@ -1040,6 +1099,11 @@ module.exports = {
   getAdminCareSection,
   createCareImage,
   updateCareImage,
+  getPublicWebsiteLogo,
+  getAdminWebsiteLogo,
+  createWebsiteLogo,
+  updateWebsiteLogo,
+  deleteWebsiteLogo,
   getPublicStaticPage,
   getAdminStaticPages,
   upsertAdminStaticPage,

@@ -10,6 +10,7 @@ const getCategorySectionsCollection = () => mongoose.connection.db.collection('l
 const getFeaturedCollectionsCollection = () => mongoose.connection.db.collection('landing_featured_collections');
 const getFeaturedCollectionBackgroundsCollection = () => mongoose.connection.db.collection('landing_featured_collection_backgrounds');
 const getGiftBannersCollection = () => mongoose.connection.db.collection('landing_gift_banners');
+const getWebsiteLogosCollection = () => mongoose.connection.db.collection('landing_website_logos');
 const getStaticPagesCollection = () => mongoose.connection.db.collection('landing_static_pages');
 const getFooterSettingsCollection = () => mongoose.connection.db.collection('landing_footer_settings');
 
@@ -1197,6 +1198,100 @@ const patchCareImage = async ({ storeName, itemId, imageUrl, isActive, displayOr
   );
 };
 
+const listPublicWebsiteLogos = async (storeName) => {
+  return getWebsiteLogosCollection()
+    .find({
+      storeName: { $in: getStoreNameAliases(storeName) },
+      isActive: true,
+    })
+    .sort({ updatedAt: -1, createdAt: -1 })
+    .toArray();
+};
+
+const listAdminWebsiteLogos = async (storeName) => {
+  return getWebsiteLogosCollection()
+    .find({ storeName: { $in: getStoreNameAliases(storeName) } })
+    .sort({ isActive: -1, updatedAt: -1, createdAt: -1 })
+    .toArray();
+};
+
+const insertWebsiteLogo = async ({ storeName, logoUrl, alt, isActive }) => {
+  const safeLogoUrl = String(logoUrl || '').trim();
+  if (!safeLogoUrl) throw new Error('logoUrl is required');
+
+  const nextIsActive = typeof isActive === 'boolean' ? isActive : true;
+  const now = new Date();
+  const normalizedStoreName = normalizeStoreName(storeName);
+
+  if (nextIsActive) {
+    await getWebsiteLogosCollection().updateMany(
+      { storeName: { $in: getStoreNameAliases(normalizedStoreName) } },
+      { $set: { isActive: false, updatedAt: now } }
+    );
+  }
+
+  const item = {
+    _id: new mongoose.Types.ObjectId(),
+    storeName: normalizedStoreName,
+    logoUrl: safeLogoUrl,
+    alt: String(alt || 'Store Logo').trim() || 'Store Logo',
+    isActive: nextIsActive,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await getWebsiteLogosCollection().insertOne(item);
+  return item;
+};
+
+const patchWebsiteLogo = async ({ storeName, logoId, logoUrl, alt, isActive }) => {
+  const objectId = toObjectId(logoId);
+  if (!objectId) return null;
+
+  const existing = await getWebsiteLogosCollection().findOne({
+    _id: objectId,
+    storeName: { $in: getStoreNameAliases(storeName) },
+  });
+  if (!existing) return null;
+
+  const payload = { updatedAt: new Date() };
+  if (logoUrl !== undefined) {
+    const safeLogoUrl = String(logoUrl || '').trim();
+    if (!safeLogoUrl) throw new Error('logoUrl is required');
+    payload.logoUrl = safeLogoUrl;
+  }
+  if (alt !== undefined) payload.alt = String(alt || 'Store Logo').trim() || 'Store Logo';
+  if (isActive !== undefined) payload.isActive = !!isActive;
+
+  if (payload.isActive === true) {
+    await getWebsiteLogosCollection().updateMany(
+      {
+        _id: { $ne: objectId },
+        storeName: { $in: getStoreNameAliases(storeName) },
+      },
+      { $set: { isActive: false, updatedAt: payload.updatedAt } }
+    );
+  }
+
+  return getWebsiteLogosCollection().findOneAndUpdate(
+    { _id: objectId, storeName: { $in: getStoreNameAliases(storeName) } },
+    { $set: payload },
+    { returnDocument: 'after' }
+  );
+};
+
+const removeWebsiteLogo = async ({ storeName, logoId }) => {
+  const objectId = toObjectId(logoId);
+  if (!objectId) return false;
+
+  const result = await getWebsiteLogosCollection().deleteOne({
+    _id: objectId,
+    storeName: { $in: getStoreNameAliases(storeName) },
+  });
+
+  return result.deletedCount > 0;
+};
+
 const getDefaultFooterSettings = (storeName) => ({
   storeName: normalizeStoreName(storeName),
   brandDescription: 'Your one-stop destination for premium plants and gardening solutions.',
@@ -1370,6 +1465,11 @@ module.exports = {
   listAdminCareImages,
   insertCareImage,
   patchCareImage,
+  listPublicWebsiteLogos,
+  listAdminWebsiteLogos,
+  insertWebsiteLogo,
+  patchWebsiteLogo,
+  removeWebsiteLogo,
   listAdminStaticPages,
   getPublicStaticPageBySlug,
   upsertStaticPage,

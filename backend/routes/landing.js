@@ -42,6 +42,11 @@ const {
   getAdminCareSection,
   createCareImage,
   updateCareImage,
+  getPublicWebsiteLogo,
+  getAdminWebsiteLogo,
+  createWebsiteLogo,
+  updateWebsiteLogo,
+  deleteWebsiteLogo,
   getPublicStaticPage,
   getAdminStaticPages,
   upsertAdminStaticPage,
@@ -89,6 +94,12 @@ router.get('/care-section', getPublicCareSection);
 router.get('/care-section/admin', verifyAdminToken, getAdminCareSection);
 router.post('/care-section/admin', verifyAdminToken, createCareImage);
 router.patch('/care-section/admin/:itemId', verifyAdminToken, updateCareImage);
+router.get('/website-logo', getPublicWebsiteLogo);
+router.get('/website-logo/admin', verifyAdminToken, getAdminWebsiteLogo);
+router.post('/website-logo/admin', verifyAdminToken, createWebsiteLogo);
+router.put('/website-logo/admin/:logoId', verifyAdminToken, updateWebsiteLogo);
+router.patch('/website-logo/admin/:logoId', verifyAdminToken, updateWebsiteLogo);
+router.delete('/website-logo/admin/:logoId', verifyAdminToken, deleteWebsiteLogo);
 router.get('/static-pages/admin', verifyAdminToken, getAdminStaticPages);
 router.put('/static-pages/admin/:slug', verifyAdminToken, upsertAdminStaticPage);
 router.get('/static-pages/:slug', getPublicStaticPage);

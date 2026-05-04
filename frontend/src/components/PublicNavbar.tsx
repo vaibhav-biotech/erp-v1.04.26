@@ -31,6 +31,13 @@ interface NotificationConfig {
   isActive: boolean;
 }
 
+interface WebsiteLogo {
+  _id: string;
+  logoUrl: string;
+  alt?: string;
+  isActive: boolean;
+}
+
 const DEFAULT_NOTIFICATION: NotificationConfig = {
   message: '🌿 Free shipping on orders above ₹499',
   bgColor: '#fef08a',
@@ -55,6 +62,8 @@ export default function PublicNavbar() {
   const [isNavVisible, setIsNavVisible] = useState(true);
   const [activeNotifications, setActiveNotifications] = useState<NotificationConfig[]>([DEFAULT_NOTIFICATION]);
   const [currentNotificationIndex, setCurrentNotificationIndex] = useState(0);
+  const [websiteLogo, setWebsiteLogo] = useState<WebsiteLogo | null>(null);
+  const [logoLoading, setLogoLoading] = useState(true);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -153,6 +162,31 @@ export default function PublicNavbar() {
   }, []);
 
   useEffect(() => {
+    const fetchWebsiteLogo = async () => {
+      try {
+        const res = await fetch(buildApiUrl('/api/landing/website-logo'), {
+          headers: getApiHeaders(),
+        });
+        if (!res.ok) {
+          setWebsiteLogo(null);
+          return;
+        }
+
+        const payload = await res.json();
+        const items = Array.isArray(payload?.data) ? payload.data as WebsiteLogo[] : [];
+        const active = items.find((item) => item?.isActive) || items[0] || null;
+        setWebsiteLogo(active || null);
+      } catch {
+        setWebsiteLogo(null);
+      } finally {
+        setLogoLoading(false);
+      }
+    };
+
+    fetchWebsiteLogo();
+  }, []);
+
+  useEffect(() => {
     if (activeNotifications.length <= 1) return;
 
     const id = window.setInterval(() => {
@@ -247,8 +281,23 @@ export default function PublicNavbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex justify-between items-center">
           {/* Logo */}
-          <Link href="/" className="text-xl sm:text-2xl font-bold text-black flex items-center gap-2 whitespace-nowrap">
-            🌿 <span className="hidden sm:inline">Plants In Garden</span><span className="sm:hidden">PIG</span>
+          <Link href="/" className="text-black flex items-center whitespace-nowrap">
+            <div className="h-9 sm:h-11 w-[170px] sm:w-[240px] flex items-center">
+              {websiteLogo?.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={websiteLogo.logoUrl}
+                  alt={websiteLogo.alt || 'Store Logo'}
+                  className="h-full w-full object-cover object-left"
+                />
+              ) : logoLoading ? (
+                <div className="h-full w-full" />
+              ) : (
+                <span className="text-xl sm:text-2xl font-bold text-black flex items-center gap-2">
+                  🌿 <span className="hidden sm:inline">Plants In Garden</span><span className="sm:hidden">PIG</span>
+                </span>
+              )}
+            </div>
           </Link>
 
           {/* Desktop Categories Menu */}
