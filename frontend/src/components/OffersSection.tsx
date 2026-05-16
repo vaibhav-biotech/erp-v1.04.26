@@ -47,7 +47,7 @@ export default function OffersSection() {
   const [isLoading, setIsLoading] = useState(true);
 
   const getOfferHref = (offer?: Offer) => offer?.ctaUrl || offer?.buttonLink || '#';
-  const offerBySlot = offers.reduce<Record<number, Offer>>((acc, offer) => {
+  const mappedOfferBySlot = offers.reduce<Record<number, Offer>>((acc, offer) => {
     const gridPositionRaw = Number((offer as Offer & { gridPosition?: string | number }).gridPosition);
     const displayOrderRaw = Number((offer as Offer & { displayOrder?: string | number }).displayOrder);
 
@@ -69,6 +69,17 @@ export default function OffersSection() {
     }
     return acc;
   }, {});
+
+  const assignedOfferIds = new Set(Object.values(mappedOfferBySlot).map((offer) => offer._id));
+  const remainingOffers = offers.filter((offer) => !assignedOfferIds.has(offer._id));
+  const offerBySlot: Record<number, Offer> = { ...mappedOfferBySlot };
+
+  for (let slot = 0; slot <= 3; slot += 1) {
+    if (!offerBySlot[slot] && remainingOffers.length > 0) {
+      const next = remainingOffers.shift();
+      if (next) offerBySlot[slot] = next;
+    }
+  }
 
   useEffect(() => {
     const loadOffers = async () => {
@@ -221,9 +232,7 @@ export default function OffersSection() {
                   </div>
                 </Link>
               ) : (
-                <div className="hidden md:flex w-full aspect-square md:w-full md:h-full md:aspect-auto bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg items-center justify-center">
-                  <span className="text-gray-400 text-xs font-montserrat">Slot {idx + 1}</span>
-                </div>
+                <div className="hidden md:block" />
               )}
             </motion.div>
           );
@@ -271,9 +280,7 @@ export default function OffersSection() {
               </Link>
             </motion.div>
           ) : (
-            <div className="hidden md:flex rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 aspect-square md:w-full md:h-full md:aspect-auto items-center justify-center">
-              <span className="text-gray-400 text-sm font-montserrat">Big Square 584x584</span>
-            </div>
+            <div className="hidden md:block" />
           )}
         </div>
 
@@ -319,9 +326,7 @@ export default function OffersSection() {
               </Link>
             </motion.div>
           ) : (
-            <div className="hidden md:flex rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 aspect-[2/1] md:w-full md:h-full md:aspect-auto items-center justify-center">
-              <span className="text-gray-400 text-sm font-montserrat">Wide Bottom 584x280</span>
-            </div>
+            <div className="hidden md:block" />
           )}
         </div>
       </div>

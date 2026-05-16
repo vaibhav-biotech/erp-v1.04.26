@@ -50,5 +50,8 @@ Thumbs.db
 /backend/package-lock 3.json
 /frontend/src/app/testing/
 
+# Mobile app (separate — not part of web commits for now)
+/mobile/
+
 # Misc
 *.pem

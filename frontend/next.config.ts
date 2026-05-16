@@ -1,4 +1,9 @@
 import type { NextConfig } from "next";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Pin app root to frontend/ — avoids picking ~/package-lock.json as monorepo root
+const appRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const getApiRewriteBase = () => {
   const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
@@ -12,6 +17,9 @@ const getApiRewriteBase = () => {
 };
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: appRoot,
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [

@@ -27,7 +27,10 @@ export default function OfferBackgroundManager() {
   const [error, setError] = useState('');
 
   const loadBackgrounds = async () => {
-    if (!adminToken) return;
+    if (!adminToken) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -84,7 +87,7 @@ export default function OfferBackgroundManager() {
         throw new Error(uploadPayload.error || uploadPayload.message || 'Failed to upload image');
       }
 
-      const response = await fetch(buildApiUrl('/api/landing/offers/backgrounds'), {
+      const response = await fetch(buildApiUrl('/api/landing/offers/backgrounds/admin'), {
         method: 'POST',
         headers: getApiHeaders(adminToken),
         body: JSON.stringify({
@@ -116,7 +119,7 @@ export default function OfferBackgroundManager() {
 
     try {
       setError('');
-      const response = await fetch(buildApiUrl(`/api/landing/offers/backgrounds/${item._id}`), {
+      const response = await fetch(buildApiUrl(`/api/landing/offers/backgrounds/admin/${item._id}`), {
         method: 'PATCH',
         headers: getApiHeaders(adminToken),
         body: JSON.stringify({ isActive: true }),
@@ -138,7 +141,7 @@ export default function OfferBackgroundManager() {
 
     try {
       setError('');
-      const response = await fetch(buildApiUrl(`/api/landing/offers/backgrounds/${item._id}`), {
+      const response = await fetch(buildApiUrl(`/api/landing/offers/backgrounds/admin/${item._id}`), {
         method: 'DELETE',
         headers: getApiHeaders(adminToken),
       });
