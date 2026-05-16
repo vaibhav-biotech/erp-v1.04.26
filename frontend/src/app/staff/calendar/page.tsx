@@ -5,10 +5,16 @@ import StaffTasksTable from '@/components/staff/StaffTasksTable';
 import { StaffPanel, StaffSectionTitle } from '@/components/staff/StaffShell';
 import { dateFromDay, getCalendarCells, todayInMonth } from '@/lib/staffCalendar';
 import { formatYearMonth, monthLabel, shiftYearMonth } from '@/lib/staffAttendance';
-import { getStaffSession, getTasks, reassignTask, saveTasks } from '@/lib/staffAuth';
-import type { StaffTask, TaskStatus } from '@/lib/staffMockData';
+import { getStaffMemberById, getStaffSession, getTasks, reassignTask, saveTasks } from '@/lib/staffAuth';
+import { WORK_TYPE_LABELS, type StaffTask, type TaskStatus } from '@/lib/staffMockData';
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+const statusBadge: Record<TaskStatus, string> = {
+  pending: 'bg-gray-100 text-gray-700',
+  in_progress: 'bg-yellow-100 text-yellow-700',
+  done: 'bg-green-100 text-green-700',
+};
 
 function taskDayClass(dayTasks: StaffTask[]) {
   if (dayTasks.length === 0) return 'bg-gray-50 text-gray-500 border-gray-100';
@@ -23,10 +29,54 @@ function taskDayClass(dayTasks: StaffTask[]) {
 
 function Legend({ color, label }: { color: string; label: string }) {
   return (
-    <div className="flex items-center gap-1.5">
-      <div className={`w-3 h-3 rounded-full ${color}`} />
-      <span className="text-gray-500 text-xs">{label}</span>
+    <div className="flex items-center gap-1">
+      <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${color}`} />
+      <span className="text-gray-500 text-[10px] sm:text-xs">{label}</span>
     </div>
+  );
+}
+
+function MobileTaskCards({
+  tasks,
+  isAdmin,
+  onStatusChange,
+}: {
+  tasks: StaffTask[];
+  isAdmin: boolean;
+  onStatusChange: (id: string, status: TaskStatus) => void;
+}) {
+  if (tasks.length === 0) {
+    return <p className="text-center text-gray-500 py-6 text-sm">No tasks this day.</p>;
+  }
+
+  return (
+    <ul className="space-y-2">
+      {tasks.map((task) => {
+        const assignee = getStaffMemberById(task.assigneeId);
+        return (
+          <li
+            key={task.id}
+            className="rounded-2xl border border-gray-100 bg-gray-50/80 p-3 space-y-2"
+          >
+            <p className="font-medium text-gray-900 text-sm leading-snug">{task.title}</p>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+              <span>{WORK_TYPE_LABELS[task.workType]}</span>
+              {task.scheduledTime && <span>· {task.scheduledTime}</span>}
+              {isAdmin && assignee && <span>· {assignee.name}</span>}
+            </div>
+            <select
+              value={task.status}
+              onChange={(e) => onStatusChange(task.id, e.target.value as TaskStatus)}
+              className={`w-full text-xs border border-gray-200 rounded-xl px-3 py-2 bg-white outline-none focus:ring-2 focus:ring-gray-400 ${statusBadge[task.status]}`}
+            >
+              <option value="pending">Pending</option>
+              <option value="in_progress">In Progress</option>
+              <option value="done">Done</option>
+            </select>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -48,7 +98,6 @@ export default function StaffCalendarPage() {
     return () => window.clearInterval(id);
   }, []);
 
-  /** Only tasks assigned to this user (staff) or all assigned tasks (admin) */
   const assignedTasks = useMemo(() => {
     if (isAdmin) return tasks;
     return tasks.filter((t) => t.assigneeId === userId);
@@ -104,40 +153,39 @@ export default function StaffCalendarPage() {
     if (!selectedDate) return 'Select a day';
     const d = new Date(selectedDate + 'T12:00:00');
     return d.toLocaleDateString('default', {
-      weekday: 'long',
+      weekday: 'short',
       day: 'numeric',
       month: 'short',
-      year: 'numeric',
     });
   };
 
   return (
-    <StaffPanel>
-      <div className="flex items-center justify-between gap-3 flex-wrap mb-5">
-        <div>
+    <StaffPanel className="p-3 sm:p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
+        <div className="min-w-0">
           <StaffSectionTitle>
-            {isAdmin ? 'Team assigned tasks' : 'My assigned tasks'}
+            {isAdmin ? 'Team tasks' : 'My tasks'}
           </StaffSectionTitle>
-          <p className="text-sm text-gray-500 mt-1">
-            {monthLabel(yearMonth)} · {monthTotal} assigned this month
+          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+            {monthTotal} this month
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between sm:justify-end gap-1 shrink-0">
           <button
             type="button"
             onClick={() => setYearMonth((m) => shiftYearMonth(m, -1))}
-            className="w-10 h-10 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50 font-medium"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 text-lg leading-none"
             aria-label="Previous month"
           >
             ‹
           </button>
-          <span className="text-sm font-medium text-gray-800 min-w-[120px] text-center">
+          <span className="text-xs sm:text-sm font-medium text-gray-800 min-w-[100px] sm:min-w-[120px] text-center truncate">
             {monthLabel(yearMonth)}
           </span>
           <button
             type="button"
             onClick={() => setYearMonth((m) => shiftYearMonth(m, 1))}
-            className="w-10 h-10 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50 font-medium"
+            className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 text-lg leading-none"
             aria-label="Next month"
           >
             ›
@@ -145,22 +193,19 @@ export default function StaffCalendarPage() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
-            Assigned tasks per day
-          </p>
-          <div className="grid grid-cols-7 gap-1.5 text-center text-sm mb-1">
+      <div className="flex flex-col lg:grid lg:grid-cols-2 lg:gap-6">
+        <div className="min-w-0">
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1.5 text-center mb-0.5">
             {WEEKDAYS.map((day, i) => (
-              <div key={`wd-${i}`} className="text-gray-400 font-medium text-xs py-1">
+              <div key={`wd-${i}`} className="text-gray-400 font-medium text-[10px] sm:text-xs py-0.5">
                 {day}
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-1.5">
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1.5">
             {cells.map((day, i) => {
               if (day == null) {
-                return <div key={`empty-${i}`} className="aspect-square" />;
+                return <div key={`empty-${i}`} className="h-9 sm:h-auto sm:aspect-square" />;
               }
               const dayTasks = tasksByDay[day] ?? [];
               const count = dayTasks.length;
@@ -172,14 +217,16 @@ export default function StaffCalendarPage() {
                   key={`day-${day}`}
                   type="button"
                   onClick={() => setSelectedDay(day)}
-                  className={`aspect-square rounded-xl flex flex-col items-center justify-center text-xs transition-all border font-semibold ${taskDayClass(dayTasks)} ${
-                    isSelected ? 'ring-2 ring-gray-900 ring-offset-2 scale-105 shadow-md' : ''
-                  } ${isToday && !isSelected ? 'ring-2 ring-gray-400 ring-offset-1' : ''}`}
+                  className={`h-9 sm:aspect-square sm:h-auto rounded-lg sm:rounded-xl flex flex-col items-center justify-center transition-all border font-semibold text-[10px] sm:text-xs ${taskDayClass(dayTasks)} ${
+                    isSelected
+                      ? 'ring-2 ring-gray-900 ring-offset-1 sm:ring-offset-2 lg:scale-105 shadow-sm z-10'
+                      : ''
+                  } ${isToday && !isSelected ? 'ring-1 ring-gray-400' : ''}`}
                 >
-                  <span>{day}</span>
+                  <span className="leading-none">{day}</span>
                   {count > 0 && (
                     <span
-                      className={`text-[10px] mt-0.5 font-bold px-1.5 rounded-full min-w-[18px] ${
+                      className={`text-[8px] sm:text-[10px] leading-none mt-0.5 font-bold px-1 rounded-full ${
                         isSelected || dayTasks.every((t) => t.status === 'done')
                           ? 'bg-white/30'
                           : 'bg-black/15'
@@ -193,32 +240,42 @@ export default function StaffCalendarPage() {
             })}
           </div>
 
-          <div className="flex flex-wrap gap-3 mt-4">
-            <Legend color="bg-green-500" label="All done" />
-            <Legend color="bg-yellow-400" label="In progress" />
+          <div className="flex flex-wrap gap-x-3 gap-y-1.5 mt-3 justify-center sm:justify-start">
+            <Legend color="bg-green-500" label="Done" />
+            <Legend color="bg-yellow-400" label="Progress" />
             <Legend color="bg-red-500" label="Pending" />
           </div>
         </div>
 
-        <div className="lg:border-l lg:border-gray-100 lg:pl-6">
+        <div className="mt-4 pt-4 border-t border-gray-100 lg:mt-0 lg:pt-0 lg:border-t-0 lg:border-l lg:pl-6">
           <div className="flex items-center justify-between gap-2 mb-3">
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                Assigned tasks
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs font-medium text-gray-500 uppercase tracking-wide">
+                {formatSelectedLabel()}
               </p>
-              <p className="text-sm font-semibold text-gray-900 mt-0.5">{formatSelectedLabel()}</p>
+              <p className="text-xs sm:text-sm font-semibold text-gray-900 mt-0.5">
+                {selectedTasks.length} task{selectedTasks.length !== 1 ? 's' : ''}
+              </p>
             </div>
-            <span className="text-xs font-medium bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full">
-              {selectedTasks.length} task{selectedTasks.length !== 1 ? 's' : ''}
-            </span>
           </div>
-          <StaffTasksTable
-            tasks={selectedTasks}
-            onStatusChange={handleStatusChange}
-            onReassign={isAdmin ? handleReassign : undefined}
-            allowReassign={isAdmin}
-            showAssignee={isAdmin}
-          />
+
+          <div className="lg:hidden">
+            <MobileTaskCards
+              tasks={selectedTasks}
+              isAdmin={isAdmin}
+              onStatusChange={handleStatusChange}
+            />
+          </div>
+
+          <div className="hidden lg:block overflow-x-auto -mx-1">
+            <StaffTasksTable
+              tasks={selectedTasks}
+              onStatusChange={handleStatusChange}
+              onReassign={isAdmin ? handleReassign : undefined}
+              allowReassign={isAdmin}
+              showAssignee={isAdmin}
+            />
+          </div>
         </div>
       </div>
     </StaffPanel>
