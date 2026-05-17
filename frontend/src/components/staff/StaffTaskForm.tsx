@@ -50,23 +50,26 @@ export default function StaffTaskForm({
     onCreated?.();
   };
 
+  const fieldClass =
+    'h-11 border border-gray-200 rounded-2xl px-3 text-sm outline-none bg-white focus:ring-2 focus:ring-gray-400 shrink-0';
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 mb-5 pb-5 border-b border-gray-100">
+    <form onSubmit={handleSubmit} className="mb-5 pb-5 border-b border-gray-100 space-y-2">
       {error && (
         <p className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">{error}</p>
       )}
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder={isAdmin ? 'Assign a new task…' : 'Add your task…'}
-        className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-gray-400"
-      />
-      <div className={`grid gap-3 ${isAdmin ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
+      <div className="flex flex-nowrap gap-2 items-center overflow-x-auto pb-0.5">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder={isAdmin ? 'Assign a new task…' : 'Add your task…'}
+          className={`${fieldClass} flex-1 min-w-[10rem] max-w-none`}
+        />
         {isAdmin && (
           <select
             value={assigneeId}
             onChange={(e) => setAssigneeId(e.target.value)}
-            className="border border-gray-200 rounded-2xl px-3 py-2.5 text-sm outline-none bg-white"
+            className={`${fieldClass} w-36`}
           >
             {staffList.map((s) => (
               <option key={s.id} value={s.id}>
@@ -78,7 +81,7 @@ export default function StaffTaskForm({
         <select
           value={workType}
           onChange={(e) => setWorkType(e.target.value as WorkType)}
-          className="border border-gray-200 rounded-2xl px-3 py-2.5 text-sm outline-none bg-white"
+          className={`${fieldClass} w-32`}
         >
           {(Object.keys(WORK_TYPE_LABELS) as WorkType[]).map((k) => (
             <option key={k} value={k}>
@@ -90,15 +93,15 @@ export default function StaffTaskForm({
           type="date"
           value={scheduledDate}
           onChange={(e) => setScheduledDate(e.target.value)}
-          className="border border-gray-200 rounded-2xl px-3 py-2.5 text-sm outline-none bg-white"
+          className={`${fieldClass} w-[9.5rem]`}
         />
+        <button
+          type="submit"
+          className="h-11 shrink-0 whitespace-nowrap bg-gray-900 hover:bg-gray-800 text-white px-5 rounded-2xl text-sm font-medium"
+        >
+          {isAdmin ? 'Assign task' : 'Add task'}
+        </button>
       </div>
-      <button
-        type="submit"
-        className="bg-gray-900 hover:bg-gray-800 text-white px-5 py-2.5 rounded-2xl text-sm font-medium"
-      >
-        {isAdmin ? 'Assign task' : 'Add task'}
-      </button>
     </form>
   );
 }

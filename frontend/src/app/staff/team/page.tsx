@@ -93,7 +93,7 @@ export default function StaffTeamPage() {
                           onClick={() => setManageFor(m)}
                           className="text-xs font-medium text-gray-800 bg-white border border-gray-200 hover:bg-gray-50 px-2.5 py-1.5 rounded-lg"
                         >
-                          Manage
+                          Edit
                         </button>
                         <button
                           type="button"

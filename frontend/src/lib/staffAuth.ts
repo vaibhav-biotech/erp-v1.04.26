@@ -67,6 +67,14 @@ export function getActiveStaffMembers() {
   return getStaffMembersOnly(false);
 }
 
+function assertStaffAdmin(): { ok: true } | { ok: false; error: string } {
+  const session = getStaffSession();
+  if (session?.user.role !== 'staff_admin') {
+    return { ok: false, error: 'Only admin can do this' };
+  }
+  return { ok: true };
+}
+
 export function updateStaffMember(
   id: string,
   patch: Partial<Pick<StaffUser, 'phone' | 'active'>>
@@ -82,6 +90,82 @@ export function updateStaffMember(
     ...(patch.phone !== undefined ? { phone: patch.phone.trim() } : {}),
     ...(patch.active !== undefined ? { active: patch.active } : {}),
   };
+  saveStaffUsers(next);
+  return { ok: true };
+}
+
+/** Admin only — edit staff profile fields */
+export function adminUpdateStaffMember(
+  id: string,
+  patch: {
+    name?: string;
+    username?: string;
+    email?: string;
+    phone?: string;
+    active?: boolean;
+    jobRoles?: StaffJobRole[];
+  }
+): { ok: true } | { ok: false; error: string } {
+  const gate = assertStaffAdmin();
+  if (!gate.ok) return gate;
+
+  const users = getStaffUsers();
+  const idx = users.findIndex((u) => u.id === id);
+  if (idx === -1) return { ok: false, error: 'Staff not found' };
+  if (users[idx].role !== 'staff') return { ok: false, error: 'Cannot edit admin account' };
+
+  const cur = users[idx];
+  const name = patch.name !== undefined ? patch.name.trim() : cur.name;
+  if (!name) return { ok: false, error: 'Name is required' };
+
+  const username =
+    patch.username !== undefined ? patch.username.trim().toLowerCase() : cur.username;
+  if (!username) return { ok: false, error: 'Username is required' };
+  if (users.some((u) => u.id !== id && u.username.toLowerCase() === username)) {
+    return { ok: false, error: 'Username already taken' };
+  }
+
+  const email =
+    patch.email !== undefined
+      ? patch.email.trim() || `${username}@plantsingarden.com`
+      : cur.email;
+  const jobRoles = patch.jobRoles !== undefined ? patch.jobRoles : cur.jobRoles;
+  if (!jobRoles.length) return { ok: false, error: 'Select at least one role' };
+
+  const next = [...users];
+  next[idx] = {
+    ...cur,
+    name,
+    username,
+    email,
+    avatarInitials: initialsFromName(name),
+    phone: patch.phone !== undefined ? patch.phone.trim() : cur.phone,
+    active: patch.active !== undefined ? patch.active : cur.active,
+    jobRoles,
+  };
+  saveStaffUsers(next);
+  return { ok: true };
+}
+
+/** Admin only — set a new login password for staff */
+export function adminResetStaffPassword(
+  id: string,
+  newPassword: string
+): { ok: true } | { ok: false; error: string } {
+  const gate = assertStaffAdmin();
+  if (!gate.ok) return gate;
+
+  if (!newPassword || newPassword.length < 4) {
+    return { ok: false, error: 'Password must be at least 4 characters' };
+  }
+
+  const users = getStaffUsers();
+  const idx = users.findIndex((u) => u.id === id);
+  if (idx === -1) return { ok: false, error: 'Staff not found' };
+  if (users[idx].role !== 'staff') return { ok: false, error: 'Cannot reset admin password here' };
+
+  const next = [...users];
+  next[idx] = { ...next[idx], password: newPassword };
   saveStaffUsers(next);
   return { ok: true };
 }
