@@ -36,7 +36,7 @@ export default function StaffDashboardPage() {
 
   return (
     <>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StaffStatCard label="Completed" value={doneToday} />
         <StaffStatCard label="Pending" value={pendingToday} />
         <StaffStatCard label="Today" value={todayTasks.length} />
@@ -59,6 +59,13 @@ export default function StaffDashboardPage() {
           showCreatedBy={isAdmin}
         />
       </StaffPanel>
+
+      <Link href="/staff/contacts" className="block">
+        <StaffPanel className="hover:border-gray-300 transition-colors">
+          <p className="font-semibold text-gray-900">Call list</p>
+          <p className="text-sm text-gray-500 mt-1">Log calls & view contact history</p>
+        </StaffPanel>
+      </Link>
 
       {isAdmin && (
         <div className="grid sm:grid-cols-2 gap-4">

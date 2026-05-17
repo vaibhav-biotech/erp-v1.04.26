@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import StaffCreateMemberModal from '@/components/staff/StaffCreateMemberModal';
 import StaffManageMemberModal from '@/components/staff/StaffManageMemberModal';
+import StaffAssignStoresModal from '@/components/staff/StaffAssignStoresModal';
 import StaffMarkAttendanceModal from '@/components/staff/StaffMarkAttendanceModal';
 import { StaffPanel, StaffSectionTitle } from '@/components/staff/StaffShell';
 import { getStaffSession, getStaffUsers } from '@/lib/staffAuth';
@@ -19,6 +20,7 @@ export default function StaffTeamPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [markFor, setMarkFor] = useState<StaffUser | null>(null);
   const [manageFor, setManageFor] = useState<StaffUser | null>(null);
+  const [storesFor, setStoresFor] = useState<StaffUser | null>(null);
 
   const reload = useCallback(() => {
     setMembers(getStaffUsers().filter((u) => u.role === 'staff'));
@@ -93,6 +95,13 @@ export default function StaffTeamPage() {
                         >
                           Manage
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => setStoresFor(m)}
+                          className="text-xs font-medium text-gray-800 bg-white border border-gray-200 hover:bg-gray-50 px-2.5 py-1.5 rounded-lg whitespace-nowrap"
+                        >
+                          Stores
+                        </button>
                         {m.active && (
                           <button
                             type="button"
@@ -129,6 +138,10 @@ export default function StaffTeamPage() {
 
       {markFor && (
         <StaffMarkAttendanceModal member={markFor} onClose={() => setMarkFor(null)} />
+      )}
+
+      {storesFor && (
+        <StaffAssignStoresModal member={storesFor} onClose={() => setStoresFor(null)} />
       )}
     </div>
   );

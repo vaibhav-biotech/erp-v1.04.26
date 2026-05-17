@@ -14,6 +14,7 @@ export const STAFF_MOBILE_NAV: StaffNavItem[] = [
   { href: '/staff', label: 'Home', exact: true },
   { href: '/staff/calendar', label: 'Calendar' },
   { href: '/staff/tasks', label: 'Tasks' },
+  { href: '/staff/contacts', label: 'Calls' },
   { href: '/staff/reports', label: 'Reports' },
 ];
 
@@ -21,9 +22,15 @@ export const STAFF_MOBILE_NAV: StaffNavItem[] = [
 export const STAFF_SIDEBAR_NAV: StaffNavItem[] = [
   ...STAFF_MOBILE_NAV,
   { href: '/staff/team', label: 'Team', roles: ['staff_admin'], desktopOnly: true },
+  { href: '/staff/stores', label: 'Stores', roles: ['staff_admin'], desktopOnly: true },
   { href: '/staff/attendance', label: 'Attendance report', roles: ['staff_admin'], desktopOnly: true },
   { href: '/staff/profile', label: 'Profile', desktopOnly: true },
 ];
+
+/** Mobile bottom bar — all routes for role (horizontal scroll) */
+export function getStaffBottomNavItems(role: StaffRole): StaffNavItem[] {
+  return STAFF_SIDEBAR_NAV.filter((item) => !item.roles || item.roles.includes(role));
+}
 
 export function getPageTitle(pathname: string): { title: string; subtitle: string } {
   if (pathname.startsWith('/staff/calendar')) {
@@ -32,11 +39,20 @@ export function getPageTitle(pathname: string): { title: string; subtitle: strin
   if (pathname.startsWith('/staff/tasks')) {
     return { title: 'Tasks', subtitle: 'Daily workflow & updates' };
   }
+  if (pathname.startsWith('/staff/contacts')) {
+    return {
+      title: 'Call list',
+      subtitle: 'Team contacts, status & call records',
+    };
+  }
   if (pathname.startsWith('/staff/reports')) {
     return { title: 'Reports', subtitle: 'Daily performance summary' };
   }
   if (pathname.startsWith('/staff/team')) {
     return { title: 'Team', subtitle: 'Staff members & roles' };
+  }
+  if (pathname.startsWith('/staff/stores')) {
+    return { title: 'Stores', subtitle: 'Order stores & staff assignments' };
   }
   if (pathname.startsWith('/staff/attendance')) {
     return { title: 'Attendance report', subtitle: 'Monthly team overview' };

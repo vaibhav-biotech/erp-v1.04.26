@@ -3,6 +3,8 @@
 import {
   DEMO_STAFF_USERS,
   INITIAL_ATTENDANCE,
+  INITIAL_CALL_LOGS,
+  INITIAL_CONTACTS,
   INITIAL_TASKS,
   STORAGE_KEYS,
   initialsFromName,
@@ -169,6 +171,18 @@ export function loginStaff(loginId: string, password: string): StaffSession | nu
   }
   if (!localStorage.getItem(STORAGE_KEYS.attendance)) {
     localStorage.setItem(STORAGE_KEYS.attendance, JSON.stringify(INITIAL_ATTENDANCE));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.contacts)) {
+    localStorage.setItem(STORAGE_KEYS.contacts, JSON.stringify(INITIAL_CONTACTS));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.callLogs)) {
+    localStorage.setItem(STORAGE_KEYS.callLogs, JSON.stringify(INITIAL_CALL_LOGS));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.stores)) {
+    localStorage.setItem(STORAGE_KEYS.stores, JSON.stringify([]));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.storeAssignments)) {
+    localStorage.setItem(STORAGE_KEYS.storeAssignments, JSON.stringify({}));
   }
 
   return session;

@@ -39,7 +39,7 @@ export default function StaffDashboardLayout({ children }: { children: React.Rea
       <StaffSidebar role={session.user.role} />
       <div className="flex-1 flex flex-col min-h-screen lg:ml-64 w-full">
         <StaffTopBar session={session} />
-        <main className="flex-1 p-4 space-y-5 w-full max-w-md mx-auto lg:max-w-4xl lg:mx-auto pb-24 lg:pb-8">
+        <main className="flex-1 w-full p-4 lg:p-6 space-y-5 pb-24 lg:pb-8">
           {children}
         </main>
         <StaffBottomNav />
