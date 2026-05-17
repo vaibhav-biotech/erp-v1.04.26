@@ -137,6 +137,11 @@ const connectDB = async () => {
       socketTimeoutMS: 45000,
     });
     console.log('✓ MongoDB connected successfully');
+
+    const { ensureStaffDemoUsersOnce } = require('./services/staffSeed');
+    ensureStaffDemoUsersOnce().catch((err) => {
+      console.warn('[staff-seed] Startup seed skipped:', err.message);
+    });
   } catch (error) {
     console.warn('⚠ MongoDB connection failed:', error.message);
     console.warn('⚠ Continuing without database...');

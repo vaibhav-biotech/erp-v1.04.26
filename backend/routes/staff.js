@@ -1,6 +1,8 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const StaffMember = require('../models/StaffMember');
+const { ensureStaffDemoUsersOnce } = require('../services/staffSeed');
 
 const router = express.Router();
 
@@ -69,6 +71,15 @@ router.post('/login', async (req, res) => {
     if (!loginId || !password) {
       return res.status(400).json({ success: false, error: 'Username/email and password required' });
     }
+
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: 'Staff login is temporarily unavailable (database not connected)',
+      });
+    }
+
+    await ensureStaffDemoUsersOnce();
 
     const member = await StaffMember.findOne({
       $or: [{ username: loginId }, { email: loginId }],

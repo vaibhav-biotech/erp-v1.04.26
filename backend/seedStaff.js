@@ -1,37 +1,12 @@
 /**
  * Seed staff folder demo users (and optional extra accounts).
  * Run from backend/: node seedStaff.js
+ * Also runs automatically on server start via services/staffSeed.js
  */
 require('dotenv').config();
 const mongoose = require('mongoose');
 const StaffMember = require('./models/StaffMember');
-
-const DEMO_USERS = [
-  {
-    id: 'staff-1',
-    username: 'priya',
-    email: 'staff@plantsingarden.com',
-    password: 'staff123',
-    name: 'Priya Sharma',
-    role: 'staff',
-    jobRoles: ['social_media_manager', 'whatsapp_manager'],
-    avatarInitials: 'PS',
-    phone: '+91 98765 43210',
-    active: true,
-  },
-  {
-    id: 'admin-1',
-    username: 'admin',
-    email: 'admin@plantsingarden.com',
-    password: 'admin123',
-    name: 'Rahul Manager',
-    role: 'staff_admin',
-    jobRoles: ['operations'],
-    avatarInitials: 'RM',
-    phone: '+91 90000 00000',
-    active: true,
-  },
-];
+const { DEMO_STAFF_USERS, ensureStaffDemoUsers } = require('./services/staffSeed');
 
 async function upsertStaff(user) {
   const existing = await StaffMember.findOne({ id: user.id }).select('+password');
@@ -64,9 +39,7 @@ async function main() {
   await mongoose.connect(uri);
   console.log('Connected to MongoDB');
 
-  for (const user of DEMO_USERS) {
-    await upsertStaff(user);
-  }
+  await ensureStaffDemoUsers();
 
   const extraUsername = process.argv[2];
   const extraPassword = process.argv[3] || 'staff123';
