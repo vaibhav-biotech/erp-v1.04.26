@@ -19,6 +19,7 @@ export default function StaffCreateMemberForm({
   const [roles, setRoles] = useState<StaffJobRole[]>([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const toggleRole = (role: StaffJobRole) => {
     setRoles((prev) =>
@@ -26,11 +27,12 @@ export default function StaffCreateMemberForm({
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setSuccess('');
-    const result = createStaffMember({
+    setLoading(true);
+    const result = await createStaffMember({
       name,
       username,
       password,
@@ -38,6 +40,7 @@ export default function StaffCreateMemberForm({
       phone: phone || undefined,
       jobRoles: roles,
     });
+    setLoading(false);
     if (!result.ok) {
       setError(result.error);
       return;
@@ -142,9 +145,10 @@ export default function StaffCreateMemberForm({
       </div>
       <button
         type="submit"
-        className="w-full sm:w-auto bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-2xl text-sm font-semibold"
+        disabled={loading}
+        className="w-full sm:w-auto bg-gray-900 hover:bg-gray-800 text-white px-6 py-3 rounded-2xl text-sm font-semibold disabled:opacity-60"
       >
-        Create staff member
+        {loading ? 'Creating…' : 'Create staff member'}
       </button>
     </form>
   );

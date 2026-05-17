@@ -24,6 +24,7 @@ export default function StaffManageMemberModal({
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const toggleRole = (role: StaffJobRole) => {
     setRoles((prev) =>
@@ -31,7 +32,7 @@ export default function StaffManageMemberModal({
     );
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -43,7 +44,8 @@ export default function StaffManageMemberModal({
       }
     }
 
-    const detailsResult = adminUpdateStaffMember(member.id, {
+    setSaving(true);
+    const detailsResult = await adminUpdateStaffMember(member.id, {
       name,
       username,
       email,
@@ -53,17 +55,20 @@ export default function StaffManageMemberModal({
     });
     if (!detailsResult.ok) {
       setError(detailsResult.error);
+      setSaving(false);
       return;
     }
 
     if (wantsPassword) {
-      const pwResult = adminResetStaffPassword(member.id, newPassword);
+      const pwResult = await adminResetStaffPassword(member.id, newPassword);
       if (!pwResult.ok) {
         setError(pwResult.error);
+        setSaving(false);
         return;
       }
     }
 
+    setSaving(false);
     onUpdated?.();
     onClose();
   };

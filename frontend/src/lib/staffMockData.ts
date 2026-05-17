@@ -307,6 +307,7 @@ export const INITIAL_ATTENDANCE: StaffAttendance[] = [
 
 export const STORAGE_KEYS = {
   session: 'staff_folder_session_v1',
+  staffToken: 'staff_folder_token_v1',
   users: 'staff_folder_users_v1',
   tasks: 'staff_folder_tasks_v1',
   attendance: 'staff_folder_attendance_v1',

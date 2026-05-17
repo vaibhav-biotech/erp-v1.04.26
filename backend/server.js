@@ -9,6 +9,7 @@ const customersRouter = require('./routes/customers');
 const ordersRouter = require('./routes/orders');
 const adminRouter = require('./routes/admin');
 const landingRouter = require('./routes/landing');
+const staffRouter = require('./routes/staff');
 const storeRouter = require('./middleware/storeRouter'); // NEW: Store detection middleware
 const verifyAdminToken = require('./middleware/verifyAdminToken');
 
@@ -523,6 +524,8 @@ app.use('/api/orders', ordersRouter);
 
 // Landing Page Router (hero banners)
 app.use('/api/landing', landingRouter);
+
+app.use('/api/staff', staffRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

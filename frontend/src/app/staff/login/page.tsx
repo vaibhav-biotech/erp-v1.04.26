@@ -11,14 +11,18 @@ export default function StaffLoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const session = loginStaff(loginId, password);
+    const result = await loginStaff(loginId, password);
     setLoading(false);
-    if (!session) {
-      setError('Invalid username/email, password, or account is inactive');
+    if (!result.ok) {
+      setError(
+        result.inactive
+          ? 'This account is inactive. Contact your admin.'
+          : result.error
+      );
       return;
     }
     router.push('/staff');
@@ -76,6 +80,9 @@ export default function StaffLoginPage() {
           <p className="font-semibold text-gray-800">Demo accounts</p>
           <p><span className="font-medium">Staff:</span> priya or staff@plantsingarden.com / staff123</p>
           <p><span className="font-medium">Admin:</span> admin or admin@plantsingarden.com / admin123</p>
+          <p className="text-gray-500 pt-1">
+            Custom staff (e.g. demo2) must exist on the server — admin creates them under Team on production.
+          </p>
         </div>
       </div>
     </div>
