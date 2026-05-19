@@ -1,10 +1,12 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { logoutStaff, getStaffSession } from '@/lib/staffAuth';
 import { StaffPanel } from '@/components/staff/StaffShell';
 import { JOB_ROLE_LABELS } from '@/lib/staffMockData';
 
 export default function StaffProfilePage() {
+  const router = useRouter();
   const session = getStaffSession();
   if (!session) return null;
   const { user } = session;
@@ -28,7 +30,7 @@ export default function StaffProfilePage() {
         type="button"
         onClick={() => {
           logoutStaff();
-          window.location.href = '/staff/login';
+          router.replace('/staff/login');
         }}
         className="w-full mt-6 py-3 rounded-2xl border border-red-200 text-red-600 font-medium hover:bg-red-50"
       >

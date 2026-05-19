@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import CartBadge from '@/components/CartBadge';
 import { useAuth } from '@/contexts/AuthContext';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
+import { readSessionCache, writeSessionCache } from '@/lib/sessionCache';
 
 interface Subcategory {
   name: string;
@@ -47,7 +48,9 @@ const DEFAULT_NOTIFICATION: NotificationConfig = {
 };
 
 const CATEGORIES_CACHE_KEY = 'public_nav_categories_v1';
-const CATEGORIES_CACHE_TTL = 15 * 60 * 1000;
+const NOTIFICATION_CACHE_KEY = 'public_nav_notifications_v1';
+const LOGO_CACHE_KEY = 'public_nav_logo_v1';
+const NAV_CACHE_TTL = 15 * 60 * 1000;
 
 export default function PublicNavbar() {
   const router = useRouter();
@@ -68,20 +71,11 @@ export default function PublicNavbar() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        if (typeof window !== 'undefined') {
-          const raw = sessionStorage.getItem(CATEGORIES_CACHE_KEY);
-          if (raw) {
-            try {
-              const parsed = JSON.parse(raw) as { timestamp: number; data: Category[] };
-              if (Array.isArray(parsed?.data) && Date.now() - Number(parsed.timestamp || 0) < CATEGORIES_CACHE_TTL) {
-                setCategories(parsed.data);
-                setLoading(false);
-                return;
-              }
-            } catch {
-              sessionStorage.removeItem(CATEGORIES_CACHE_KEY);
-            }
-          }
+        const cached = readSessionCache<Category[]>(CATEGORIES_CACHE_KEY, NAV_CACHE_TTL);
+        if (cached) {
+          setCategories(cached);
+          setLoading(false);
+          return;
         }
 
         const headers = getApiHeaders();
@@ -90,12 +84,7 @@ export default function PublicNavbar() {
           const data = await res.json();
           const nextCategories = data.data || [];
           setCategories(nextCategories);
-          if (typeof window !== 'undefined') {
-            sessionStorage.setItem(
-              CATEGORIES_CACHE_KEY,
-              JSON.stringify({ timestamp: Date.now(), data: nextCategories })
-            );
-          }
+          writeSessionCache(CATEGORIES_CACHE_KEY, nextCategories);
         } else {
           setCategories([]);
         }
@@ -117,6 +106,16 @@ export default function PublicNavbar() {
   useEffect(() => {
     const fetchNotificationConfig = async () => {
       try {
+        const cached = readSessionCache<NotificationConfig[]>(
+          NOTIFICATION_CACHE_KEY,
+          NAV_CACHE_TTL
+        );
+        if (cached?.length) {
+          setActiveNotifications(cached);
+          setCurrentNotificationIndex(0);
+          return;
+        }
+
         const headers = getApiHeaders();
         const res = await fetch(buildApiUrl('/api/notification-bar'), { headers });
         if (!res.ok) return;
@@ -135,14 +134,16 @@ export default function PublicNavbar() {
               isActive: true,
             } as NotificationConfig));
 
-          setActiveNotifications(parsed.length > 0 ? parsed : [DEFAULT_NOTIFICATION]);
+          const next = parsed.length > 0 ? parsed : [DEFAULT_NOTIFICATION];
+          setActiveNotifications(next);
           setCurrentNotificationIndex(0);
+          writeSessionCache(NOTIFICATION_CACHE_KEY, next);
           return;
         }
 
         const config = data?.data;
         if (config && config.isActive !== false) {
-          setActiveNotifications([
+          const next: NotificationConfig[] = [
             {
               message: config.message || DEFAULT_NOTIFICATION.message,
               bgColor: config.bgColor || DEFAULT_NOTIFICATION.bgColor,
@@ -150,8 +151,10 @@ export default function PublicNavbar() {
               fontWeight: config.fontWeight === 'bold' ? 'bold' : 'regular',
               isActive: true,
             },
-          ]);
+          ];
+          setActiveNotifications(next);
           setCurrentNotificationIndex(0);
+          writeSessionCache(NOTIFICATION_CACHE_KEY, next);
         }
       } catch {
         // keep defaults silently
@@ -164,6 +167,12 @@ export default function PublicNavbar() {
   useEffect(() => {
     const fetchWebsiteLogo = async () => {
       try {
+        const cached = readSessionCache<WebsiteLogo>(LOGO_CACHE_KEY, NAV_CACHE_TTL);
+        if (cached) {
+          setWebsiteLogo(cached);
+          return;
+        }
+
         const res = await fetch(buildApiUrl('/api/landing/website-logo'), {
           headers: getApiHeaders(),
         });
@@ -173,9 +182,10 @@ export default function PublicNavbar() {
         }
 
         const payload = await res.json();
-        const items = Array.isArray(payload?.data) ? payload.data as WebsiteLogo[] : [];
+        const items = Array.isArray(payload?.data) ? (payload.data as WebsiteLogo[]) : [];
         const active = items.find((item) => item?.isActive) || items[0] || null;
         setWebsiteLogo(active || null);
+        if (active) writeSessionCache(LOGO_CACHE_KEY, active);
       } catch {
         setWebsiteLogo(null);
       } finally {

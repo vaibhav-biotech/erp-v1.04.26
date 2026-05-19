@@ -1,118 +1,78 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import dynamic from 'next/dynamic';
 import PublicLayout from '@/components/PublicLayout';
 import LandingBannerHero from '@/components/LandingBannerHero';
-import CategoryCircleSection from '@/components/CategoryCircleSection';
-import TopPicksSection from '@/components/TopPicksSection';
-import FeaturedCollectionsSection from '@/components/FeaturedCollectionsSection';
-import WhyChooseUsSection from '@/components/WhyChooseUsSection';
-import OffersSection from '@/components/OffersSection';
-import GiftSection from '@/components/GiftSection';
-import CraftedWithCareSection from '@/components/CraftedWithCareSection';
 
-const fadeInUp: any = {
-  hidden: { opacity: 0, y: 18 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: 'easeOut' },
-  },
-};
+function SectionSkeleton({ tall = false }: { tall?: boolean }) {
+  return (
+    <div
+      className={`rounded-xl bg-gray-50 animate-pulse ${tall ? 'min-h-[280px]' : 'min-h-[160px]'}`}
+      aria-hidden
+    />
+  );
+}
+
+const CategoryCircleSection = dynamic(() => import('@/components/CategoryCircleSection'), {
+  loading: () => <SectionSkeleton />,
+});
+const TopPicksSection = dynamic(() => import('@/components/TopPicksSection'), {
+  loading: () => <SectionSkeleton />,
+});
+const FeaturedCollectionsSection = dynamic(
+  () => import('@/components/FeaturedCollectionsSection'),
+  { loading: () => <SectionSkeleton tall /> }
+);
+const WhyChooseUsSection = dynamic(() => import('@/components/WhyChooseUsSection'), {
+  loading: () => <SectionSkeleton />,
+});
+const OffersSection = dynamic(() => import('@/components/OffersSection'), {
+  loading: () => <SectionSkeleton tall />,
+});
+const GiftSection = dynamic(() => import('@/components/GiftSection'), {
+  loading: () => <SectionSkeleton tall />,
+});
+const CraftedWithCareSection = dynamic(() => import('@/components/CraftedWithCareSection'), {
+  loading: () => <SectionSkeleton />,
+});
 
 export default function Home() {
   return (
     <PublicLayout>
       <div className="pt-0 pb-10 sm:pb-12 lg:pb-16">
-        <motion.div
-          variants={fadeInUp}
-          initial="hidden"
-          animate="show"
-        >
-          <LandingBannerHero />
-        </motion.div>
+        <LandingBannerHero />
 
-        <motion.div
-          className="mt-10 sm:mt-12 lg:mt-16"
-          variants={fadeInUp}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
-        >
+        <div className="mt-10 sm:mt-12 lg:mt-16">
           <CategoryCircleSection />
-        </motion.div>
-
-        <div className="mt-10 sm:mt-12 lg:mt-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={fadeInUp}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
-          >
-            <TopPicksSection />
-          </motion.div>
         </div>
 
-        <motion.div
-          className="mt-10 sm:mt-12 lg:mt-16"
-          variants={fadeInUp}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
-        >
+        <div className="mt-10 sm:mt-12 lg:mt-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <TopPicksSection />
+        </div>
+
+        <div className="mt-10 sm:mt-12 lg:mt-16">
           <FeaturedCollectionsSection />
-        </motion.div>
+        </div>
 
-        <motion.div
-          className="mt-10 sm:mt-12 lg:mt-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
-          variants={fadeInUp}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
-        >
+        <div className="mt-10 sm:mt-12 lg:mt-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <WhyChooseUsSection />
-        </motion.div>
+        </div>
 
-        <motion.div
-          className="mt-10 sm:mt-12 lg:mt-16"
-          variants={fadeInUp}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
-        >
+        <div className="mt-10 sm:mt-12 lg:mt-16">
           <OffersSection />
-        </motion.div>
+        </div>
 
-        <motion.div
-          className="mt-20 sm:mt-24 lg:mt-32"
-          variants={fadeInUp}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
-        >
+        <div className="mt-20 sm:mt-24 lg:mt-32">
           <GiftSection />
-        </motion.div>
+        </div>
 
-        <motion.div
-          className="mt-10 sm:mt-12 lg:mt-16"
-          variants={fadeInUp}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
-        >
+        <div className="mt-10 sm:mt-12 lg:mt-16">
           <CraftedWithCareSection />
-        </motion.div>
+        </div>
 
-        <motion.div
-          className="mt-10 sm:mt-12 lg:mt-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center"
-          variants={fadeInUp}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true }}
-        >
+        <div className="mt-10 sm:mt-12 lg:mt-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-lg text-gray-700">Fresh plants, seeds & garden supplies</p>
-        </motion.div>
-
+        </div>
       </div>
     </PublicLayout>
   );

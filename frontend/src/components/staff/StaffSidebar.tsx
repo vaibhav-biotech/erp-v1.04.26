@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { FiLogOut } from 'react-icons/fi';
 import { logoutStaff } from '@/lib/staffAuth';
 import { STAFF_SIDEBAR_NAV } from '@/lib/staffNav';
@@ -9,6 +9,7 @@ import { staffNavActive, staffNavInactive } from '@/lib/staffTheme';
 import type { StaffRole } from '@/lib/staffMockData';
 
 export default function StaffSidebar({ role }: { role: StaffRole }) {
+  const router = useRouter();
   const pathname = usePathname();
   const items = STAFF_SIDEBAR_NAV.filter((item) => !item.roles || item.roles.includes(role));
 
@@ -41,7 +42,7 @@ export default function StaffSidebar({ role }: { role: StaffRole }) {
           type="button"
           onClick={() => {
             logoutStaff();
-            window.location.href = '/staff/login';
+            router.replace('/staff/login');
           }}
           className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 text-sm font-medium"
         >

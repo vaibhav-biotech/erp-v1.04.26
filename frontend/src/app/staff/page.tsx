@@ -5,7 +5,7 @@ import Link from 'next/link';
 import StaffStatCard from '@/components/staff/StaffStatCard';
 import StaffTasksTable from '@/components/staff/StaffTasksTable';
 import { StaffPanel, StaffSectionTitle } from '@/components/staff/StaffShell';
-import { getStaffSession, getTasks, reassignTask, saveTasks } from '@/lib/staffAuth';
+import { getStaffSession, getTasks, reassignTask, updateTaskStatus } from '@/lib/staffAuth';
 import type { TaskStatus } from '@/lib/staffMockData';
 
 export default function StaffDashboardPage() {
@@ -25,9 +25,7 @@ export default function StaffDashboardPage() {
   const pendingToday = todayTasks.filter((t) => t.status !== 'done').length;
 
   const handleStatusChange = (id: string, status: TaskStatus) => {
-    const next = tasks.map((t) => (t.id === id ? { ...t, status } : t));
-    setTasks(next);
-    saveTasks(next);
+    if (updateTaskStatus(id, status)) setTasks(getTasks());
   };
 
   const handleReassign = (id: string, assigneeId: string) => {

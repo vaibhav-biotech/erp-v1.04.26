@@ -12,12 +12,11 @@ export const generateSampleTemplate = () => {
       'Benefits': 'Improves air quality, Low maintenance',
       'Care': 'Water weekly, Indirect sunlight',
       'Stock': 50,
-      'Size Variants': 'small, medium, large',
-      'Size Original Prices': '599, 799, 999',
+      'Size Variants': 'small:599,medium:799,large:999',
       'Discount': 20,
       'Rating': 4.5,
       'Status': 'active',
-      'Reviews': 128
+      'Reviews': 128,
     },
     {
       'Images Link': 'https://drive.google.com/uc?id=GOOGLE_DRIVE_ID_3',
@@ -29,12 +28,11 @@ export const generateSampleTemplate = () => {
       'Benefits': 'Tolerates low light, Quick growing',
       'Care': 'Water when soil is dry, Any light',
       'Stock': 75,
-      'Size Variants': 'small, medium',
-      'Size Original Prices': '399, 599',
+      'Size Variants': 'small:399,medium:599',
       'Discount': 10,
       'Rating': 4.8,
       'Status': 'active',
-      'Reviews': 256
+      'Reviews': 256,
     },
     {
       'Images Link': 'https://drive.google.com/uc?id=GOOGLE_DRIVE_ID_4',
@@ -46,58 +44,35 @@ export const generateSampleTemplate = () => {
       'Benefits': 'Extremely hardy, Air purifying',
       'Care': 'Minimal watering, Low light tolerant',
       'Stock': 100,
-      'Size Variants': 'small, medium, large',
-      'Size Original Prices': '299, 499, 799',
+      'Size Variants': 'small:299,medium:499,large:799',
       'Discount': 15,
       'Rating': 4.9,
       'Status': 'active',
-      'Reviews': 512
-    }
+      'Reviews': 512,
+    },
   ];
 
-  // Create workbook
   const worksheet = XLSX.utils.json_to_sheet(sampleData);
 
-  // Set column widths
-  const columnWidths = [
-    { wch: 50 },  // Images Link
-    { wch: 20 },  // Names
-    { wch: 18 },  // Category
-    { wch: 20 },  // Subcategory
-    { wch: 30 },  // Tags
-    { wch: 25 },  // Description
-    { wch: 30 },  // Benefits
-    { wch: 25 },  // Care
-    { wch: 10 },  // Stock
-    { wch: 25 },  // Size Variants
-    { wch: 25 },  // Size Prices
-    { wch: 15 },  // Original Price
-    { wch: 12 },  // Discount
-    { wch: 10 },  // Rating
-    { wch: 12 },  // Status
-    { wch: 10 }   // Reviews
+  worksheet['!cols'] = [
+    { wch: 50 },
+    { wch: 20 },
+    { wch: 18 },
+    { wch: 20 },
+    { wch: 30 },
+    { wch: 25 },
+    { wch: 30 },
+    { wch: 25 },
+    { wch: 10 },
+    { wch: 36 },
+    { wch: 12 },
+    { wch: 10 },
+    { wch: 12 },
+    { wch: 10 },
   ];
-
-  worksheet['!cols'] = columnWidths;
-
-  // Style header row
-  const headerStyle = {
-    font: { bold: true, color: 'FFFFFF' },
-    fill: { fgColor: { rgb: 'FF3B82F6' } },
-    alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
-  };
-
-  const headerCells = ['A1', 'B1', 'C1', 'D1', 'E1', 'F1', 'G1', 'H1', 'I1', 'J1', 'K1', 'L1', 'M1', 'N1', 'O1'];
-  headerCells.forEach(cell => {
-    if (worksheet[cell]) {
-      worksheet[cell].s = headerStyle;
-    }
-  });
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Products');
-
-  // Download
   XLSX.writeFile(workbook, 'Plants_Sample_Template.xlsx');
 };
 
@@ -107,97 +82,97 @@ export const getColumnInstructions = () => {
       column: 'Images Link',
       required: true,
       format: 'Comma-separated Google Drive URLs or File IDs',
-      example: 'https://drive.google.com/uc?id=ABC123...,https://drive.google.com/file/d/XYZ789.../view'
+      example: 'https://drive.google.com/uc?id=ABC123...',
     },
     {
       column: 'Names',
       required: true,
       format: 'Product name',
-      example: 'Monstera Deliciosa'
+      example: 'Monstera Deliciosa',
     },
     {
       column: 'Category',
       required: true,
       format: 'Main category name',
-      example: 'Indoor Plants'
+      example: 'Indoor Plants',
     },
     {
       column: 'Subcategory',
       required: true,
       format: 'Single subcategory slug',
-      example: 'indoor-plants'
+      example: 'indoor-plants',
     },
     {
       column: 'Tags',
       required: false,
-      format: 'Comma-separated tag slugs for cross-listing',
-      example: 'indoor-plants,air-purifying,office'
+      format: 'Comma-separated tag slugs',
+      example: 'indoor-plants,air-purifying',
     },
     {
       column: 'Description',
       required: false,
       format: 'Product description',
-      example: 'Beautiful split-leaf plant'
+      example: 'Beautiful split-leaf plant',
     },
     {
       column: 'Benefits',
       required: false,
       format: 'Key benefits',
-      example: 'Improves air quality, Low maintenance'
+      example: 'Improves air quality',
     },
     {
       column: 'Care',
       required: false,
       format: 'Care instructions',
-      example: 'Water weekly, Indirect sunlight'
+      example: 'Water weekly',
     },
     {
       column: 'Stock',
       required: true,
-      format: 'Number of items in stock',
-      example: '50'
+      format: 'Number in stock',
+      example: '50',
     },
     {
       column: 'Size Variants',
       required: false,
-      format: 'Comma-separated variant names',
-      example: 'small, medium, large'
+      format: 'Single column: name:price pairs',
+      example: 'small:599,medium:799,large:999',
     },
     {
       column: 'Size Original Prices',
       required: false,
-      format: 'Comma-separated original prices (before discount)',
-      example: '599, 799, 999'
+      format: 'Optional two-column format (with Size Variants as names only)',
+      example: '599, 799, 999',
     },
     {
       column: 'Original Price',
       required: false,
-      format: 'Price in INR (optional - uses first Size Price if not provided)',
-      example: '999'
+      format: 'Optional base price; if empty, uses highest variant price',
+      example: '999',
     },
     {
       column: 'Discount',
       required: true,
       format: 'Discount percentage (0-100)',
-      example: '20'
+      example: '20',
     },
     {
       column: 'Rating',
       required: true,
       format: 'Rating 1-5',
-      example: '4.5'
+      example: '4.5',
     },
     {
       column: 'Status',
       required: true,
       format: 'active, inactive, or draft',
-      example: 'active'
+      example: 'active',
     },
     {
       column: 'Reviews',
       required: true,
       format: 'Number of reviews',
-      example: '128'
-    }
+      example: '128',
+    },
   ];
 };

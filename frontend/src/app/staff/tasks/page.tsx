@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import StaffTaskForm from '@/components/staff/StaffTaskForm';
 import StaffTasksTable from '@/components/staff/StaffTasksTable';
 import { StaffPanel, StaffSectionTitle } from '@/components/staff/StaffShell';
-import { getStaffSession, getTasks, reassignTask, saveTasks } from '@/lib/staffAuth';
+import { getStaffSession, getTasks, reassignTask, updateTaskStatus } from '@/lib/staffAuth';
 import type { TaskStatus } from '@/lib/staffMockData';
 
 type Tab = 'all' | 'today' | 'upcoming' | 'done';
@@ -28,9 +28,7 @@ export default function StaffTasksPage() {
   }, [tasks, tab, today, userId, isAdmin]);
 
   const handleStatusChange = (id: string, status: TaskStatus) => {
-    const next = tasks.map((t) => (t.id === id ? { ...t, status } : t));
-    setTasks(next);
-    saveTasks(next);
+    if (updateTaskStatus(id, status)) reload();
   };
 
   const handleReassign = (id: string, assigneeId: string) => {

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Home,
@@ -23,6 +23,7 @@ interface MenuItem {
 }
 
 export default function CustomerSidebar() {
+  const router = useRouter();
   const pathname = usePathname();
   const { logout, customer } = useAuth();
 
@@ -38,7 +39,7 @@ export default function CustomerSidebar() {
 
   const handleLogout = () => {
     logout();
-    window.location.href = '/';
+    router.replace('/');
   };
 
   return (

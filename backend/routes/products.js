@@ -83,8 +83,7 @@ router.post('/migrate', async (req, res) => {
 
 /**
  * POST /api/products/bulk-upload
- * Upload multiple products with images from Google Drive
- * Expects array of products with driveImageUrls (Google Drive links or IDs)
+ * Starts async bulk upload; poll GET /bulk-upload/status/:jobId for progress.
  */
 router.post('/bulk-upload', async (req, res) => {
   try {
@@ -93,28 +92,76 @@ router.post('/bulk-upload', async (req, res) => {
     if (!Array.isArray(products) || products.length === 0) {
       return res.status(400).json({
         success: false,
-        error: 'Products array is required and must not be empty'
+        error: 'Products array is required and must not be empty',
       });
     }
 
-    console.log(`📨 Received bulk upload request for ${products.length} products`);
+    const {
+      createBulkUploadJob,
+      completeBulkUploadJob,
+      failBulkUploadJob,
+    } = require('../services/bulkUploadJobs');
 
-    const result = await processBulkUpload(products);
+    const jobId = createBulkUploadJob(products.length);
+    console.log(`📨 Bulk upload job ${jobId} — ${products.length} products`);
 
-    return res.status(200).json({
+    res.status(202).json({
       success: true,
-      totalProducts: result.totalProducts,
-      successCount: result.successCount,
-      failureCount: result.failureCount,
-      results: result.results
+      jobId,
+      totalProducts: products.length,
+      message: 'Upload started. Poll /api/products/bulk-upload/status/:jobId for progress.',
+    });
+
+    setImmediate(async () => {
+      try {
+        const result = await processBulkUpload(products, { jobId });
+        completeBulkUploadJob(jobId, result);
+      } catch (error) {
+        console.error('Bulk Upload Job Error:', error);
+        failBulkUploadJob(jobId, error.message || 'Bulk upload failed');
+      }
     });
   } catch (error) {
     console.error('Bulk Upload Error:', error);
     return res.status(500).json({
       success: false,
-      error: error.message || 'Bulk upload failed'
+      error: error.message || 'Bulk upload failed',
     });
   }
+});
+
+/**
+ * GET /api/products/bulk-upload/status/:jobId
+ */
+router.get('/bulk-upload/status/:jobId', (req, res) => {
+  const { getBulkUploadJob } = require('../services/bulkUploadJobs');
+  const job = getBulkUploadJob(req.params.jobId);
+
+  if (!job) {
+    return res.status(404).json({
+      success: false,
+      error: 'Upload job not found or expired',
+    });
+  }
+
+  const percent =
+    job.totalProducts > 0
+      ? Math.round((job.processed / job.totalProducts) * 100)
+      : 0;
+
+  return res.status(200).json({
+    success: true,
+    jobId: job.id,
+    status: job.status,
+    percent,
+    totalProducts: job.totalProducts,
+    processed: job.processed,
+    currentProduct: job.currentProduct,
+    successCount: job.successCount,
+    failureCount: job.failureCount,
+    results: job.status === 'completed' || job.status === 'failed' ? job.results : undefined,
+    error: job.error,
+  });
 });
 
 /**

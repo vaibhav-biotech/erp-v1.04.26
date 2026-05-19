@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { getStaffSession, syncStaffUsersFromServer, type StaffSession } from '@/lib/staffAuth';
+import { getStaffSession, syncStaffFolderFromServer, type StaffSession } from '@/lib/staffAuth';
 import StaffSidebar from './StaffSidebar';
 import StaffBottomNav from './StaffBottomNav';
 import StaffTopBar from './StaffTopBar';
@@ -19,12 +19,17 @@ export default function StaffDashboardLayout({ children }: { children: React.Rea
       router.replace('/staff/login');
       return;
     }
-    void syncStaffUsersFromServer();
+    const sync = () => void syncStaffFolderFromServer();
+    sync();
+    const poll = window.setInterval(sync, 3000);
     const id = window.setTimeout(() => {
       setSession(s);
       setReady(true);
     }, 0);
-    return () => window.clearTimeout(id);
+    return () => {
+      window.clearTimeout(id);
+      window.clearInterval(poll);
+    };
   }, [router, pathname]);
 
   if (!ready || !session) {

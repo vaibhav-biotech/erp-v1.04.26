@@ -2,7 +2,10 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const StaffMember = require('../models/StaffMember');
+const StaffAttendanceRecord = require('../models/StaffAttendanceRecord');
+const StaffTaskRecord = require('../models/StaffTaskRecord');
 const { ensureStaffDemoUsersOnce } = require('../services/staffSeed');
+const { ensureStaffDataOnce } = require('../services/staffDataSeed');
 
 const router = express.Router();
 
@@ -80,6 +83,7 @@ router.post('/login', async (req, res) => {
     }
 
     await ensureStaffDemoUsersOnce();
+    await ensureStaffDataOnce();
 
     const member = await StaffMember.findOne({
       $or: [{ username: loginId }, { email: loginId }],
@@ -282,6 +286,181 @@ router.post('/users/:id/password', verifyStaffToken, requireStaffAdmin, async (r
   } catch (error) {
     console.error('[staff/users password]', error);
     return res.status(500).json({ success: false, error: 'Failed to reset password' });
+  }
+});
+
+const ATTENDANCE_STATUSES = ['present', 'absent', 'holiday', 'leave', 'half_day'];
+const TASK_STATUSES = ['pending', 'in_progress', 'done'];
+const WORK_TYPES = ['social_media', 'whatsapp', 'sales', 'operations'];
+
+// GET /api/staff/attendance
+router.get('/attendance', verifyStaffToken, async (req, res) => {
+  try {
+    await ensureStaffDataOnce();
+    const records = await StaffAttendanceRecord.find().sort({ date: 1 });
+    return res.status(200).json({
+      success: true,
+      data: records.map((r) => ({
+        staffId: r.staffId,
+        date: r.date,
+        status: r.status,
+      })),
+    });
+  } catch (error) {
+    console.error('[staff/attendance GET]', error);
+    return res.status(500).json({ success: false, error: 'Failed to load attendance' });
+  }
+});
+
+// PUT /api/staff/attendance
+router.put('/attendance', verifyStaffToken, requireStaffAdmin, async (req, res) => {
+  try {
+    const staffId = String(req.body.staffId || '').trim();
+    const date = String(req.body.date || '').trim();
+    const status = String(req.body.status || '').trim();
+
+    if (!staffId || !date || !status) {
+      return res.status(400).json({ success: false, error: 'staffId, date, and status are required' });
+    }
+    if (!ATTENDANCE_STATUSES.includes(status)) {
+      return res.status(400).json({ success: false, error: 'Invalid attendance status' });
+    }
+
+    const member = await StaffMember.findOne({ id: staffId });
+    if (!member) {
+      return res.status(404).json({ success: false, error: 'Staff member not found' });
+    }
+
+    const record = await StaffAttendanceRecord.findOneAndUpdate(
+      { staffId, date },
+      { staffId, date, status },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: { staffId: record.staffId, date: record.date, status: record.status },
+    });
+  } catch (error) {
+    console.error('[staff/attendance PUT]', error);
+    return res.status(500).json({ success: false, error: 'Failed to save attendance' });
+  }
+});
+
+// GET /api/staff/tasks
+router.get('/tasks', verifyStaffToken, async (req, res) => {
+  try {
+    await ensureStaffDataOnce();
+    const tasks = await StaffTaskRecord.find().sort({ scheduledDate: -1, createdAt: -1 });
+    return res.status(200).json({
+      success: true,
+      data: tasks.map((t) => t.toClientJSON()),
+    });
+  } catch (error) {
+    console.error('[staff/tasks GET]', error);
+    return res.status(500).json({ success: false, error: 'Failed to load tasks' });
+  }
+});
+
+// POST /api/staff/tasks
+router.post('/tasks', verifyStaffToken, async (req, res) => {
+  try {
+    const title = String(req.body.title || '').trim();
+    const assigneeId = String(req.body.assigneeId || '').trim();
+    const workType = String(req.body.workType || '').trim();
+    const scheduledDate = String(req.body.scheduledDate || '').trim();
+    const createdById = String(req.body.createdById || req.staffId).trim();
+
+    if (!title) {
+      return res.status(400).json({ success: false, error: 'Title is required' });
+    }
+    if (!assigneeId || !scheduledDate) {
+      return res.status(400).json({ success: false, error: 'Assignee and date are required' });
+    }
+    if (!WORK_TYPES.includes(workType)) {
+      return res.status(400).json({ success: false, error: 'Invalid work type' });
+    }
+
+    const isAdmin = req.staffRole === 'staff_admin';
+    if (!isAdmin && assigneeId !== req.staffId) {
+      return res.status(403).json({ success: false, error: 'Can only create tasks for yourself' });
+    }
+
+    const assignee = await StaffMember.findOne({ id: assigneeId });
+    if (!assignee || assignee.role !== 'staff' || !assignee.active) {
+      return res.status(400).json({ success: false, error: 'Invalid assignee' });
+    }
+
+    const id = String(req.body.id || `t-${Date.now()}`).trim();
+    const status = TASK_STATUSES.includes(req.body.status) ? req.body.status : 'pending';
+
+    const task = await StaffTaskRecord.create({
+      id,
+      title,
+      description: String(req.body.description || '').trim(),
+      assigneeId,
+      workType,
+      scheduledDate,
+      scheduledTime: String(req.body.scheduledTime || '').trim(),
+      status,
+      createdById,
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: task.toClientJSON(),
+    });
+  } catch (error) {
+    console.error('[staff/tasks POST]', error);
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, error: 'Task id already exists' });
+    }
+    return res.status(500).json({ success: false, error: 'Failed to create task' });
+  }
+});
+
+// PATCH /api/staff/tasks/:id
+router.patch('/tasks/:id', verifyStaffToken, async (req, res) => {
+  try {
+    const task = await StaffTaskRecord.findOne({ id: req.params.id });
+    if (!task) {
+      return res.status(404).json({ success: false, error: 'Task not found' });
+    }
+
+    const isAdmin = req.staffRole === 'staff_admin';
+    if (!isAdmin && task.assigneeId !== req.staffId) {
+      return res.status(403).json({ success: false, error: 'Not allowed to edit this task' });
+    }
+
+    if (req.body.status !== undefined) {
+      const status = String(req.body.status).trim();
+      if (!TASK_STATUSES.includes(status)) {
+        return res.status(400).json({ success: false, error: 'Invalid status' });
+      }
+      task.status = status;
+    }
+
+    if (req.body.assigneeId !== undefined) {
+      if (!isAdmin) {
+        return res.status(403).json({ success: false, error: 'Only admin can reassign tasks' });
+      }
+      const assigneeId = String(req.body.assigneeId).trim();
+      const assignee = await StaffMember.findOne({ id: assigneeId });
+      if (!assignee || assignee.role !== 'staff' || !assignee.active) {
+        return res.status(400).json({ success: false, error: 'Invalid assignee' });
+      }
+      task.assigneeId = assigneeId;
+    }
+
+    await task.save();
+
+    return res.status(200).json({
+      success: true,
+      data: task.toClientJSON(),
+    });
+  } catch (error) {
+    console.error('[staff/tasks PATCH]', error);
+    return res.status(500).json({ success: false, error: 'Failed to update task' });
   }
 });
 

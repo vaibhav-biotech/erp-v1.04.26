@@ -1,5 +1,11 @@
 import { buildApiUrl } from '@/lib/storeConfig';
-import type { StaffJobRole, StaffUser } from './staffMockData';
+import type {
+  StaffAttendance,
+  StaffJobRole,
+  StaffTask,
+  StaffUser,
+  TaskStatus,
+} from './staffMockData';
 
 export type SafeStaffUser = Omit<StaffUser, 'password'>;
 
@@ -132,4 +138,98 @@ export async function apiResetStaffPassword(
   }
 
   return { ok: true };
+}
+
+export async function apiFetchStaffAttendance(
+  token: string
+): Promise<{ ok: true; records: StaffAttendance[] } | { ok: false; error: string }> {
+  const res = await fetch(buildApiUrl('/api/staff/attendance'), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const parsed = await parseJson<StaffAttendance[]>(res);
+  if (!parsed.ok || !parsed.data) {
+    return { ok: false, error: parsed.error || 'Failed to load attendance' };
+  }
+
+  return { ok: true, records: parsed.data };
+}
+
+export async function apiUpsertStaffAttendance(
+  token: string,
+  input: { staffId: string; date: string; status: StaffAttendance['status'] }
+): Promise<{ ok: true; record: StaffAttendance } | { ok: false; error: string }> {
+  const res = await fetch(buildApiUrl('/api/staff/attendance'), {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(input),
+  });
+
+  const parsed = await parseJson<StaffAttendance>(res);
+  if (!parsed.ok || !parsed.data) {
+    return { ok: false, error: parsed.error || 'Failed to save attendance' };
+  }
+
+  return { ok: true, record: parsed.data };
+}
+
+export async function apiFetchStaffTasks(
+  token: string
+): Promise<{ ok: true; tasks: StaffTask[] } | { ok: false; error: string }> {
+  const res = await fetch(buildApiUrl('/api/staff/tasks'), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const parsed = await parseJson<StaffTask[]>(res);
+  if (!parsed.ok || !parsed.data) {
+    return { ok: false, error: parsed.error || 'Failed to load tasks' };
+  }
+
+  return { ok: true, tasks: parsed.data };
+}
+
+export async function apiCreateStaffTask(
+  token: string,
+  task: StaffTask
+): Promise<{ ok: true; task: StaffTask } | { ok: false; error: string }> {
+  const res = await fetch(buildApiUrl('/api/staff/tasks'), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(task),
+  });
+
+  const parsed = await parseJson<StaffTask>(res);
+  if (!parsed.ok || !parsed.data) {
+    return { ok: false, error: parsed.error || 'Failed to create task' };
+  }
+
+  return { ok: true, task: parsed.data };
+}
+
+export async function apiPatchStaffTask(
+  token: string,
+  id: string,
+  patch: { status?: TaskStatus; assigneeId?: string }
+): Promise<{ ok: true; task: StaffTask } | { ok: false; error: string }> {
+  const res = await fetch(buildApiUrl(`/api/staff/tasks/${encodeURIComponent(id)}`), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(patch),
+  });
+
+  const parsed = await parseJson<StaffTask>(res);
+  if (!parsed.ok || !parsed.data) {
+    return { ok: false, error: parsed.error || 'Failed to update task' };
+  }
+
+  return { ok: true, task: parsed.data };
 }

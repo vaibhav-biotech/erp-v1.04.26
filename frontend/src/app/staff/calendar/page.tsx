@@ -5,8 +5,24 @@ import StaffTasksTable from '@/components/staff/StaffTasksTable';
 import { StaffPanel, StaffSectionTitle } from '@/components/staff/StaffShell';
 import { dateFromDay, getCalendarCells, todayInMonth } from '@/lib/staffCalendar';
 import { formatYearMonth, monthLabel, shiftYearMonth } from '@/lib/staffAttendance';
-import { getStaffMemberById, getStaffSession, getTasks, reassignTask, saveTasks } from '@/lib/staffAuth';
-import { WORK_TYPE_LABELS, type StaffTask, type TaskStatus } from '@/lib/staffMockData';
+import {
+  getAttendance,
+  getStaffMemberById,
+  getStaffSession,
+  getTasks,
+  reassignTask,
+  updateTaskStatus,
+} from '@/lib/staffAuth';
+import {
+  attendanceDayClass,
+  attendanceMark,
+} from '@/lib/staffAttendance';
+import {
+  WORK_TYPE_LABELS,
+  type AttendanceStatus,
+  type StaffTask,
+  type TaskStatus,
+} from '@/lib/staffMockData';
 
 const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
@@ -87,12 +103,16 @@ export default function StaffCalendarPage() {
 
   const [yearMonth, setYearMonth] = useState(() => formatYearMonth(new Date()));
   const [tasks, setTasks] = useState(() => getTasks());
+  const [attendance, setAttendance] = useState(() => getAttendance());
   const [selectedDay, setSelectedDay] = useState<number | null>(() =>
     todayInMonth(formatYearMonth(new Date()))
   );
 
   useEffect(() => {
-    const refresh = () => setTasks(getTasks());
+    const refresh = () => {
+      setTasks(getTasks());
+      setAttendance(getAttendance());
+    };
     refresh();
     const id = window.setInterval(refresh, 2000);
     return () => window.clearInterval(id);
@@ -117,6 +137,20 @@ export default function StaffCalendarPage() {
     return map;
   }, [assignedTasks, yearMonth]);
 
+  const attendanceByDay = useMemo(() => {
+    const map: Record<number, AttendanceStatus> = {};
+    const staffId = isAdmin ? null : userId;
+    if (!staffId) return map;
+
+    attendance
+      .filter((r) => r.staffId === staffId && r.date.startsWith(yearMonth))
+      .forEach((r) => {
+        const day = parseInt(r.date.slice(8), 10);
+        if (!Number.isNaN(day)) map[day] = r.status;
+      });
+    return map;
+  }, [attendance, userId, yearMonth, isAdmin]);
+
   const cells = useMemo(() => getCalendarCells(yearMonth), [yearMonth]);
 
   useEffect(() => {
@@ -140,9 +174,7 @@ export default function StaffCalendarPage() {
   );
 
   const handleStatusChange = (id: string, status: TaskStatus) => {
-    const next = tasks.map((t) => (t.id === id ? { ...t, status } : t));
-    setTasks(next);
-    saveTasks(next);
+    if (updateTaskStatus(id, status)) setTasks(getTasks());
   };
 
   const handleReassign = (id: string, assigneeId: string) => {
@@ -164,10 +196,12 @@ export default function StaffCalendarPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
         <div className="min-w-0">
           <StaffSectionTitle>
-            {isAdmin ? 'Team tasks' : 'My tasks'}
+            {isAdmin ? 'Team tasks' : 'My calendar'}
           </StaffSectionTitle>
           <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-            {monthTotal} this month
+            {isAdmin
+              ? `${monthTotal} tasks this month`
+              : `${monthTotal} tasks · attendance from admin`}
           </p>
         </div>
         <div className="flex items-center justify-between sm:justify-end gap-1 shrink-0">
@@ -209,22 +243,32 @@ export default function StaffCalendarPage() {
               }
               const dayTasks = tasksByDay[day] ?? [];
               const count = dayTasks.length;
+              const attStatus = attendanceByDay[day];
               const isSelected = selectedDay === day;
               const isToday = todayInMonth(yearMonth) === day;
+              const cellClass = isAdmin
+                ? taskDayClass(dayTasks)
+                : attStatus
+                  ? attendanceDayClass(attStatus)
+                  : 'bg-gray-50 text-gray-500 border-gray-100';
 
               return (
                 <button
                   key={`day-${day}`}
                   type="button"
                   onClick={() => setSelectedDay(day)}
-                  className={`h-9 sm:aspect-square sm:h-auto rounded-lg sm:rounded-xl flex flex-col items-center justify-center transition-all border font-semibold text-[10px] sm:text-xs ${taskDayClass(dayTasks)} ${
+                  className={`h-9 sm:aspect-square sm:h-auto rounded-lg sm:rounded-xl flex flex-col items-center justify-center transition-all border font-semibold text-[10px] sm:text-xs ${cellClass} ${
                     isSelected
                       ? 'ring-2 ring-gray-900 ring-offset-1 sm:ring-offset-2 lg:scale-105 shadow-sm z-10'
                       : ''
                   } ${isToday && !isSelected ? 'ring-1 ring-gray-400' : ''}`}
                 >
                   <span className="leading-none">{day}</span>
-                  {count > 0 && (
+                  {!isAdmin && attStatus ? (
+                    <span className="text-[8px] sm:text-[10px] leading-none mt-0.5 font-bold">
+                      {attendanceMark(attStatus)}
+                    </span>
+                  ) : count > 0 ? (
                     <span
                       className={`text-[8px] sm:text-[10px] leading-none mt-0.5 font-bold px-1 rounded-full ${
                         isSelected || dayTasks.every((t) => t.status === 'done')
@@ -234,16 +278,26 @@ export default function StaffCalendarPage() {
                     >
                       {count}
                     </span>
-                  )}
+                  ) : null}
                 </button>
               );
             })}
           </div>
 
           <div className="flex flex-wrap gap-x-3 gap-y-1.5 mt-3 justify-center sm:justify-start">
-            <Legend color="bg-green-500" label="Done" />
-            <Legend color="bg-yellow-400" label="Progress" />
-            <Legend color="bg-red-500" label="Pending" />
+            {isAdmin ? (
+              <>
+                <Legend color="bg-green-500" label="Done" />
+                <Legend color="bg-yellow-400" label="Progress" />
+                <Legend color="bg-red-500" label="Pending" />
+              </>
+            ) : (
+              <>
+                <Legend color="bg-green-500" label="Present" />
+                <Legend color="bg-red-500" label="Absent" />
+                <Legend color="bg-yellow-400" label="Holiday" />
+              </>
+            )}
           </div>
         </div>
 

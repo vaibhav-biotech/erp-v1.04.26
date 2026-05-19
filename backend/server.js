@@ -139,8 +139,12 @@ const connectDB = async () => {
     console.log('✓ MongoDB connected successfully');
 
     const { ensureStaffDemoUsersOnce } = require('./services/staffSeed');
+    const { ensureStaffDataOnce } = require('./services/staffDataSeed');
     ensureStaffDemoUsersOnce().catch((err) => {
       console.warn('[staff-seed] Startup seed skipped:', err.message);
+    });
+    ensureStaffDataOnce().catch((err) => {
+      console.warn('[staff-data-seed] Startup seed skipped:', err.message);
     });
   } catch (error) {
     console.warn('⚠ MongoDB connection failed:', error.message);

@@ -15,10 +15,15 @@ import {
 } from './staffMockData';
 import {
   apiCreateStaffMember,
+  apiCreateStaffTask,
+  apiFetchStaffAttendance,
+  apiFetchStaffTasks,
   apiFetchStaffUsers,
+  apiPatchStaffTask,
   apiResetStaffPassword,
   apiStaffLogin,
   apiUpdateStaffMember,
+  apiUpsertStaffAttendance,
   type SafeStaffUser,
 } from './staffApi';
 
@@ -94,6 +99,39 @@ export async function syncStaffUsersFromServer(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/** Pull tasks + attendance from API (shared across admin and staff browsers). */
+export async function syncStaffPortalDataFromServer(): Promise<boolean> {
+  const token = getStaffToken();
+  if (!token) return false;
+
+  try {
+    const [attendanceResult, tasksResult] = await Promise.all([
+      apiFetchStaffAttendance(token),
+      apiFetchStaffTasks(token),
+    ]);
+
+    let ok = true;
+    if (attendanceResult.ok) {
+      saveAttendance(attendanceResult.records);
+    } else {
+      ok = false;
+    }
+    if (tasksResult.ok) {
+      saveTasks(tasksResult.tasks);
+    } else {
+      ok = false;
+    }
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Sync users, tasks, and attendance from the server. */
+export async function syncStaffFolderFromServer(): Promise<void> {
+  await Promise.all([syncStaffUsersFromServer(), syncStaffPortalDataFromServer()]);
 }
 
 export function getStaffUsers(): StaffUser[] {
@@ -280,15 +318,49 @@ export async function adminResetStaffPassword(
 export function reassignTask(taskId: string, assigneeId: string): boolean {
   const assignee = getStaffMemberById(assigneeId);
   if (!assignee || assignee.role !== 'staff' || !assignee.active) return false;
+  return patchTask(taskId, { assigneeId });
+}
 
+function pushTaskPatchToServer(
+  id: string,
+  patch: Partial<Pick<StaffTask, 'status' | 'assigneeId'>>
+) {
+  const token = getStaffToken();
+  if (!token) return;
+  void apiPatchStaffTask(token, id, patch).catch(() => {
+    /* offline — local cache already updated */
+  });
+}
+
+function pushAttendanceToServer(
+  staffId: string,
+  date: string,
+  status: StaffAttendance['status']
+) {
+  const token = getStaffToken();
+  if (!token) return;
+  void apiUpsertStaffAttendance(token, { staffId, date, status }).catch(() => {
+    /* offline */
+  });
+}
+
+export function patchTask(
+  id: string,
+  patch: Partial<Pick<StaffTask, 'status' | 'assigneeId'>>
+): boolean {
   const tasks = getTasks();
-  const idx = tasks.findIndex((t) => t.id === taskId);
+  const idx = tasks.findIndex((t) => t.id === id);
   if (idx === -1) return false;
 
   const next = [...tasks];
-  next[idx] = { ...next[idx], assigneeId };
+  next[idx] = { ...next[idx], ...patch };
   saveTasks(next);
+  pushTaskPatchToServer(id, patch);
   return true;
+}
+
+export function updateTaskStatus(id: string, status: StaffTask['status']): boolean {
+  return patchTask(id, { status });
 }
 
 function createStaffMemberLocal(input: {
@@ -411,7 +483,7 @@ export async function loginStaff(loginId: string, password: string): Promise<Sta
       const session: StaffSession = { user: apiResult.user };
       localStorage.setItem(STORAGE_KEYS.session, JSON.stringify(session));
       seedStaffStorageIfNeeded();
-      await syncStaffUsersFromServer();
+      await syncStaffFolderFromServer();
       return { ok: true, session };
     }
     return {
@@ -456,7 +528,7 @@ export function saveTasks(tasks: StaffTask[]) {
   localStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(tasks));
 }
 
-export function createTask(input: {
+export async function createTask(input: {
   title: string;
   assigneeId: string;
   workType: StaffTask['workType'];
@@ -464,7 +536,7 @@ export function createTask(input: {
   scheduledTime?: string;
   createdById: string;
   description?: string;
-}): StaffTask {
+}): Promise<StaffTask> {
   const task: StaffTask = {
     id: `t-${Date.now()}`,
     title: input.title.trim(),
@@ -476,8 +548,22 @@ export function createTask(input: {
     status: 'pending',
     createdById: input.createdById,
   };
-  const next = [task, ...getTasks()];
-  saveTasks(next);
+  saveTasks([task, ...getTasks()]);
+
+  const token = getStaffToken();
+  if (token) {
+    try {
+      const result = await apiCreateStaffTask(token, task);
+      if (result.ok) {
+        const tasks = getTasks().map((t) => (t.id === task.id ? result.task : t));
+        saveTasks(tasks);
+        return result.task;
+      }
+    } catch {
+      /* keep local task */
+    }
+  }
+
   return task;
 }
 
@@ -500,6 +586,7 @@ export function upsertAttendance(staffId: string, date: string, status: StaffAtt
   const without = records.filter((r) => !(r.staffId === staffId && r.date === date));
   const next = [...without, { staffId, date, status }];
   saveAttendance(next);
+  pushAttendanceToServer(staffId, date, status);
   return next;
 }
 

@@ -9,6 +9,8 @@ import {
   parseCSVFile 
 } from '../utils/parseExcelFile';
 import { generateSampleTemplate, getColumnInstructions } from '../utils/generateSampleTemplate';
+import BulkUploadPreviewTable from './BulkUploadPreviewTable';
+import type { ParsedProduct } from '@/utils/parseExcelFile';
 
 interface UploadResult {
   success: boolean;
@@ -24,23 +26,6 @@ interface BulkUploadResponse {
   successCount: number;
   failureCount: number;
   results: UploadResult[];
-}
-
-interface ParsedProduct {
-  name: string;
-  category: string;
-  subcategory: string;
-  tags?: string[];
-  originalPrice: number;
-  finalPrice: number;
-  discount?: number;
-  rating: number;
-  reviews: number;
-  images: string[];
-  description?: string;
-  sizeVariants: any[];
-  potVariants: any[];
-  status: 'active' | 'inactive' | 'draft';
 }
 
 interface BulkUploadModalProps {
@@ -61,9 +46,22 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
   const [dragActive, setDragActive] = useState(false);
   const [parsedProducts, setParsedProducts] = useState<ParsedProduct[] | null>(null);
   const [parseErrors, setParseErrors] = useState<string[] | null>(null);
-  const [currentStep, setCurrentStep] = useState<'upload' | 'preview' | 'results'>('upload');
+  const [currentStep, setCurrentStep] = useState<'upload' | 'preview' | 'processing' | 'results'>('upload');
   const [cachedFileData, setCachedFileData] = useState<ArrayBuffer | string | null>(null);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({
+    percent: 0,
+    processed: 0,
+    total: 0,
+    currentProduct: null as string | null,
+    successCount: 0,
+    failureCount: 0,
+  });
+
+  const isAcceptedFile = (f: File) => {
+    const ext = f.name.split('.').pop()?.toLowerCase();
+    return ext === 'xlsx' || ext === 'xls' || ext === 'csv';
+  };
 
   if (!isOpen) return null;
 
@@ -84,20 +82,29 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
-      if (droppedFile.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-          droppedFile.type === 'application/vnd.ms-excel') {
-        setFile(droppedFile);
-        setError(null);
+      if (isAcceptedFile(droppedFile)) {
+        void selectAndParseFile(droppedFile);
       } else {
-        setError('Please upload an Excel file (.xlsx or .xls)');
+        setError('Please upload .xlsx, .xls, or .csv');
       }
+    }
+  };
+
+  const selectAndParseFile = async (selectedFile: File) => {
+    setFile(selectedFile);
+    setError(null);
+    setUploadResponse(null);
+    setCurrentStep('upload');
+    setCachedFileData(null);
+    const products = await parseExcelToProducts(selectedFile, false);
+    if (products && products.length > 0) {
+      setCurrentStep('preview');
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-      setError(null);
+      void selectAndParseFile(e.target.files[0]);
     }
   };
 
@@ -165,47 +172,99 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
     setCurrentStep('preview');
   };
 
+  const pollBulkUploadJob = async (jobId: string): Promise<BulkUploadResponse> => {
+    for (;;) {
+      const res = await fetch(`/api/products/bulk-upload/status/${jobId}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to get upload status');
+      }
+      const data = await res.json();
+
+      setUploadProgress({
+        percent: data.percent ?? 0,
+        processed: data.processed ?? 0,
+        total: data.totalProducts ?? 0,
+        currentProduct: data.currentProduct ?? null,
+        successCount: data.successCount ?? 0,
+        failureCount: data.failureCount ?? 0,
+      });
+
+      if (data.status === 'completed') {
+        return {
+          totalProducts: data.totalProducts,
+          successCount: data.successCount,
+          failureCount: data.failureCount,
+          results: data.results || [],
+        };
+      }
+      if (data.status === 'failed') {
+        throw new Error(data.error || 'Upload failed');
+      }
+
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+  };
+
+  const runBulkUpload = async (products: ParsedProduct[]) => {
+    setIsLoading(true);
+    setError(null);
+    setCurrentStep('processing');
+    setUploadProgress({
+      percent: 0,
+      processed: 0,
+      total: products.length,
+      currentProduct: null,
+      successCount: 0,
+      failureCount: 0,
+    });
+
+    try {
+      const response = await fetch('/api/products/bulk-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ products }),
+      });
+
+      const body = await response.json();
+      if (!response.ok) {
+        throw new Error(body.error || 'Upload failed to start');
+      }
+
+      const jobId = body.jobId as string;
+      if (!jobId) {
+        throw new Error('Server did not return a job id');
+      }
+
+      const data = await pollBulkUploadJob(jobId);
+      setUploadResponse(data);
+      setCurrentStep('results');
+      onUploadComplete?.(data);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Upload failed';
+      setError(message);
+      setCurrentStep('preview');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleConfirmUpload = async () => {
     if (!parsedProducts || parsedProducts.length === 0) {
       setError('No products to upload');
       return;
     }
+    await runBulkUpload(parsedProducts);
+  };
 
-    setIsLoading(true);
-    setError(null);
-    setCurrentStep('results');
-
-    try {
-      console.log(`📤 Uploading ${parsedProducts.length} products...`);
-      console.log('🔍 First product data:', JSON.stringify(parsedProducts[0], null, 2));
-
-      const response = await fetch('/api/products/bulk-upload', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ products: parsedProducts })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Upload failed');
-      }
-
-      const data: BulkUploadResponse = await response.json();
-      setUploadResponse(data);
-      
-      if (onUploadComplete) {
-        onUploadComplete(data);
-      }
-
-      console.log('✅ Upload complete!', data);
-    } catch (err: any) {
-      console.error('Upload error:', err);
-      setError(err.message || 'Upload failed. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleRetryFailed = async () => {
+    if (!uploadResponse || !parsedProducts) return;
+    const failedNames = new Set(
+      uploadResponse.results.filter((r) => !r.success).map((r) => r.productName)
+    );
+    const toRetry = parsedProducts.filter((p) => failedNames.has(p.name));
+    if (toRetry.length === 0) return;
+    await runBulkUpload(toRetry);
   };
 
   const handleClose = () => {
@@ -217,12 +276,24 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
     setDragActive(false);
     setCachedFileData(null);
     setCurrentStep('upload');
+    setUploadProgress({
+      percent: 0,
+      processed: 0,
+      total: 0,
+      currentProduct: null,
+      successCount: 0,
+      failureCount: 0,
+    });
     onClose();
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl">
+      <div
+        className={`bg-white rounded-lg w-full max-h-[92vh] overflow-y-auto shadow-xl ${
+          currentStep === 'preview' ? 'max-w-[96vw] xl:max-w-7xl' : 'max-w-2xl'
+        }`}
+      >
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
           <h2 className="text-2xl font-bold text-gray-900">Bulk Upload Products</h2>
@@ -258,7 +329,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
                 <label>
                   <input
                     type="file"
-                    accept=".xlsx,.xls"
+                    accept=".xlsx,.xls,.csv"
                     onChange={handleFileChange}
                     className="hidden"
                   />
@@ -267,7 +338,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
                   </span>
                 </label>
                 <p className="text-sm text-gray-500 mt-4">
-                  Supported formats: .xlsx, .xls
+                  Supported: .xlsx, .xls, .csv — parses automatically on select
                 </p>
               </div>
 
@@ -303,10 +374,10 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
                   </button>
                 </div>
                 <ul className="text-sm text-blue-800 space-y-1 ml-4 mb-4">
-                  <li>• Columns: Images Link, Names, Category, Subcategory, Tags, Description, Benefits, Care, Stock, Size Variants, Size Original Prices, Discount, Rating, Status, Reviews</li>
-                  <li>• Google Drive direct image URLs (https://drive.google.com/uc?id=ID)</li>
-                  <li>• Use one Subcategory; use Tags for cross-listing in other subcategory views</li>
-                  <li>• Size variants (2-column format): Names = "small, medium, large" | Original Prices = "599, 799, 999" | Discount applies to each</li>
+                  <li>• Size variants (one column): <code className="bg-blue-100 px-1 rounded">small:599,medium:799,large:999</code></li>
+                  <li>• Google Drive image URLs — auto-optimized and uploaded to S3</li>
+                  <li>• Original Price optional (uses highest variant if empty)</li>
+                  <li>• Live progress while uploading; retry failed rows after</li>
                 </ul>
 
                 {/* Instructions Expandable */}
@@ -377,48 +448,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
                 <p className="text-sm text-gray-600 mt-1">Review the data before uploading</p>
               </div>
 
-              {/* Preview Table */}
-              <div className="mb-6 overflow-x-auto border border-gray-200 rounded-lg">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-100 border-b">
-                    <tr>
-                      <th className="px-4 py-2 text-left">#</th>
-                      <th className="px-4 py-2 text-left">Name</th>
-                      <th className="px-4 py-2 text-left">Category</th>
-                      <th className="px-4 py-2 text-left">Price</th>
-                      <th className="px-4 py-2 text-left">Images</th>
-                      <th className="px-4 py-2 text-left">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {parsedProducts.slice(0, 5).map((product, idx) => (
-                      <tr key={idx} className="border-b hover:bg-gray-50">
-                        <td className="px-4 py-2">{idx + 1}</td>
-                        <td className="px-4 py-2 font-medium truncate">{product.name}</td>
-                        <td className="px-4 py-2 text-xs">{product.category}</td>
-                        <td className="px-4 py-2">₹{product.finalPrice}</td>
-                        <td className="px-4 py-2 text-xs">
-                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                            {product.images.length}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2">
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                            product.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {product.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {parsedProducts.length > 5 && (
-                  <div className="px-4 py-2 bg-gray-50 text-xs text-gray-600">
-                    ... and {parsedProducts.length - 5} more products
-                  </div>
-                )}
-              </div>
+              <BulkUploadPreviewTable products={parsedProducts} />
 
               {/* Action Buttons */}
               <div className="flex gap-3 justify-end">
@@ -451,6 +481,35 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
                 </button>
               </div>
             </>
+          )}
+
+          {currentStep === 'processing' && (
+            <div className="space-y-6 py-4">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Uploading products…</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Images download from Drive, optimize, then save to S3
+                </p>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                <div
+                  className="bg-green-600 h-3 rounded-full transition-all duration-500"
+                  style={{ width: `${uploadProgress.percent}%` }}
+                />
+              </div>
+              <p className="text-sm text-gray-700 text-center font-medium">
+                {uploadProgress.percent}% — {uploadProgress.processed} / {uploadProgress.total} products
+              </p>
+              {uploadProgress.currentProduct && (
+                <p className="text-sm text-gray-500 text-center truncate">
+                  Processing: {uploadProgress.currentProduct}
+                </p>
+              )}
+              <div className="flex justify-center gap-6 text-sm">
+                <span className="text-green-700">✅ {uploadProgress.successCount} ok</span>
+                <span className="text-red-700">❌ {uploadProgress.failureCount} failed</span>
+              </div>
+            </div>
           )}
 
           {currentStep === 'results' && uploadResponse && (
@@ -517,8 +576,19 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
               </div>
 
               {/* Close Button */}
-              <div className="mt-6 flex justify-end">
+              <div className="mt-6 flex gap-3 justify-end">
+                {uploadResponse.failureCount > 0 && parsedProducts && (
+                  <button
+                    type="button"
+                    onClick={() => void handleRetryFailed()}
+                    disabled={isLoading}
+                    className="px-6 py-2 border border-amber-400 text-amber-800 rounded-lg hover:bg-amber-50 transition font-medium disabled:opacity-50"
+                  >
+                    Retry failed ({uploadResponse.failureCount})
+                  </button>
+                )}
                 <button
+                  type="button"
                   onClick={handleClose}
                   className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
                 >

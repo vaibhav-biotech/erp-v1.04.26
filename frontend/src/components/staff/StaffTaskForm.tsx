@@ -26,7 +26,7 @@ export default function StaffTaskForm({
   const [scheduledDate, setScheduledDate] = useState(today);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
       setError('Task title is required');
@@ -37,7 +37,7 @@ export default function StaffTaskForm({
       setError('No staff member to assign');
       return;
     }
-    createTask({
+    await createTask({
       title,
       assigneeId: assignee,
       workType,

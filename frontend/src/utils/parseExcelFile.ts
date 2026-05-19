@@ -5,7 +5,7 @@
 
 import * as XLSX from 'xlsx';
 
-interface ParsedProduct {
+export interface ParsedProduct {
   name: string;
   category: string;
   subcategory: string;
@@ -47,7 +47,7 @@ export const parseExcelFile = (buffer: ArrayBuffer): ParseResult => {
     }
     
     const worksheet = workbook.Sheets[sheetName];
-    const rawData = XLSX.utils.sheet_to_json(worksheet);
+    const rawData = sheetToRows(worksheet);
 
     console.log('✅ Parsed rows:', rawData.length);
 
@@ -69,43 +69,60 @@ export const parseExcelFile = (buffer: ArrayBuffer): ParseResult => {
 };
 
 /**
- * Parse CSV text to Product objects
+ * Parse CSV via XLSX (handles quoted fields, commas in URLs/descriptions, UTF-8 BOM).
  */
 export const parseCSVFile = (csvText: string): ParseResult => {
   try {
-    // Split by newline and filter empty lines
-    const lines = csvText.split('\n').filter(line => line.trim());
+    const workbook = XLSX.read(csvText, {
+      type: 'string',
+      raw: false,
+      codepage: 65001,
+    });
 
-    if (lines.length < 2) {
+    const sheetName = workbook.SheetNames[0];
+    if (!sheetName) {
+      return { success: false, errors: ['CSV file is empty'] };
+    }
+
+    const worksheet = workbook.Sheets[sheetName];
+    const rawData = sheetToRows(worksheet);
+
+    if (rawData.length === 0) {
       return {
         success: false,
-        errors: ['CSV file is empty or has no data rows']
+        errors: ['CSV file is empty or contains no data rows'],
       };
     }
 
-    // Parse header
-    const headers = lines[0].split(',').map(h => h.trim());
-
-    // Parse data rows
-    const rawData = lines.slice(1).map(line => {
-      const values = line.split(',').map(v => v.trim());
-      const row: any = {};
-
-      headers.forEach((header, index) => {
-        row[header] = values[index] || '';
-      });
-
-      return row;
-    });
+    console.log('✅ CSV columns:', Object.keys(rawData[0] || {}));
+    console.log('✅ CSV parsed rows:', rawData.length);
 
     return transformData(rawData);
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     return {
       success: false,
-      errors: [`Failed to parse CSV file: ${error.message}`]
+      errors: [`Failed to parse CSV file: ${message}`],
     };
   }
 };
+
+/** Convert sheet to row objects with clean headers (BOM-safe). */
+function sheetToRows(worksheet: XLSX.WorkSheet): Record<string, unknown>[] {
+  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, {
+    defval: '',
+    raw: false,
+  });
+
+  return rows.map((row) => {
+    const cleaned: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(row)) {
+      const header = String(key).replace(/^\uFEFF/, '').trim();
+      cleaned[header] = value;
+    }
+    return cleaned;
+  });
+}
 
 /**
  * Transform raw data to Product objects
@@ -166,12 +183,12 @@ const transformData = (rawData: any[]): ParseResult => {
         return;
       }
 
-      if (subcategoryRaw.includes(',')) {
-        errors.push(`Row ${index + 2}: Subcategory must be a single value. Use Tags column for additional mappings.`);
-        return;
-      }
+      const subcategoryParts = subcategoryRaw
+        .split(',')
+        .map((s) => toSlug(s.trim()))
+        .filter(Boolean);
 
-      const subcategory = toSlug(subcategoryRaw);
+      const subcategory = subcategoryParts[0] || '';
       if (!subcategory) {
         errors.push(`Row ${index + 2}: Subcategory is required`);
         return;
@@ -184,17 +201,20 @@ const transformData = (rawData: any[]): ParseResult => {
           .filter(Boolean)
         : [];
 
-      const tags = Array.from(new Set([subcategory, ...parsedTags]));
+      const tags = Array.from(
+        new Set([subcategory, ...subcategoryParts.slice(1), ...parsedTags])
+      );
 
-      // Parse images - accepts multiple column name variations
-      const imageUrlsRaw = 
-        row['Images Link'] || 
-        row['Image URLs'] || 
-        row['Image Link'] ||
-        row.imageUrls || 
-        row['images'] || 
-        row.Images ||
-        '';
+      const imageUrlsRaw =
+        getColumnValue(
+          row,
+          'Images Link',
+          'Image URLs',
+          'Image Link',
+          'imageUrls',
+          'images',
+          'Images'
+        ) || '';
       const images = String(imageUrlsRaw)
         .split(',')
         .map((url: string) => url.trim())
@@ -219,9 +239,12 @@ const transformData = (rawData: any[]): ParseResult => {
         // Use provided original price
         originalPrice = parseFloat(String(originalPriceRaw));
       } else if (sizeVariants.length > 0) {
-        // Fall back to first size price
-        originalPrice = sizeVariants[0].price;
-        console.log(`  ℹ️  Row ${index + 2}: Using first size price (${originalPrice}) as Original Price`);
+        // Fall back to highest variant price (e.g. large = 999)
+        const variantPrices = sizeVariants.map(
+          (v) => v.originalPrice ?? v.price
+        );
+        originalPrice = Math.max(...variantPrices);
+        console.log(`  ℹ️  Row ${index + 2}: Using max variant price (${originalPrice}) as Original Price`);
       } else {
         // No original price and no size variants
         errors.push(`Row ${index + 2}: Either Original Price or Size Prices is required`);
@@ -240,12 +263,15 @@ const transformData = (rawData: any[]): ParseResult => {
       const potVariants: Array<{ id: number; name: string; price: number; tag?: string }> = [];
 
       // Parse description, benefits, care as SEPARATE fields (not combined)
-      const description = String(row.Description || row.description || '').trim();
-      const benefits = String(row.Benefits || row.benefits || '').trim();
-      const care = String(row.Care || row.care || '').trim();
+      const description = String(
+        getColumnValue(row, 'Description', 'description') || ''
+      ).trim();
+      const benefits = String(getColumnValue(row, 'Benefits', 'benefits') || '').trim();
+      const care = String(getColumnValue(row, 'Care', 'care') || '').trim();
 
-      // Status
-      const status = (row.Status || row.status || 'active').toLowerCase();
+      const status = String(
+        getColumnValue(row, 'Status', 'status') || 'active'
+      ).toLowerCase();
       if (!['active', 'inactive', 'draft'].includes(status)) {
         errors.push(`Row ${index + 2}: Status must be active, inactive, or draft`);
         return;
@@ -289,9 +315,9 @@ const transformData = (rawData: any[]): ParseResult => {
 };
 
 /**
- * Parse size variants from comma-separated strings
- * Format: names="S,M,L" and originalPrices="100,150,200"
- * Applies discount to each price and stores both original and final price
+ * Parse size variants — supports:
+ * 1) Colon format (single column): "small:599,medium:799,large:999"
+ * 2) Two-column: names="small, medium, large" + prices="599, 799, 999"
  */
 const parseSizeVariants = (
   names: string,
@@ -299,29 +325,54 @@ const parseSizeVariants = (
   rowIndex: number,
   discount: number = 0
 ): Array<{ id: number; name: string; price: number; originalPrice?: number; tag?: string }> => {
-  if (!names || !originalPrices) return [];
+  const namesStr = String(names || '').trim();
+  if (!namesStr) return [];
+
+  const applyDiscount = (originalPrice: number) =>
+    discount > 0
+      ? Math.round(originalPrice * (1 - discount / 100))
+      : originalPrice;
 
   try {
-    const nameArray = String(names).split(',').map(n => n.trim());
-    const priceArray = String(originalPrices).split(',').map(p => p.trim());
+    if (namesStr.includes(':')) {
+      return namesStr
+        .split(',')
+        .map((part, idx) => {
+          const [rawName, rawPrice] = part.trim().split(':');
+          const originalPrice = parseFloat(String(rawPrice || '').trim()) || 0;
+          const name = String(rawName || '').trim();
+          if (!name || originalPrice <= 0) return null;
+          return {
+            id: idx + 1,
+            name,
+            price: applyDiscount(originalPrice),
+            originalPrice,
+            tag: undefined,
+          };
+        })
+        .filter((v): v is NonNullable<typeof v> => v !== null);
+    }
+
+    const pricesStr = String(originalPrices || '').trim();
+    if (!pricesStr) return [];
+
+    const nameArray = namesStr.split(',').map((n) => n.trim());
+    const priceArray = pricesStr.split(',').map((p) => p.trim());
 
     return nameArray
       .map((name, idx) => {
         const originalPrice = parseFloat(priceArray[idx]) || 0;
-        const finalPrice = discount > 0 
-          ? Math.round(originalPrice * (1 - discount / 100))
-          : originalPrice;
-        
+        if (!name || originalPrice <= 0) return null;
         return {
           id: idx + 1,
           name,
-          price: finalPrice,
-          originalPrice: originalPrice > 0 ? originalPrice : undefined,
-          tag: undefined
+          price: applyDiscount(originalPrice),
+          originalPrice,
+          tag: undefined,
         };
       })
-      .filter(v => v.originalPrice && v.originalPrice > 0);
-  } catch (error) {
+      .filter((v): v is NonNullable<typeof v> => v !== null);
+  } catch {
     console.warn(`Warning: Failed to parse size variants for row ${rowIndex + 2}`);
     return [];
   }
@@ -407,7 +458,7 @@ export const readFile = (file: File): Promise<ArrayBuffer | string> => {
       if (fileType === 'excel') {
         reader.readAsArrayBuffer(file);
       } else if (fileType === 'csv') {
-        reader.readAsText(file);
+        reader.readAsText(file, 'UTF-8');
       } else {
         reject(new Error(`Unsupported file format: ${file.name}. Please upload .xlsx, .xls, or .csv`));
       }

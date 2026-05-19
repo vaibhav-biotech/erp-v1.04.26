@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 import { FiPlus, FiRefreshCw, FiTrendingUp } from 'react-icons/fi';
-import BulkUploadModal from '@/components/BulkUploadModal';
+
+const BulkUploadModal = dynamic(() => import('@/components/BulkUploadModal'), { ssr: false });
 import ProductsTable from '@/components/ProductsTable';
 import CategoriesPage from '@/components/pages/CategoriesPage';
 import StoreAdminOrdersListPage from '@/components/pages/StoreAdminOrdersListPage';

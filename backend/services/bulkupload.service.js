@@ -2,7 +2,75 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const { uploadImageToS3 } = require('./s3.service');
 const { downloadFromGoogleDrive } = require('./drive.service');
-const { validateProduct, validateBulkProducts, parseVariants } = require('./validation.service');
+const { optimizeImage } = require('./imageOptimize.service');
+const { patchBulkUploadJob } = require('./bulkUploadJobs');
+const { validateProduct, validateBulkProducts } = require('./validation.service');
+
+const IMAGE_CONCURRENCY = parseInt(process.env.BULK_IMAGE_CONCURRENCY || '4', 10);
+
+/** Run async tasks with a concurrency limit */
+const mapWithConcurrency = async (items, limit, fn) => {
+  if (!items.length) return [];
+  const results = new Array(items.length);
+  let nextIndex = 0;
+
+  const worker = async () => {
+    while (nextIndex < items.length) {
+      const i = nextIndex++;
+      results[i] = await fn(items[i], i);
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, () => worker())
+  );
+  return results;
+};
+
+/**
+ * Download Drive images in parallel, optimize, upload to S3.
+ */
+const processProductImages = async (driveUrls, productSlug) => {
+  const safeSlug = String(productSlug || 'product')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .slice(0, 40);
+
+  const imageResults = await mapWithConcurrency(driveUrls, IMAGE_CONCURRENCY, async (driveUrl, j) => {
+    const driveResult = await downloadFromGoogleDrive(driveUrl);
+    if (!driveResult.success || !driveResult.buffer) {
+      return { success: false, error: `Image ${j + 1}: ${driveResult.error || 'download failed'}` };
+    }
+
+    const optimized = await optimizeImage(driveResult.buffer);
+    const ext = optimized.contentType.includes('webp') ? 'webp' : 'jpg';
+    const fileName = `${safeSlug}-${Date.now()}-${j}.${ext}`;
+    const s3Result = await uploadImageToS3(
+      optimized.buffer,
+      fileName,
+      optimized.contentType
+    );
+
+    if (!s3Result.success || !s3Result.url) {
+      return { success: false, error: `Image ${j + 1}: ${s3Result.error || 'S3 upload failed'}` };
+    }
+
+    if (optimized.optimized) {
+      const saved = optimized.originalBytes - optimized.outputBytes;
+      const pct = optimized.originalBytes
+        ? Math.round((saved / optimized.originalBytes) * 100)
+        : 0;
+      console.log(`    📷 Image ${j + 1} optimized: ${optimized.originalBytes} → ${optimized.outputBytes} bytes (−${pct}%)`);
+    }
+
+    return { success: true, url: s3Result.url };
+  });
+
+  const s3ImageUrls = imageResults.filter((r) => r.success).map((r) => r.url);
+  const errors = imageResults.filter((r) => !r.success).map((r) => r.error);
+
+  return { s3ImageUrls, errors };
+};
 
 const toSlug = (value) => String(value || '')
   .toLowerCase()
@@ -122,97 +190,78 @@ const resolveCategoryId = async (categoryName) => {
 
 /**
  * Main bulk upload orchestrator
- * Process: Download → Validate → Upload to S3 → Save to DB
+ * Process: Download → Optimize → Upload to S3 → Save to DB
+ * @param {object[]} products
+ * @param {{ jobId?: string }} options
  */
-const processBulkUpload = async (products) => {
+const processBulkUpload = async (products, options = {}) => {
+  const { jobId } = options;
   const results = [];
   let successCount = 0;
   let failureCount = 0;
 
+  const reportProgress = (patch) => {
+    if (jobId) {
+      patchBulkUploadJob(jobId, {
+        ...patch,
+        results: [...results],
+      });
+    }
+  };
+
   console.log(`🔄 Starting bulk upload for ${products.length} products...`);
 
-  // Step 1: Validate all products first
-  console.log('📋 Validating products...');
   const { valid, invalid } = validateBulkProducts(products);
 
-  // Add invalid products to results
-  invalid.forEach(item => {
+  invalid.forEach((item) => {
     results.push({
       success: false,
       productName: item.product.name || 'Unknown',
-      errors: item.errors
+      errors: item.errors,
     });
     failureCount++;
   });
 
+  reportProgress({
+    processed: invalid.length,
+    failureCount,
+    successCount,
+  });
+
   console.log(`✅ Valid products: ${valid.length}, ❌ Invalid products: ${invalid.length}`);
 
-  // Step 2: Process valid products
   for (let i = 0; i < valid.length; i++) {
     const product = valid[i];
+    const processedSoFar = invalid.length + i;
+
+    reportProgress({
+      currentProduct: product.name,
+      processed: processedSoFar,
+      successCount,
+      failureCount,
+    });
+
     console.log(`\n🔄 Processing product ${i + 1}/${valid.length}: ${product.name}`);
 
     try {
       const uploadItem = {
         success: true,
         productName: product.name,
-        driveImageUrls: product.images || []
+        driveImageUrls: product.images || [],
       };
 
-      // Step 2a: Download images from Google Drive
-      console.log(`  📥 Downloading ${product.images.length} images from Google Drive...`);
-      const downloadedImages = [];
+      console.log(`  📥 Processing ${product.images.length} images (parallel ×${IMAGE_CONCURRENCY})...`);
+      const { s3ImageUrls, errors: imageErrors } = await processProductImages(
+        product.images,
+        product.name
+      );
 
-      for (let j = 0; j < product.images.length; j++) {
-        const driveUrl = product.images[j];
-        console.log(`    Downloading image ${j + 1}/${product.images.length}...`);
-
-        const driveResult = await downloadFromGoogleDrive(driveUrl);
-
-        if (!driveResult.success || !driveResult.buffer) {
-          console.error(`    ❌ Failed to download: ${driveResult.error}`);
-          uploadItem.success = false;
-          uploadItem.errors = uploadItem.errors || [];
-          uploadItem.errors.push(`Image ${j + 1} download failed: ${driveResult.error}`);
-          continue;
-        }
-
-        downloadedImages.push({
-          url: driveUrl,
-          buffer: driveResult.buffer
-        });
-        console.log(`    ✅ Downloaded ${driveResult.buffer.length} bytes`);
-      }
-
-      if (downloadedImages.length === 0) {
-        throw new Error('No images could be downloaded from Google Drive');
-      }
-
-      // Step 2b: Upload downloaded images to S3
-      console.log(`  📤 Uploading ${downloadedImages.length} images to AWS S3...`);
-      const s3ImageUrls = [];
-
-      for (let j = 0; j < downloadedImages.length; j++) {
-        const image = downloadedImages[j];
-        const fileName = `product-${Date.now()}-${j}.jpg`;
-
-        console.log(`    Uploading to S3: ${fileName}...`);
-        const s3Result = await uploadImageToS3(image.buffer, fileName, 'image/jpeg');
-
-        if (!s3Result.success || !s3Result.url) {
-          console.error(`    ❌ S3 upload failed: ${s3Result.error}`);
-          uploadItem.success = false;
-          uploadItem.errors = uploadItem.errors || [];
-          uploadItem.errors.push(`S3 upload failed: ${s3Result.error}`);
-          continue;
-        }
-
-        s3ImageUrls.push(s3Result.url);
-        console.log(`    ✅ Uploaded to: ${s3Result.url}`);
+      if (imageErrors.length) {
+        uploadItem.errors = imageErrors;
       }
 
       if (s3ImageUrls.length === 0) {
-        throw new Error('No images could be uploaded to S3');
+        throw new Error('No images could be downloaded and uploaded to S3');
       }
 
       // Step 2c: Replace Google Drive URLs with S3 URLs
@@ -311,20 +360,37 @@ const processBulkUpload = async (products) => {
       results.push({
         success: false,
         productName: product.name,
-        errors: [error.message || 'Unknown error during bulk upload']
+        errors: [error.message || 'Unknown error during bulk upload'],
       });
     }
+
+    reportProgress({
+      processed: invalid.length + i + 1,
+      successCount,
+      failureCount,
+      currentProduct: null,
+    });
   }
 
   console.log(`\n📊 Bulk Upload Complete!`);
   console.log(`   Total: ${products.length} | Success: ${successCount} | Failed: ${failureCount}`);
 
-  return {
+  const summary = {
     totalProducts: products.length,
     successCount,
     failureCount,
-    results
+    results,
   };
+
+  reportProgress({
+    processed: products.length,
+    successCount,
+    failureCount,
+    currentProduct: null,
+    results,
+  });
+
+  return summary;
 };
 
 /**
