@@ -250,9 +250,10 @@ function mapRawRow(row: Record<string, string>): BulkRow | null {
   Object.entries(row).forEach(([k, v]) => {
     lower[k.toLowerCase().trim()] = String(v ?? '').trim();
   });
-  const name = lower.name || lower['full name'] || lower.client;
+  let name = lower.name || lower['full name'] || lower.client;
   const phone = lower.phone || lower.mobile || lower['phone number'];
-  if (!name || !phone) return null;
+  if (!phone) return null;
+  if (!name) name = 'Unknown';
   return {
     name,
     phone,
@@ -282,7 +283,7 @@ export async function parseBulkFile(file: File): Promise<BulkParseResult> {
         });
         const row = mapRawRow(obj);
         if (row) rows.push(row);
-        else errors.push(`Row ${i + 1}: missing name or phone`);
+        else errors.push(`Row ${i + 1}: missing phone`);
       }
       return { ok: true, rows, errors };
     }
@@ -297,7 +298,7 @@ export async function parseBulkFile(file: File): Promise<BulkParseResult> {
       json.forEach((row, i) => {
         const mapped = mapRawRow(row);
         if (mapped) rows.push(mapped);
-        else errors.push(`Row ${i + 2}: missing name or phone`);
+        else errors.push(`Row ${i + 2}: missing phone`);
       });
       return { ok: true, rows, errors };
     }
