@@ -65,6 +65,12 @@ const staffMemberSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    storeName: {
+      type: String,
+      lowercase: true,
+      default: 'plantsingarden',
+      index: true,
+    },
   },
   {
     timestamps: true,

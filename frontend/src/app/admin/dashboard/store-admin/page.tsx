@@ -5,9 +5,8 @@ import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
-import { FiPlus, FiRefreshCw, FiTrendingUp } from 'react-icons/fi';
+import { FiPlus, FiRefreshCw, FiTrendingUp, FiBox, FiUsers, FiShoppingCart, FiBarChart2 } from 'react-icons/fi';
 
-const BulkUploadModal = dynamic(() => import('@/components/BulkUploadModal'), { ssr: false });
 import ProductsTable from '@/components/ProductsTable';
 import CategoriesPage from '@/components/pages/CategoriesPage';
 import StoreAdminOrdersListPage from '@/components/pages/StoreAdminOrdersListPage';
@@ -24,11 +23,13 @@ import AccountTaxSettingsPage from '@/components/pages/AccountTaxSettingsPage';
 import OffersManager from '@/components/pages/OffersManager';
 import OfferBackgroundManager from '@/components/pages/OfferBackgroundManager';
 
+const BulkUploadModal = dynamic(() => import('@/components/BulkUploadModal'), { ssr: false });
+
 interface DashboardStats {
   totalProducts: number;
-  activeProducts: number;
-  inactiveProducts: number;
-  draftProducts: number;
+  totalCustomers: number;
+  totalOrders: number;
+  totalRevenue: number;
 }
 
 interface StoreInfo {
@@ -47,9 +48,9 @@ export default function StoreAdminDashboard() {
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
     totalProducts: 0,
-    activeProducts: 0,
-    inactiveProducts: 0,
-    draftProducts: 0
+    totalCustomers: 0,
+    totalOrders: 0,
+    totalRevenue: 0
   });
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -110,35 +111,30 @@ export default function StoreAdminDashboard() {
   const fetchStats = async () => {
     setIsLoadingStats(true);
     try {
-      const headers = {
-        ...getApiHeaders(adminToken || undefined),
-        'Authorization': `Bearer ${adminToken}`
-      };
+      const response = await fetch(buildApiUrl('/api/admin/dashboard-stats'), {
+        headers: {
+          ...getApiHeaders(adminToken || undefined),
+          'Authorization': `Bearer ${adminToken}`
+        }
+      });
 
-      const [allRes, activeRes, inactiveRes, draftRes] = await Promise.all([
-        fetch(buildApiUrl('/api/products?limit=1'), { headers }),
-        fetch(buildApiUrl('/api/products?status=active&limit=1'), { headers }),
-        fetch(buildApiUrl('/api/products?status=inactive&limit=1'), { headers }),
-        fetch(buildApiUrl('/api/products?status=draft&limit=1'), { headers })
-      ]);
-
-      if ([allRes, activeRes, inactiveRes, draftRes].some((res) => res.status === 401)) {
+      if (response.status === 401) {
         logoutAdmin();
         router.push('/admin');
         return;
       }
 
-      const allData = await allRes.json();
-      const activeData = await activeRes.json();
-      const inactiveData = await inactiveRes.json();
-      const draftData = await draftRes.json();
-
-      setStats({
-        totalProducts: allData.pagination?.total || 0,
-        activeProducts: activeData.pagination?.total || 0,
-        inactiveProducts: inactiveData.pagination?.total || 0,
-        draftProducts: draftData.pagination?.total || 0
-      });
+      if (response.ok) {
+        const json = await response.json();
+        if (json.success) {
+          setStats({
+            totalProducts: json.data.totalProducts || 0,
+            totalCustomers: json.data.totalCustomers || 0,
+            totalOrders: json.data.totalOrders || 0,
+            totalRevenue: json.data.totalRevenue || 0
+          });
+        }
+      }
     } catch (error) {
       console.error('Error fetching stats:', error);
     } finally {
@@ -238,37 +234,73 @@ export default function StoreAdminDashboard() {
         return <AccountTaxSettingsPage />;
       default:
         return (
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg shadow p-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">Welcome, {admin?.firstName || 'Store Admin'}! 👋</h1>
-              <p className="text-gray-600 text-lg mb-6">
-                You're logged into <span className="font-semibold">{admin?.storeName || 'Your Store'}</span>
-              </p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-                <div className="border-l-4 border-blue-500 pl-4 py-2">
-                  <h3 className="font-semibold text-gray-900 mb-2">📦 Products</h3>
-                  <p className="text-gray-600 text-sm">Manage and organize your product catalog</p>
+          <div className="max-w-6xl mx-auto">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-8 relative overflow-hidden">
+              <div className="relative z-10">
+                <h1 className="text-3xl font-playfair font-bold text-gray-900 mb-2">Welcome back, {admin?.firstName || 'Store Admin'} 👋</h1>
+                <p className="text-gray-600 text-lg">
+                  Here is what's happening at <span className="font-semibold text-green-700">{admin?.storeName || 'Your Store'}</span> today.
+                </p>
+              </div>
+              {/* Decorative background element */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-green-50 rounded-full blur-3xl opacity-50 transform translate-x-1/2 -translate-y-1/2"></div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {/* Total Revenue */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-start gap-4">
+                <div className="p-3 bg-orange-50 text-orange-600 rounded-lg">
+                  <FiBarChart2 className="w-6 h-6" />
                 </div>
-                
-                <div className="border-l-4 border-green-500 pl-4 py-2">
-                  <h3 className="font-semibold text-gray-900 mb-2">📂 Categories</h3>
-                  <p className="text-gray-600 text-sm">Organize products into categories</p>
-                </div>
-                
-                <div className="border-l-4 border-purple-500 pl-4 py-2">
-                  <h3 className="font-semibold text-gray-900 mb-2">📋 Orders</h3>
-                  <p className="text-gray-600 text-sm">View and manage customer orders</p>
-                </div>
-                
-                <div className="border-l-4 border-orange-500 pl-4 py-2">
-                  <h3 className="font-semibold text-gray-900 mb-2">👥 Customers</h3>
-                  <p className="text-gray-600 text-sm">Manage your customer list</p>
+                <div>
+                  <p className="text-sm text-gray-500 font-medium mb-1">Total Revenue</p>
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    {isLoadingStats ? '...' : `₹${stats.totalRevenue.toLocaleString('en-IN')}`}
+                  </h3>
                 </div>
               </div>
               
-              <p className="text-gray-600 text-sm mt-8">Use the sidebar menu to navigate and manage your store.</p>
+              {/* Total Orders */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-start gap-4">
+                <div className="p-3 bg-purple-50 text-purple-600 rounded-lg">
+                  <FiShoppingCart className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 font-medium mb-1">Total Orders</p>
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    {isLoadingStats ? '...' : stats.totalOrders.toLocaleString()}
+                  </h3>
+                </div>
+              </div>
+
+              {/* Total Customers */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-start gap-4">
+                <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+                  <FiUsers className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 font-medium mb-1">Total Customers</p>
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    {isLoadingStats ? '...' : stats.totalCustomers.toLocaleString()}
+                  </h3>
+                </div>
+              </div>
+
+              {/* Total Products */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-start gap-4">
+                <div className="p-3 bg-green-50 text-green-600 rounded-lg">
+                  <FiBox className="w-6 h-6" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 font-medium mb-1">Total Products</p>
+                  <h3 className="text-2xl font-bold text-gray-900">
+                    {isLoadingStats ? '...' : stats.totalProducts.toLocaleString()}
+                  </h3>
+                </div>
+              </div>
             </div>
+            
+            <p className="text-gray-500 text-sm text-center">Use the sidebar menu to navigate and manage your store operations.</p>
           </div>
         );
     }

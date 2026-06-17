@@ -9,6 +9,7 @@ const staffAttendanceRecordSchema = new mongoose.Schema(
       enum: ['present', 'absent', 'holiday', 'leave', 'half_day'],
       required: true,
     },
+    storeName: { type: String, lowercase: true, default: 'plantsingarden', index: true },
   },
   {
     timestamps: true,

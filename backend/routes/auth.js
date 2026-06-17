@@ -29,8 +29,9 @@ router.post('/login', async (req, res) => {
 
     console.log(`\n🔐 LOGIN ATTEMPT: ${email}`);
 
-    // Find customer by email
-    const customer = await Customer.findOne({ email: email.toLowerCase() });
+    const storeName = req.storeName || 'plantsingarden';
+    // Find customer by email and store
+    const customer = await Customer.findOne({ email: email.toLowerCase(), store: storeName });
     console.log(`   Customer found: ${customer ? '✓' : '✗'}`);
 
     if (!customer) {
@@ -104,8 +105,10 @@ router.post('/signup', async (req, res) => {
 
     console.log(`\n📝 SIGNUP ATTEMPT: ${email}`);
 
-    // Check if customer already exists
-    const existingCustomer = await Customer.findOne({ email: email.toLowerCase() });
+    const storeName = req.storeName || 'plantsingarden';
+
+    // Check if customer already exists for this store
+    const existingCustomer = await Customer.findOne({ email: email.toLowerCase(), store: storeName });
     if (existingCustomer) {
       console.log(`   ❌ Customer already exists`);
       return res.status(409).json({
@@ -121,7 +124,7 @@ router.post('/signup', async (req, res) => {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       phone: phone.trim(),
-      store: 'plants in garden', // Default store
+      store: storeName,
     });
 
     await newCustomer.save();

@@ -32,7 +32,7 @@ function initialsFromName(name) {
 
 function generateStaffToken(member) {
   return jwt.sign(
-    { id: member.id, role: member.role, type: 'staff_folder' },
+    { id: member.id, role: member.role, type: 'staff_folder', storeName: member.storeName },
     JWT_SECRET,
     { expiresIn: '7d' }
   );
@@ -50,6 +50,7 @@ function verifyStaffToken(req, res, next) {
     }
     req.staffId = decoded.id;
     req.staffRole = decoded.role;
+    req.staffStoreName = decoded.storeName;
     next();
   } catch {
     return res.status(401).json({ success: false, error: 'Invalid or expired token' });
@@ -85,8 +86,10 @@ router.post('/login', async (req, res) => {
     await ensureStaffDemoUsersOnce();
     await ensureStaffDataOnce();
 
+    const storeName = req.storeName || 'plantsingarden';
     const member = await StaffMember.findOne({
       $or: [{ username: loginId }, { email: loginId }],
+      storeName,
     }).select('+password');
 
     if (!member) {
@@ -120,7 +123,8 @@ router.post('/login', async (req, res) => {
 // GET /api/staff/users
 router.get('/users', verifyStaffToken, async (req, res) => {
   try {
-    const members = await StaffMember.find().sort({ name: 1 });
+    const storeName = req.staffStoreName || 'plantsingarden';
+    const members = await StaffMember.find({ storeName }).sort({ name: 1 });
     return res.status(200).json({
       success: true,
       data: members.map((m) => m.toSafeJSON()),
@@ -159,14 +163,15 @@ router.post('/users', verifyStaffToken, requireStaffAdmin, async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid job role' });
     }
 
-    const exists = await StaffMember.findOne({ username });
+    const storeName = req.staffStoreName || 'plantsingarden';
+    const exists = await StaffMember.findOne({ username, storeName });
     if (exists) {
       return res.status(400).json({ success: false, error: 'Username already exists' });
     }
 
     const email =
       String(req.body.email || '').trim() || `${username}@plantsingarden.com`;
-    const emailTaken = await StaffMember.findOne({ email: email.toLowerCase() });
+    const emailTaken = await StaffMember.findOne({ email: email.toLowerCase(), storeName });
     if (emailTaken) {
       return res.status(400).json({ success: false, error: 'Email already in use' });
     }
@@ -182,6 +187,7 @@ router.post('/users', verifyStaffToken, requireStaffAdmin, async (req, res) => {
       avatarInitials: initialsFromName(name),
       phone: String(req.body.phone || '').trim(),
       active: true,
+      storeName,
     });
 
     return res.status(201).json({
@@ -200,7 +206,8 @@ router.post('/users', verifyStaffToken, requireStaffAdmin, async (req, res) => {
 // PATCH /api/staff/users/:id
 router.patch('/users/:id', verifyStaffToken, requireStaffAdmin, async (req, res) => {
   try {
-    const member = await StaffMember.findOne({ id: req.params.id });
+    const storeName = req.staffStoreName || 'plantsingarden';
+    const member = await StaffMember.findOne({ id: req.params.id, storeName });
     if (!member) {
       return res.status(404).json({ success: false, error: 'Staff not found' });
     }
@@ -222,7 +229,7 @@ router.patch('/users/:id', verifyStaffToken, requireStaffAdmin, async (req, res)
       if (!username) {
         return res.status(400).json({ success: false, error: 'Username is required' });
       }
-      const taken = await StaffMember.findOne({ username, id: { $ne: member.id } });
+      const taken = await StaffMember.findOne({ username, id: { $ne: member.id }, storeName });
       if (taken) {
         return res.status(400).json({ success: false, error: 'Username already taken' });
       }
@@ -271,7 +278,8 @@ router.post('/users/:id/password', verifyStaffToken, requireStaffAdmin, async (r
       return res.status(400).json({ success: false, error: 'Password must be at least 4 characters' });
     }
 
-    const member = await StaffMember.findOne({ id: req.params.id }).select('+password');
+    const storeName = req.staffStoreName || 'plantsingarden';
+    const member = await StaffMember.findOne({ id: req.params.id, storeName }).select('+password');
     if (!member) {
       return res.status(404).json({ success: false, error: 'Staff not found' });
     }
@@ -297,7 +305,8 @@ const WORK_TYPES = ['social_media', 'whatsapp', 'sales', 'operations'];
 router.get('/attendance', verifyStaffToken, async (req, res) => {
   try {
     await ensureStaffDataOnce();
-    const records = await StaffAttendanceRecord.find().sort({ date: 1 });
+    const storeName = req.staffStoreName || 'plantsingarden';
+    const records = await StaffAttendanceRecord.find({ storeName }).sort({ date: 1 });
     return res.status(200).json({
       success: true,
       data: records.map((r) => ({
@@ -326,14 +335,15 @@ router.put('/attendance', verifyStaffToken, requireStaffAdmin, async (req, res) 
       return res.status(400).json({ success: false, error: 'Invalid attendance status' });
     }
 
-    const member = await StaffMember.findOne({ id: staffId });
+    const storeName = req.staffStoreName || 'plantsingarden';
+    const member = await StaffMember.findOne({ id: staffId, storeName });
     if (!member) {
       return res.status(404).json({ success: false, error: 'Staff member not found' });
     }
 
     const record = await StaffAttendanceRecord.findOneAndUpdate(
-      { staffId, date },
-      { staffId, date, status },
+      { staffId, date, storeName },
+      { staffId, date, status, storeName },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
@@ -351,7 +361,8 @@ router.put('/attendance', verifyStaffToken, requireStaffAdmin, async (req, res) 
 router.get('/tasks', verifyStaffToken, async (req, res) => {
   try {
     await ensureStaffDataOnce();
-    const tasks = await StaffTaskRecord.find().sort({ scheduledDate: -1, createdAt: -1 });
+    const storeName = req.staffStoreName || 'plantsingarden';
+    const tasks = await StaffTaskRecord.find({ storeName }).sort({ scheduledDate: -1, createdAt: -1 });
     return res.status(200).json({
       success: true,
       data: tasks.map((t) => t.toClientJSON()),
@@ -386,7 +397,8 @@ router.post('/tasks', verifyStaffToken, async (req, res) => {
       return res.status(403).json({ success: false, error: 'Can only create tasks for yourself' });
     }
 
-    const assignee = await StaffMember.findOne({ id: assigneeId });
+    const storeName = req.staffStoreName || 'plantsingarden';
+    const assignee = await StaffMember.findOne({ id: assigneeId, storeName });
     if (!assignee || assignee.role !== 'staff' || !assignee.active) {
       return res.status(400).json({ success: false, error: 'Invalid assignee' });
     }
@@ -404,6 +416,7 @@ router.post('/tasks', verifyStaffToken, async (req, res) => {
       scheduledTime: String(req.body.scheduledTime || '').trim(),
       status,
       createdById,
+      storeName,
     });
 
     return res.status(201).json({
@@ -422,7 +435,8 @@ router.post('/tasks', verifyStaffToken, async (req, res) => {
 // PATCH /api/staff/tasks/:id
 router.patch('/tasks/:id', verifyStaffToken, async (req, res) => {
   try {
-    const task = await StaffTaskRecord.findOne({ id: req.params.id });
+    const storeName = req.staffStoreName || 'plantsingarden';
+    const task = await StaffTaskRecord.findOne({ id: req.params.id, storeName });
     if (!task) {
       return res.status(404).json({ success: false, error: 'Task not found' });
     }
@@ -445,7 +459,7 @@ router.patch('/tasks/:id', verifyStaffToken, async (req, res) => {
         return res.status(403).json({ success: false, error: 'Only admin can reassign tasks' });
       }
       const assigneeId = String(req.body.assigneeId).trim();
-      const assignee = await StaffMember.findOne({ id: assigneeId });
+      const assignee = await StaffMember.findOne({ id: assigneeId, storeName });
       if (!assignee || assignee.role !== 'staff' || !assignee.active) {
         return res.status(400).json({ success: false, error: 'Invalid assignee' });
       }

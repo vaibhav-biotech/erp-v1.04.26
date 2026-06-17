@@ -205,42 +205,7 @@ function adminUpdateStaffMemberLocal(
     jobRoles?: StaffJobRole[];
   }
 ): { ok: true } | { ok: false; error: string } {
-  const users = getStaffUsers();
-  const idx = users.findIndex((u) => u.id === id);
-  if (idx === -1) return { ok: false, error: 'Staff not found' };
-  if (users[idx].role !== 'staff') return { ok: false, error: 'Cannot edit admin account' };
-
-  const cur = users[idx];
-  const name = patch.name !== undefined ? patch.name.trim() : cur.name;
-  if (!name) return { ok: false, error: 'Name is required' };
-
-  const username =
-    patch.username !== undefined ? patch.username.trim().toLowerCase() : cur.username;
-  if (!username) return { ok: false, error: 'Username is required' };
-  if (users.some((u) => u.id !== id && u.username.toLowerCase() === username)) {
-    return { ok: false, error: 'Username already taken' };
-  }
-
-  const email =
-    patch.email !== undefined
-      ? patch.email.trim() || `${username}@plantsingarden.com`
-      : cur.email;
-  const jobRoles = patch.jobRoles !== undefined ? patch.jobRoles : cur.jobRoles;
-  if (!jobRoles.length) return { ok: false, error: 'Select at least one role' };
-
-  const next = [...users];
-  next[idx] = {
-    ...cur,
-    name,
-    username,
-    email,
-    avatarInitials: initialsFromName(name),
-    phone: patch.phone !== undefined ? patch.phone.trim() : cur.phone,
-    active: patch.active !== undefined ? patch.active : cur.active,
-    jobRoles,
-  };
-  saveStaffUsers(next);
-  return { ok: true };
+  return { ok: false, error: 'Database connection required' };
 }
 
 /** Admin only — edit staff profile fields */
@@ -277,15 +242,7 @@ function adminResetStaffPasswordLocal(
   id: string,
   newPassword: string
 ): { ok: true } | { ok: false; error: string } {
-  const users = getStaffUsers();
-  const idx = users.findIndex((u) => u.id === id);
-  if (idx === -1) return { ok: false, error: 'Staff not found' };
-  if (users[idx].role !== 'staff') return { ok: false, error: 'Cannot reset admin password here' };
-
-  const next = [...users];
-  next[idx] = { ...next[idx], password: newPassword };
-  saveStaffUsers(next);
-  return { ok: true };
+  return { ok: false, error: 'Database connection required' };
 }
 
 /** Admin only — set a new login password for staff */
@@ -371,35 +328,7 @@ function createStaffMemberLocal(input: {
   phone?: string;
   jobRoles: StaffJobRole[];
 }): { ok: true; user: StaffUser } | { ok: false; error: string } {
-  const users = getStaffUsers();
-  const username = input.username.trim().toLowerCase();
-  if (!username) return { ok: false, error: 'Username is required' };
-  if (users.some((u) => u.username.toLowerCase() === username)) {
-    return { ok: false, error: 'Username already exists' };
-  }
-  const password = input.password.trim();
-  if (!password || password.length < 4) {
-    return { ok: false, error: 'Password must be at least 4 characters' };
-  }
-  if (!input.jobRoles.length) {
-    return { ok: false, error: 'Select at least one role' };
-  }
-
-  const user: StaffUser = {
-    id: `staff-${Date.now()}`,
-    username,
-    email: input.email?.trim() || `${username}@plantsingarden.com`,
-    password,
-    name: input.name.trim(),
-    role: 'staff',
-    jobRoles: input.jobRoles,
-    avatarInitials: initialsFromName(input.name),
-    phone: input.phone?.trim() ?? '',
-    active: true,
-  };
-
-  saveStaffUsers([...users, user]);
-  return { ok: true, user };
+  return { ok: false, error: 'Database connection required' };
 }
 
 export async function createStaffMember(input: {
@@ -452,20 +381,8 @@ export function getStaffSession(): StaffSession | null {
 }
 
 function loginStaffLocal(loginId: string, password: string): StaffSession | null {
-  const id = loginId.toLowerCase().trim();
-  const pw = password.trim();
-  const match = getStaffUsers().find(
-    (u) =>
-      u.password === pw &&
-      (u.username.toLowerCase() === id || u.email.toLowerCase() === id)
-  );
-  if (!match) return null;
-  if (match.role === 'staff' && !match.active) return null;
-
-  const session: StaffSession = { user: withoutPassword(match) };
-  localStorage.setItem(STORAGE_KEYS.session, JSON.stringify(session));
-  seedStaffStorageIfNeeded();
-  return session;
+  // Offline fallback is disabled for security.
+  return null;
 }
 
 export type StaffLoginResult =

@@ -48,7 +48,10 @@ export default function Sidebar({ onPageChange, currentPage }: SidebarProps) {
     { id: 'customers', label: 'Customers', icon: <FiUsers className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=customers', roles: ['store_admin'] },
     { id: 'all-customers', label: 'All Customers', icon: <FiUsers className="w-5 h-5" />, route: '/admin/dashboard/super-admin?page=all-customers', roles: ['super_admin'] },
     { id: 'analytics', label: 'Analytics', icon: <FiPackage className="w-5 h-5" />, route: '/admin/dashboard/super-admin?page=analytics', roles: ['super_admin'] },
+    { id: 'manage-stores', label: 'Manage Stores', icon: <FiPackage className="w-5 h-5" />, route: '/admin/dashboard/super-admin?page=manage-stores', roles: ['super_admin'] },
     { id: 'manage-admins', label: 'Manage Admins', icon: <FiUsers className="w-5 h-5" />, route: '/admin/dashboard/super-admin?page=manage-admins', roles: ['super_admin'] },
+    { id: 'manage-staff', label: 'Manage Staff', icon: <FiUsers className="w-5 h-5" />, route: '/admin/dashboard/super-admin?page=manage-staff', roles: ['super_admin'] },
+    { id: 'all-orders', label: 'All Orders', icon: <FiList className="w-5 h-5" />, route: '/admin/dashboard/super-admin?page=all-orders', roles: ['super_admin'] },
   ] : [
     { id: 'home', label: 'Home', icon: <FiHome className="w-5 h-5" />, route: '/dashboard?page=home' },
     { id: 'categories', label: 'Categories', icon: <FiPackage className="w-5 h-5" />, route: '/dashboard?page=categories' },

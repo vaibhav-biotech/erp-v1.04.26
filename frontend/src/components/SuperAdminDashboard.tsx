@@ -1,8 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FiUsers, FiBarChart2, FiShoppingCart, FiTrendingUp } from 'react-icons/fi';
+import { useAuth } from '@/contexts/AuthContext';
+import { buildApiUrl } from '@/lib/storeConfig';
 
 interface StatCard {
   title: string;
@@ -13,31 +15,67 @@ interface StatCard {
 }
 
 export default function SuperAdminDashboard() {
+  const { adminToken } = useAuth();
+  const [dashboardStats, setDashboardStats] = useState({
+    totalStores: 0,
+    totalCustomers: 0,
+    totalOrders: 0,
+    totalRevenue: 0
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        if (!adminToken) return;
+        const res = await fetch(buildApiUrl('/api/superadmin/dashboard-stats'), {
+          headers: {
+            Authorization: `Bearer ${adminToken}`
+          }
+        });
+        const json = await res.json();
+        if (json.success) {
+          setDashboardStats({
+            totalStores: json.data.totalStores || 0,
+            totalCustomers: json.data.totalCustomers || 0,
+            totalOrders: json.data.totalOrders || 0,
+            totalRevenue: json.data.totalRevenue || 0
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch dashboard stats', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchStats();
+  }, [adminToken]);
+
   const stats: StatCard[] = [
     {
       title: 'Total Stores',
-      value: '3',
+      value: isLoading ? '...' : String(dashboardStats.totalStores),
       icon: <FiShoppingCart className="w-8 h-8" />,
       color: 'bg-blue-50',
       borderColor: 'border-blue-500',
     },
     {
       title: 'Total Customers',
-      value: '1,234',
+      value: isLoading ? '...' : String(dashboardStats.totalCustomers),
       icon: <FiUsers className="w-8 h-8" />,
       color: 'bg-green-50',
       borderColor: 'border-green-500',
     },
     {
       title: 'Total Orders',
-      value: '567',
+      value: isLoading ? '...' : String(dashboardStats.totalOrders),
       icon: <FiTrendingUp className="w-8 h-8" />,
       color: 'bg-purple-50',
       borderColor: 'border-purple-500',
     },
     {
       title: 'Total Revenue',
-      value: '₹2,45,890',
+      value: isLoading ? '...' : `₹${dashboardStats.totalRevenue.toLocaleString('en-IN')}`,
       icon: <FiBarChart2 className="w-8 h-8" />,
       color: 'bg-orange-50',
       borderColor: 'border-orange-500',
@@ -46,8 +84,9 @@ export default function SuperAdminDashboard() {
 
   const quickActions = [
     { title: 'View All Customers', icon: <FiUsers className="w-5 h-5" />, color: 'text-blue-600', link: '?page=all-customers' },
-    { title: 'Analytics', icon: <FiBarChart2 className="w-5 h-5" />, color: 'text-green-600', link: '?page=analytics' },
+    { title: 'Manage Stores', icon: <FiShoppingCart className="w-5 h-5" />, color: 'text-green-600', link: '?page=manage-stores' },
     { title: 'Manage Admins', icon: <FiUsers className="w-5 h-5" />, color: 'text-purple-600', link: '?page=manage-admins' },
+    { title: 'View All Staff', icon: <FiUsers className="w-5 h-5" />, color: 'text-blue-600', link: '?page=manage-staff' },
   ];
 
   return (

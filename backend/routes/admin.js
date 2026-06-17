@@ -41,7 +41,13 @@ const verifyAdminToken = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-super-secret-key-change-in-production');
     req.adminId = decoded.id;
     req.adminRole = decoded.role;
-    req.storeName = decoded.storeName;
+    
+    // Enforce store isolation for store_admin
+    // For super_admin, we keep the storeName set by storeRouter middleware (from headers)
+    if (decoded.role === 'store_admin' && decoded.storeName) {
+      req.storeName = decoded.storeName;
+    }
+    
     next();
   } catch (error) {
     return res.status(401).json({ success: false, error: 'Invalid or expired token' });
@@ -116,6 +122,41 @@ router.get('/profile', verifyAdminToken, async (req, res) => {
   } catch (error) {
     console.error('[Admin Profile]', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Admin: Get Dashboard Stats for Current Store
+router.get('/dashboard-stats', verifyAdminToken, async (req, res) => {
+  try {
+    const storeName = req.storeName;
+    if (!storeName) {
+      return res.status(400).json({ success: false, error: 'Store name required' });
+    }
+
+    const Customer = require('../models/Customer');
+    const Product = require('../models/Product');
+    const mongoose = require('mongoose');
+
+    const totalCustomers = await Customer.countDocuments({ storeName });
+    const totalProducts = await Product.countDocuments({ storeName });
+    
+    const db = mongoose.connection.db;
+    const orders = await db.collection('orders').find({ storeName, paymentStatus: 'paid' }).toArray();
+    const totalOrders = orders.length;
+    const totalRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || order.total || 0), 0);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        totalCustomers,
+        totalProducts,
+        totalOrders,
+        totalRevenue
+      }
+    });
+  } catch (error) {
+    console.error('[Store Admin Dashboard Stats Error]', error);
+    return res.status(500).json({ success: false, error: error.message });
   }
 });
 

@@ -7,6 +7,9 @@ import SuperAdminDashboard from '@/components/SuperAdminDashboard';
 import AllCustomersPage from '@/components/pages/AllCustomersPage';
 import AnalyticsPage from '@/components/pages/AnalyticsPage';
 import ManageAdminsPage from '@/components/pages/ManageAdminsPage';
+import ManageStoresPage from '@/components/pages/ManageStoresPage';
+import ManageAllStaffPage from '@/components/pages/ManageAllStaffPage';
+import ManageAllOrdersPage from '@/components/pages/ManageAllOrdersPage';
 
 export default function SuperAdminPage() {
   const router = useRouter();
@@ -34,8 +37,14 @@ export default function SuperAdminPage() {
         return <AllCustomersPage />;
       case 'analytics':
         return <AnalyticsPage />;
+      case 'manage-stores':
+        return <ManageStoresPage />;
       case 'manage-admins':
         return <ManageAdminsPage />;
+      case 'manage-staff':
+        return <ManageAllStaffPage />;
+      case 'all-orders':
+        return <ManageAllOrdersPage />;
       default:
         return <SuperAdminDashboard />;
     }

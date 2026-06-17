@@ -14,6 +14,7 @@ const staffTaskRecordSchema = new mongoose.Schema(
     scheduledTime: { type: String, default: '' },
     status: { type: String, enum: TASK_STATUSES, default: 'pending' },
     createdById: { type: String, required: true, trim: true },
+    storeName: { type: String, lowercase: true, default: 'plantsingarden', index: true },
   },
   {
     timestamps: true,

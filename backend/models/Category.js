@@ -52,6 +52,12 @@ const categorySchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  storeName: {
+    type: String,
+    lowercase: true,
+    default: 'plantsingarden',
+    index: true,
+  },
 });
 
 module.exports = mongoose.model('Category', categorySchema);

@@ -1,0 +1,4 @@
+src/components/pages/ManageAdminsPage.tsx(8,25): error TS2307: Cannot find module '@/lib/config' or its corresponding type declarations.
+src/components/pages/ManageAllStaffPage.tsx(8,25): error TS2307: Cannot find module '@/lib/config' or its corresponding type declarations.
+src/components/pages/ManageStoresPage.tsx(7,25): error TS2307: Cannot find module '@/lib/config' or its corresponding type declarations.
+src/components/SuperAdminDashboard.tsx(7,25): error TS2307: Cannot find module '@/lib/config' or its corresponding type declarations.

@@ -10,6 +10,7 @@ const ordersRouter = require('./routes/orders');
 const adminRouter = require('./routes/admin');
 const landingRouter = require('./routes/landing');
 const staffRouter = require('./routes/staff');
+const superadminRouter = require('./routes/superadmin');
 const storeRouter = require('./middleware/storeRouter'); // NEW: Store detection middleware
 const verifyAdminToken = require('./middleware/verifyAdminToken');
 
@@ -31,6 +32,7 @@ const allowedExactOrigins = [
 
 const allowedOriginPatterns = [
   /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,
+  /^http:\/\/.*\.localhost(:\d+)?$/,
   /^http:\/\/\d{1,3}(?:\.\d{1,3}){3}(?::\d+)?$/,
   /^https?:\/\/.*\.exp\.direct$/,
   /^exp:\/\/.+$/,
@@ -379,7 +381,8 @@ app.patch('/api/notification-bar/admin/:id', verifyAdminToken, async (req, res) 
 // GET all categories with subcategories
 app.get('/api/categories', async (req, res) => {
   try {
-    const categories = await Category.find().sort({ displayOrder: 1, createdAt: -1 });
+    const storeName = req.storeName || 'plantsingarden';
+    const categories = await Category.find({ storeName }).sort({ displayOrder: 1, createdAt: -1 });
     res.json({
       success: true,
       data: categories,
@@ -393,7 +396,8 @@ app.get('/api/categories', async (req, res) => {
 // GET single category by slug
 app.get('/api/categories/:slug', async (req, res) => {
   try {
-    const category = await Category.findOne({ slug: req.params.slug });
+    const storeName = req.storeName || 'plantsingarden';
+    const category = await Category.findOne({ slug: req.params.slug, storeName });
     if (!category) {
       return res.status(404).json({ error: 'Category not found' });
     }
@@ -416,12 +420,15 @@ app.post('/api/categories', async (req, res) => {
       return res.status(400).json({ error: 'Name and slug are required' });
     }
 
+    const storeName = req.storeName || 'plantsingarden';
+
     const category = new Category({
       name,
       slug,
       description,
       icon,
       subcategories: subcategories || [],
+      storeName,
     });
 
     await category.save();
@@ -439,9 +446,10 @@ app.post('/api/categories', async (req, res) => {
 app.put('/api/categories/:id', async (req, res) => {
   try {
     const { name, slug, description, icon, subcategories } = req.body;
+    const storeName = req.storeName || 'plantsingarden';
 
-    const category = await Category.findByIdAndUpdate(
-      req.params.id,
+    const category = await Category.findOneAndUpdate(
+      { _id: req.params.id, storeName },
       {
         name,
         slug,
@@ -477,9 +485,10 @@ app.patch('/api/categories/reorder', async (req, res) => {
     }
 
     // Update displayOrder for each category
+    const storeName = req.storeName || 'plantsingarden';
     const updatePromises = categories.map((cat, index) =>
-      Category.findByIdAndUpdate(
-        cat._id,
+      Category.findOneAndUpdate(
+        { _id: cat._id, storeName },
         { displayOrder: index },
         { new: true }
       )
@@ -500,7 +509,8 @@ app.patch('/api/categories/reorder', async (req, res) => {
 // DELETE category
 app.delete('/api/categories/:id', async (req, res) => {
   try {
-    const category = await Category.findByIdAndDelete(req.params.id);
+    const storeName = req.storeName || 'plantsingarden';
+    const category = await Category.findOneAndDelete({ _id: req.params.id, storeName });
 
     if (!category) {
       return res.status(404).json({ error: 'Category not found' });
@@ -535,6 +545,9 @@ app.use('/api/orders', ordersRouter);
 app.use('/api/landing', landingRouter);
 
 app.use('/api/staff', staffRouter);
+
+// Superadmin Router
+app.use('/api/superadmin', superadminRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

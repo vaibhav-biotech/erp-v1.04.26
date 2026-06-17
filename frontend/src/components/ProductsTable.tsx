@@ -28,11 +28,6 @@ interface Product {
   createdAt: string;
 }
 
-interface ProductsTableProps {
-  onEdit?: (product: Product) => void;
-  onDelete?: (productId: string) => void;
-  onRefresh?: () => void;
-}
 
 interface ProductsTableProps {
   onEdit?: (product: Product) => void;
@@ -46,7 +41,7 @@ type SortField = 'name' | 'category' | 'finalPrice' | 'rating' | 'createdAt';
 type SortOrder = 'asc' | 'desc';
 
 const getProductsTableCacheKey = (categoryId?: string | null) =>
-  `store_admin_products_table_state_v2_${categoryId || 'all'}`;
+  `store_admin_products_table_state_v3_${categoryId || 'all'}`;
 const PRODUCTS_TABLE_CACHE_TTL_MS = 30 * 60 * 1000;
 
 interface ProductsTableCacheState {
@@ -171,48 +166,19 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
 
   // Fetch products
   useEffect(() => {
-    if (!initialized) return;
-
     if (skipInitialFetch) {
       setSkipInitialFetch(false);
       return;
     }
 
     fetchProducts();
-  }, [initialized, skipInitialFetch, pagination.currentPage, filterStatus, categoryId, categoryName]);
+  }, [skipInitialFetch, pagination.currentPage, filterStatus, categoryId, categoryName]);
 
   useEffect(() => {
     fetchTopPicksConfig();
   }, []);
 
-  useEffect(() => {
-    if (typeof window === 'undefined' || !initialized) return;
 
-    const cache: ProductsTableCacheState = {
-      timestamp: Date.now(),
-      products,
-      searchQuery,
-      filterStatus,
-      sortField,
-      sortOrder,
-      pagination,
-      topPicksProductIds,
-      topPicksConfig,
-    };
-
-    sessionStorage.setItem(cacheKey, JSON.stringify(cache));
-  }, [
-    cacheKey,
-    initialized,
-    products,
-    searchQuery,
-    filterStatus,
-    sortField,
-    sortOrder,
-    pagination,
-    topPicksProductIds,
-    topPicksConfig,
-  ]);
 
   const fetchProducts = async () => {
     setIsLoading(true);
@@ -224,7 +190,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
         url += `&status=${filterStatus}`;
       }
 
-      if (categoryId) {
+      if (categoryId && categoryId !== 'null' && categoryId !== 'undefined') {
         url += `&category=${categoryId}`;
       }
 
@@ -249,7 +215,10 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
       }
 
       const rawProducts = Array.isArray(data?.data) ? data.data : [];
-      const normalizedCategoryName = (categoryName || '').trim().toLowerCase();
+      let normalizedCategoryName = (categoryName || '').trim().toLowerCase();
+      if (normalizedCategoryName === 'null' || normalizedCategoryName === 'undefined') {
+        normalizedCategoryName = '';
+      }
 
       const filteredProducts = normalizedCategoryName
         ? rawProducts.filter((product: Product) => {

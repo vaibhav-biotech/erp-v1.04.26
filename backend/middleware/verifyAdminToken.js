@@ -18,6 +18,12 @@ const verifyAdminToken = (req, res, next) => {
     );
 
     req.user = decoded;
+    
+    // Enforce store isolation for store_admin
+    if (decoded.role === 'store_admin' && decoded.storeName) {
+      req.storeName = decoded.storeName;
+    }
+    
     next();
   } catch (error) {
     console.error('[Token Verification Error]', error.message);
