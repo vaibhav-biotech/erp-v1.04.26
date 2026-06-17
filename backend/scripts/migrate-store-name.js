@@ -4,6 +4,10 @@ const mongoose = require('mongoose');
 const Category = require('../models/Category');
 const Product = require('../models/Product');
 const Customer = require('../models/Customer');
+const Admin = require('../models/Admin');
+const StaffMember = require('../models/StaffMember');
+const StaffTaskRecord = require('../models/StaffTaskRecord');
+const StaffAttendanceRecord = require('../models/StaffAttendanceRecord');
 
 const runMigration = async () => {
   try {
@@ -17,31 +21,28 @@ const runMigration = async () => {
 
     console.log('Running migration: Adding storeName="plantsingarden" to old records...');
 
-    // Update Categories
-    if (Category) {
-      const catRes = await Category.updateMany(
-        { storeName: { $exists: false } },
-        { $set: { storeName: 'plantsingarden' } }
-      );
-      console.log(`- Categories updated: ${catRes.modifiedCount}`);
-    }
+    const models = [
+      { name: 'Category', model: Category },
+      { name: 'Product', model: Product },
+      { name: 'Customer', model: Customer },
+      { name: 'Admin', model: Admin },
+      { name: 'StaffMember', model: StaffMember },
+      { name: 'StaffTaskRecord', model: StaffTaskRecord },
+      { name: 'StaffAttendanceRecord', model: StaffAttendanceRecord },
+    ];
 
-    // Update Products
-    if (Product) {
-      const prodRes = await Product.updateMany(
-        { storeName: { $exists: false } },
-        { $set: { storeName: 'plantsingarden' } }
-      );
-      console.log(`- Products updated: ${prodRes.modifiedCount}`);
-    }
-
-    // Update Customers
-    if (Customer) {
-      const custRes = await Customer.updateMany(
-        { storeName: { $exists: false } },
-        { $set: { storeName: 'plantsingarden' } }
-      );
-      console.log(`- Customers updated: ${custRes.modifiedCount}`);
+    for (const { name, model } of models) {
+      if (model) {
+        try {
+          const res = await model.updateMany(
+            { storeName: { $exists: false } },
+            { $set: { storeName: 'plantsingarden' } }
+          );
+          console.log(`- ${name} updated: ${res.modifiedCount}`);
+        } catch (err) {
+          console.error(`Error updating ${name}:`, err.message);
+        }
+      }
     }
 
     console.log('✓ Migration completed successfully!');
