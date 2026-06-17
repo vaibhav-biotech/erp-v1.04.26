@@ -1,4 +1,4 @@
-import { buildApiUrl } from '@/lib/storeConfig';
+import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 import type {
   StaffAttendance,
   StaffJobRole,
@@ -30,7 +30,7 @@ export async function apiStaffLogin(
 > {
   const res = await fetch(buildApiUrl('/api/staff/login'), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...getApiHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ loginId, password }),
   });
 
@@ -50,7 +50,7 @@ export async function apiFetchStaffUsers(
   token: string
 ): Promise<{ ok: true; users: SafeStaffUser[] } | { ok: false; error: string }> {
   const res = await fetch(buildApiUrl('/api/staff/users'), {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { ...getApiHeaders(), Authorization: `Bearer ${token}` },
   });
 
   const parsed = await parseJson<SafeStaffUser[]>(res);
@@ -74,7 +74,7 @@ export async function apiCreateStaffMember(
 ): Promise<{ ok: true; user: SafeStaffUser } | { ok: false; error: string }> {
   const res = await fetch(buildApiUrl('/api/staff/users'), {
     method: 'POST',
-    headers: {
+    headers: { ...getApiHeaders(),
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
@@ -103,7 +103,7 @@ export async function apiUpdateStaffMember(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const res = await fetch(buildApiUrl(`/api/staff/users/${encodeURIComponent(id)}`), {
     method: 'PATCH',
-    headers: {
+    headers: { ...getApiHeaders(),
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
@@ -125,7 +125,7 @@ export async function apiResetStaffPassword(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const res = await fetch(buildApiUrl(`/api/staff/users/${encodeURIComponent(id)}/password`), {
     method: 'POST',
-    headers: {
+    headers: { ...getApiHeaders(),
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
@@ -144,7 +144,7 @@ export async function apiFetchStaffAttendance(
   token: string
 ): Promise<{ ok: true; records: StaffAttendance[] } | { ok: false; error: string }> {
   const res = await fetch(buildApiUrl('/api/staff/attendance'), {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { ...getApiHeaders(), Authorization: `Bearer ${token}` },
   });
 
   const parsed = await parseJson<StaffAttendance[]>(res);
@@ -161,7 +161,7 @@ export async function apiUpsertStaffAttendance(
 ): Promise<{ ok: true; record: StaffAttendance } | { ok: false; error: string }> {
   const res = await fetch(buildApiUrl('/api/staff/attendance'), {
     method: 'PUT',
-    headers: {
+    headers: { ...getApiHeaders(),
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
@@ -180,7 +180,7 @@ export async function apiFetchStaffTasks(
   token: string
 ): Promise<{ ok: true; tasks: StaffTask[] } | { ok: false; error: string }> {
   const res = await fetch(buildApiUrl('/api/staff/tasks'), {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { ...getApiHeaders(), Authorization: `Bearer ${token}` },
   });
 
   const parsed = await parseJson<StaffTask[]>(res);
@@ -197,7 +197,7 @@ export async function apiCreateStaffTask(
 ): Promise<{ ok: true; task: StaffTask } | { ok: false; error: string }> {
   const res = await fetch(buildApiUrl('/api/staff/tasks'), {
     method: 'POST',
-    headers: {
+    headers: { ...getApiHeaders(),
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
@@ -219,7 +219,7 @@ export async function apiPatchStaffTask(
 ): Promise<{ ok: true; task: StaffTask } | { ok: false; error: string }> {
   const res = await fetch(buildApiUrl(`/api/staff/tasks/${encodeURIComponent(id)}`), {
     method: 'PATCH',
-    headers: {
+    headers: { ...getApiHeaders(),
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
