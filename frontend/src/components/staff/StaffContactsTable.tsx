@@ -27,6 +27,9 @@ interface StaffContactsTableProps {
   onPageChange: (page: number) => void;
   onView: (contact: StaffContact) => void;
   onLogCall: (contact: StaffContact) => void;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string | 'all') => void;
+  onEdit: (contact: StaffContact) => void;
 }
 
 function SortHeader({
@@ -86,6 +89,9 @@ export default function StaffContactsTable({
   onPageChange,
   onView,
   onLogCall,
+  selectedIds,
+  onToggleSelect,
+  onEdit,
 }: StaffContactsTableProps) {
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const from = totalCount === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -109,6 +115,14 @@ export default function StaffContactsTable({
         <table className="w-full text-sm text-left min-w-[760px]">
           <thead>
             <tr className="border-b border-gray-100 text-xs uppercase tracking-wide">
+              <th className="py-3 px-3 w-10">
+                <input
+                  type="checkbox"
+                  checked={rows.length > 0 && rows.every((r) => selectedIds.has(r.id))}
+                  onChange={() => onToggleSelect('all')}
+                  className="rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                />
+              </th>
               <SortHeader label="Name" column="name" sort={sort} onSort={onSort} />
               <th className="py-3 px-2 font-medium text-gray-500">Phone</th>
               <th className="py-3 px-2 font-medium text-gray-500">City</th>
@@ -133,6 +147,14 @@ export default function StaffContactsTable({
           <tbody className="divide-y divide-gray-50">
             {rows.map((c) => (
               <tr key={c.id} className="hover:bg-gray-50/80">
+                <td className="py-3 px-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(c.id)}
+                    onChange={() => onToggleSelect(c.id)}
+                    className="rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                  />
+                </td>
                 <td className="py-3 px-2 font-medium text-gray-900">{c.name}</td>
                 <td className="py-3 px-2 text-gray-600 whitespace-nowrap">
                   <a href={`tel:${c.phone}`} className="hover:underline">
@@ -175,6 +197,13 @@ export default function StaffContactsTable({
                       className="text-xs font-medium px-2.5 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50"
                     >
                       View
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onEdit(c)}
+                      className="text-xs font-medium px-2.5 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50"
+                    >
+                      Edit
                     </button>
                     <button
                       type="button"

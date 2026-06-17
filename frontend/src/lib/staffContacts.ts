@@ -190,6 +190,24 @@ export function reassignContact(contactId: string, assignedToId: string) {
   saveContacts(next);
 }
 
+export function reassignContactsBulk(contactIds: string[], assignedToId: string) {
+  const ids = new Set(contactIds);
+  const next = getContacts().map((c) =>
+    ids.has(c.id) ? { ...c, assignedToId } : c
+  );
+  saveContacts(next);
+}
+
+export function updateContact(
+  contactId: string,
+  updates: Partial<Omit<StaffContact, 'id' | 'createdAt' | 'source'>>
+) {
+  const next = getContacts().map((c) =>
+    c.id === contactId ? { ...c, ...updates } : c
+  );
+  saveContacts(next);
+}
+
 export function createContact(input: {
   name: string;
   phone: string;

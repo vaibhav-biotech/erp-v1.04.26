@@ -4,6 +4,8 @@ import { useCallback, useMemo, useState } from 'react';
 import StaffAddContactModal from '@/components/staff/StaffAddContactModal';
 import StaffBulkUploadModal from '@/components/staff/StaffBulkUploadModal';
 import StaffContactDetailModal from '@/components/staff/StaffContactDetailModal';
+import StaffEditContactModal from '@/components/staff/StaffEditContactModal';
+import StaffBulkAssignModal from '@/components/staff/StaffBulkAssignModal';
 import StaffContactsAnalytics from '@/components/staff/StaffContactsAnalytics';
 import StaffContactsTable from '@/components/staff/StaffContactsTable';
 import StaffLogCallModal from '@/components/staff/StaffLogCallModal';
@@ -49,11 +51,17 @@ export default function StaffContactsPage() {
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZE_OPTIONS)[number]>(50);
   const [page, setPage] = useState(1);
   const [viewContact, setViewContact] = useState<StaffContact | null>(null);
+  const [editContact, setEditContact] = useState<StaffContact | null>(null);
   const [logContact, setLogContact] = useState<StaffContact | null>(null);
   const [showBulk, setShowBulk] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+  const [showBulkAssign, setShowBulkAssign] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const reload = useCallback(() => setContacts(getContacts()), []);
+  const reload = useCallback(() => {
+    setContacts(getContacts());
+    setSelectedIds(new Set());
+  }, []);
 
   const statsMap = useMemo(() => getContactStatsMap(), [contacts]);
   const callLogs = useMemo(() => getCallLogs(), [contacts]);
@@ -123,6 +131,25 @@ export default function StaffContactsPage() {
 
   const resetPage = () => setPage(1);
 
+  const handleToggleSelect = (id: string | 'all') => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (id === 'all') {
+        const allOnPage = pageRows.map((r) => r.id);
+        const allSelected = allOnPage.every((rid) => next.has(rid));
+        if (allSelected) {
+          allOnPage.forEach((rid) => next.delete(rid));
+        } else {
+          allOnPage.forEach((rid) => next.add(rid));
+        }
+      } else {
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+      }
+      return next;
+    });
+  };
+
   const handleSort = (column: 'name' | 'last_call' | 'calls' | 'status' | 'created') => {
     setSort((s) => toggleSort(s, column));
     resetPage();
@@ -149,6 +176,15 @@ export default function StaffContactsPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            {selectedIds.size > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowBulkAssign(true)}
+                className="text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-2xl"
+              >
+                Bulk Assign ({selectedIds.size})
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setShowAdd(true)}
@@ -240,6 +276,9 @@ export default function StaffContactsPage() {
           onPageChange={setPage}
           onView={setViewContact}
           onLogCall={setLogContact}
+          selectedIds={selectedIds}
+          onToggleSelect={handleToggleSelect}
+          onEdit={setEditContact}
         />
       </StaffPanel>
 
@@ -279,6 +318,23 @@ export default function StaffContactsPage() {
           isAdmin={isAdmin}
           onClose={() => setShowBulk(false)}
           onImported={reload}
+        />
+      )}
+
+      {editContact && (
+        <StaffEditContactModal
+          contact={editContact}
+          isAdmin={isAdmin}
+          onClose={() => setEditContact(null)}
+          onUpdated={reload}
+        />
+      )}
+
+      {showBulkAssign && (
+        <StaffBulkAssignModal
+          contactIds={Array.from(selectedIds)}
+          onClose={() => setShowBulkAssign(false)}
+          onAssigned={reload}
         />
       )}
     </div>
