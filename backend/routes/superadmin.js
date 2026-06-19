@@ -4,6 +4,7 @@ const verifyAdminToken = require('../middleware/verifyAdminToken');
 const Store = require('../models/Store');
 const StaffAttendanceRecord = require('../models/StaffAttendanceRecord');
 const StaffTaskRecord = require('../models/StaffTaskRecord');
+const StaffCallLogRecord = require('../models/StaffCallLogRecord');
 const crypto = require('crypto');
 const Customer = require('../models/Customer');
 const mongoose = require('mongoose');
@@ -279,6 +280,79 @@ router.get('/staff/:id/tasks', async (req, res) => {
     const mappedTasks = tasks.map(t => t.toClientJSON());
     return res.status(200).json({ success: true, data: mappedTasks });
   } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get staff analytics (across all stores)
+router.get('/staff-analytics', async (req, res) => {
+  try {
+    const StaffMember = require('../models/StaffMember');
+    const staffMembers = await StaffMember.find({ active: true });
+    
+    // Convert to map for easy grouping
+    const staffMap = {};
+    staffMembers.forEach(sm => {
+      staffMap[sm.id] = {
+        name: sm.name,
+        username: sm.username,
+        storeName: sm.storeName,
+        totalTasks: 0,
+        completedTasks: 0,
+        totalCalls: 0,
+        convertedCalls: 0,
+      };
+    });
+
+    const tasks = await StaffTaskRecord.find({});
+    tasks.forEach(t => {
+      const assigneeId = t.assigneeId;
+      if (staffMap[assigneeId]) {
+        staffMap[assigneeId].totalTasks += 1;
+        if (t.status === 'done') {
+          staffMap[assigneeId].completedTasks += 1;
+        }
+      }
+    });
+
+    const calls = await StaffCallLogRecord.find({});
+    calls.forEach(c => {
+      const staffId = c.staffId;
+      if (staffMap[staffId]) {
+        staffMap[staffId].totalCalls += 1;
+        if (c.outcome === 'create_order' || c.outcome === 'interested') {
+          staffMap[staffId].convertedCalls += 1;
+        }
+      }
+    });
+
+    let globalTotalTasks = 0;
+    let globalCompletedTasks = 0;
+    let globalTotalCalls = 0;
+    let globalConvertedCalls = 0;
+
+    const staffLeaderboard = Object.values(staffMap);
+    staffLeaderboard.forEach(s => {
+      globalTotalTasks += s.totalTasks;
+      globalCompletedTasks += s.completedTasks;
+      globalTotalCalls += s.totalCalls;
+      globalConvertedCalls += s.convertedCalls;
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        global: {
+          totalTasks: globalTotalTasks,
+          completedTasks: globalCompletedTasks,
+          totalCalls: globalTotalCalls,
+          convertedCalls: globalConvertedCalls,
+        },
+        leaderboard: staffLeaderboard.sort((a, b) => b.completedTasks - a.completedTasks)
+      }
+    });
+  } catch (error) {
+    console.error('[Superadmin Staff Analytics Error]', error);
     return res.status(500).json({ success: false, error: error.message });
   }
 });
