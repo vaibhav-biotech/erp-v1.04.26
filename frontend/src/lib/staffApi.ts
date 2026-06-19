@@ -233,3 +233,133 @@ export async function apiPatchStaffTask(
 
   return { ok: true, task: parsed.data };
 }
+
+export async function apiFetchStaffContacts(
+  token: string
+): Promise<{ ok: true; contacts: any[] } | { ok: false; error: string }> {
+  const res = await fetch(buildApiUrl('/api/staff/contacts'), {
+    headers: { ...getApiHeaders(), Authorization: `Bearer ${token}` },
+  });
+
+  const parsed = await parseJson<any[]>(res);
+  if (!parsed.ok || !parsed.data) {
+    return { ok: false, error: parsed.error || 'Failed to load contacts' };
+  }
+  return { ok: true, contacts: parsed.data };
+}
+
+export async function apiCreateStaffContact(
+  token: string,
+  contact: any
+): Promise<{ ok: true; contact: any } | { ok: false; error: string }> {
+  const res = await fetch(buildApiUrl('/api/staff/contacts'), {
+    method: 'POST',
+    headers: { ...getApiHeaders(),
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(contact),
+  });
+
+  const parsed = await parseJson<any>(res);
+  if (!parsed.ok || !parsed.data) {
+    return { ok: false, error: parsed.error || 'Failed to create contact' };
+  }
+  return { ok: true, contact: parsed.data };
+}
+
+export async function apiPatchStaffContact(
+  token: string,
+  id: string,
+  patch: any
+): Promise<{ ok: true; contact: any } | { ok: false; error: string }> {
+  const res = await fetch(buildApiUrl(`/api/staff/contacts/${encodeURIComponent(id)}`), {
+    method: 'PATCH',
+    headers: { ...getApiHeaders(),
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(patch),
+  });
+
+  const parsed = await parseJson<any>(res);
+  if (!parsed.ok || !parsed.data) {
+    return { ok: false, error: parsed.error || 'Failed to update contact' };
+  }
+  return { ok: true, contact: parsed.data };
+}
+
+export async function apiBulkImportStaffContacts(
+  token: string,
+  contacts: any[]
+): Promise<{ ok: true; contacts: any[] } | { ok: false; error: string }> {
+  const res = await fetch(buildApiUrl('/api/staff/contacts/bulk'), {
+    method: 'POST',
+    headers: { ...getApiHeaders(),
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ contacts }),
+  });
+
+  const parsed = await parseJson<any[]>(res);
+  if (!parsed.ok || !parsed.data) {
+    return { ok: false, error: parsed.error || 'Failed to bulk import contacts' };
+  }
+  return { ok: true, contacts: parsed.data };
+}
+
+export async function apiBulkAssignStaffContacts(
+  token: string,
+  contactIds: string[],
+  assignedToId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const res = await fetch(buildApiUrl('/api/staff/contacts/bulk-assign'), {
+    method: 'POST',
+    headers: { ...getApiHeaders(),
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ contactIds, assignedToId }),
+  });
+
+  const parsed = await parseJson<any>(res);
+  if (!parsed.ok) {
+    return { ok: false, error: parsed.error || 'Failed to bulk assign contacts' };
+  }
+  return { ok: true };
+}
+
+export async function apiFetchStaffCallLogs(
+  token: string
+): Promise<{ ok: true; logs: any[] } | { ok: false; error: string }> {
+  const res = await fetch(buildApiUrl('/api/staff/call-logs'), {
+    headers: { ...getApiHeaders(), Authorization: `Bearer ${token}` },
+  });
+
+  const parsed = await parseJson<any[]>(res);
+  if (!parsed.ok || !parsed.data) {
+    return { ok: false, error: parsed.error || 'Failed to load call logs' };
+  }
+  return { ok: true, logs: parsed.data };
+}
+
+export async function apiCreateStaffCallLog(
+  token: string,
+  log: any
+): Promise<{ ok: true; log: any } | { ok: false; error: string }> {
+  const res = await fetch(buildApiUrl('/api/staff/call-logs'), {
+    method: 'POST',
+    headers: { ...getApiHeaders(),
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(log),
+  });
+
+  const parsed = await parseJson<any>(res);
+  if (!parsed.ok || !parsed.data) {
+    return { ok: false, error: parsed.error || 'Failed to create call log' };
+  }
+  return { ok: true, log: parsed.data };
+}

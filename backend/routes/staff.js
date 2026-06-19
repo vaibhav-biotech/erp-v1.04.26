@@ -4,6 +4,8 @@ const mongoose = require('mongoose');
 const StaffMember = require('../models/StaffMember');
 const StaffAttendanceRecord = require('../models/StaffAttendanceRecord');
 const StaffTaskRecord = require('../models/StaffTaskRecord');
+const StaffContactRecord = require('../models/StaffContactRecord');
+const StaffCallLogRecord = require('../models/StaffCallLogRecord');
 const { ensureStaffDemoUsersOnce } = require('../services/staffSeed');
 const { ensureStaffDataOnce } = require('../services/staffDataSeed');
 
@@ -475,6 +477,255 @@ router.patch('/tasks/:id', verifyStaffToken, async (req, res) => {
   } catch (error) {
     console.error('[staff/tasks PATCH]', error);
     return res.status(500).json({ success: false, error: 'Failed to update task' });
+  }
+});
+
+const CONTACT_STATUSES = ['new', 'contacted', 'callback', 'interested', 'not_interested'];
+const CALL_OUTCOMES = ['answered', 'no_answer', 'busy', 'wrong_number', 'callback', 'converted', 'create_order'];
+
+// GET /api/staff/contacts
+router.get('/contacts', verifyStaffToken, async (req, res) => {
+  try {
+    await ensureStaffDataOnce();
+    const storeName = req.staffStoreName || 'plantsingarden';
+    const contacts = await StaffContactRecord.find({ storeName }).sort({ createdAt: -1 });
+    return res.status(200).json({
+      success: true,
+      data: contacts.map((c) => c.toClientJSON()),
+    });
+  } catch (error) {
+    console.error('[staff/contacts GET]', error);
+    return res.status(500).json({ success: false, error: 'Failed to load contacts' });
+  }
+});
+
+// POST /api/staff/contacts
+router.post('/contacts', verifyStaffToken, async (req, res) => {
+  try {
+    const storeName = req.staffStoreName || 'plantsingarden';
+    const isAdmin = req.staffRole === 'staff_admin';
+    const assignedToId = String(req.body.assignedToId || req.staffId).trim();
+
+    if (!isAdmin && assignedToId !== req.staffId) {
+      return res.status(403).json({ success: false, error: 'Can only assign contacts to yourself' });
+    }
+
+    const assignee = await StaffMember.findOne({ id: assignedToId, storeName });
+    if (!assignee || assignee.role !== 'staff' || !assignee.active) {
+      return res.status(400).json({ success: false, error: 'Invalid assignee' });
+    }
+
+    const contact = await StaffContactRecord.create({
+      id: String(req.body.id || `c-${Date.now()}`).trim(),
+      name: String(req.body.name || '').trim(),
+      phone: String(req.body.phone || '').trim(),
+      email: String(req.body.email || '').trim(),
+      city: String(req.body.city || '').trim(),
+      notes: String(req.body.notes || '').trim(),
+      status: CONTACT_STATUSES.includes(req.body.status) ? req.body.status : 'new',
+      assignedToId,
+      createdAtDate: String(req.body.createdAt || new Date().toISOString().slice(0, 10)).trim(),
+      source: req.body.source === 'bulk_upload' ? 'bulk_upload' : 'manual',
+      storeName,
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: contact.toClientJSON(),
+    });
+  } catch (error) {
+    console.error('[staff/contacts POST]', error);
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, error: 'Contact ID already exists' });
+    }
+    return res.status(500).json({ success: false, error: 'Failed to create contact' });
+  }
+});
+
+// PATCH /api/staff/contacts/:id
+router.patch('/contacts/:id', verifyStaffToken, async (req, res) => {
+  try {
+    const storeName = req.staffStoreName || 'plantsingarden';
+    const contact = await StaffContactRecord.findOne({ id: req.params.id, storeName });
+    if (!contact) {
+      return res.status(404).json({ success: false, error: 'Contact not found' });
+    }
+
+    const isAdmin = req.staffRole === 'staff_admin';
+    if (!isAdmin && contact.assignedToId !== req.staffId) {
+      return res.status(403).json({ success: false, error: 'Not allowed to edit this contact' });
+    }
+
+    if (req.body.status !== undefined) {
+      const status = String(req.body.status).trim();
+      if (!CONTACT_STATUSES.includes(status)) {
+        return res.status(400).json({ success: false, error: 'Invalid status' });
+      }
+      contact.status = status;
+    }
+
+    if (req.body.assignedToId !== undefined) {
+      if (!isAdmin) {
+        return res.status(403).json({ success: false, error: 'Only admin can reassign contacts' });
+      }
+      const assignedToId = String(req.body.assignedToId).trim();
+      const assignee = await StaffMember.findOne({ id: assignedToId, storeName });
+      if (!assignee || assignee.role !== 'staff' || !assignee.active) {
+        return res.status(400).json({ success: false, error: 'Invalid assignee' });
+      }
+      contact.assignedToId = assignedToId;
+    }
+
+    if (req.body.name !== undefined) contact.name = String(req.body.name).trim();
+    if (req.body.phone !== undefined) contact.phone = String(req.body.phone).trim();
+    if (req.body.email !== undefined) contact.email = String(req.body.email).trim();
+    if (req.body.city !== undefined) contact.city = String(req.body.city).trim();
+    if (req.body.notes !== undefined) contact.notes = String(req.body.notes).trim();
+
+    await contact.save();
+
+    return res.status(200).json({
+      success: true,
+      data: contact.toClientJSON(),
+    });
+  } catch (error) {
+    console.error('[staff/contacts PATCH]', error);
+    return res.status(500).json({ success: false, error: 'Failed to update contact' });
+  }
+});
+
+// POST /api/staff/contacts/bulk
+router.post('/contacts/bulk', verifyStaffToken, async (req, res) => {
+  try {
+    const storeName = req.staffStoreName || 'plantsingarden';
+    const isAdmin = req.staffRole === 'staff_admin';
+    const contactsInput = Array.isArray(req.body.contacts) ? req.body.contacts : [];
+
+    if (!contactsInput.length) {
+      return res.status(400).json({ success: false, error: 'No contacts provided' });
+    }
+
+    const contactsToInsert = [];
+    for (const c of contactsInput) {
+      const assignedToId = String(c.assignedToId || req.staffId).trim();
+      
+      // Basic validation
+      if (!isAdmin && assignedToId !== req.staffId) {
+        continue; // skip unauthorized assignment
+      }
+
+      contactsToInsert.push({
+        id: String(c.id || `c-${Date.now()}-${Math.random()}`).trim(),
+        name: String(c.name || '').trim(),
+        phone: String(c.phone || '').trim(),
+        email: String(c.email || '').trim(),
+        city: String(c.city || '').trim(),
+        notes: String(c.notes || '').trim(),
+        status: CONTACT_STATUSES.includes(c.status) ? c.status : 'new',
+        assignedToId,
+        createdAtDate: String(c.createdAt || new Date().toISOString().slice(0, 10)).trim(),
+        source: c.source === 'bulk_upload' ? 'bulk_upload' : 'manual',
+        storeName,
+      });
+    }
+
+    if (!contactsToInsert.length) {
+      return res.status(400).json({ success: false, error: 'No valid contacts to insert' });
+    }
+
+    const inserted = await StaffContactRecord.insertMany(contactsToInsert, { ordered: false });
+
+    return res.status(201).json({
+      success: true,
+      data: inserted.map(c => c.toClientJSON()),
+    });
+  } catch (error) {
+    console.error('[staff/contacts/bulk POST]', error);
+    // Ignore duplicate key errors for bulk
+    if (error.code === 11000) {
+      return res.status(201).json({ success: true, warning: 'Some duplicates ignored' });
+    }
+    return res.status(500).json({ success: false, error: 'Failed to bulk import contacts' });
+  }
+});
+
+// POST /api/staff/contacts/bulk-assign
+router.post('/contacts/bulk-assign', verifyStaffToken, requireStaffAdmin, async (req, res) => {
+  try {
+    const storeName = req.staffStoreName || 'plantsingarden';
+    const contactIds = Array.isArray(req.body.contactIds) ? req.body.contactIds : [];
+    const assignedToId = String(req.body.assignedToId || '').trim();
+
+    if (!contactIds.length || !assignedToId) {
+      return res.status(400).json({ success: false, error: 'Contact IDs and Assignee ID required' });
+    }
+
+    const assignee = await StaffMember.findOne({ id: assignedToId, storeName });
+    if (!assignee || assignee.role !== 'staff' || !assignee.active) {
+      return res.status(400).json({ success: false, error: 'Invalid assignee' });
+    }
+
+    await StaffContactRecord.updateMany(
+      { id: { $in: contactIds }, storeName },
+      { $set: { assignedToId } }
+    );
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('[staff/contacts/bulk-assign POST]', error);
+    return res.status(500).json({ success: false, error: 'Failed to bulk assign contacts' });
+  }
+});
+
+// GET /api/staff/call-logs
+router.get('/call-logs', verifyStaffToken, async (req, res) => {
+  try {
+    await ensureStaffDataOnce();
+    const storeName = req.staffStoreName || 'plantsingarden';
+    const logs = await StaffCallLogRecord.find({ storeName }).sort({ calledAt: -1 });
+    return res.status(200).json({
+      success: true,
+      data: logs.map((l) => l.toClientJSON()),
+    });
+  } catch (error) {
+    console.error('[staff/call-logs GET]', error);
+    return res.status(500).json({ success: false, error: 'Failed to load call logs' });
+  }
+});
+
+// POST /api/staff/call-logs
+router.post('/call-logs', verifyStaffToken, async (req, res) => {
+  try {
+    const storeName = req.staffStoreName || 'plantsingarden';
+    const contactId = String(req.body.contactId || '').trim();
+    const staffId = String(req.body.staffId || '').trim();
+
+    if (!contactId || !staffId) {
+      return res.status(400).json({ success: false, error: 'Contact ID and Staff ID are required' });
+    }
+
+    const log = await StaffCallLogRecord.create({
+      id: String(req.body.id || `cl-${Date.now()}`).trim(),
+      contactId,
+      staffId,
+      calledAt: String(req.body.calledAt || new Date().toISOString()).trim(),
+      outcome: CALL_OUTCOMES.includes(req.body.outcome) ? req.body.outcome : 'no_answer',
+      orderStoreId: req.body.orderStoreId ? String(req.body.orderStoreId).trim() : undefined,
+      durationMinutes: req.body.durationMinutes ? Number(req.body.durationMinutes) : undefined,
+      notes: String(req.body.notes || '').trim(),
+      storeName,
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: log.toClientJSON(),
+    });
+  } catch (error) {
+    console.error('[staff/call-logs POST]', error);
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, error: 'Call log already exists' });
+    }
+    return res.status(500).json({ success: false, error: 'Failed to create call log' });
   }
 });
 

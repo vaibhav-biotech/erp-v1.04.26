@@ -101,6 +101,8 @@ export async function syncStaffUsersFromServer(): Promise<boolean> {
   }
 }
 
+import { syncStaffContactsDataFromServer } from './staffContacts';
+
 /** Pull tasks + attendance from API (shared across admin and staff browsers). */
 export async function syncStaffPortalDataFromServer(): Promise<boolean> {
   const token = getStaffToken();
@@ -110,6 +112,7 @@ export async function syncStaffPortalDataFromServer(): Promise<boolean> {
     const [attendanceResult, tasksResult] = await Promise.all([
       apiFetchStaffAttendance(token),
       apiFetchStaffTasks(token),
+      syncStaffContactsDataFromServer(token),
     ]);
 
     let ok = true;

@@ -1,7 +1,16 @@
 'use client';
 
 import * as XLSX from 'xlsx';
-import { getActiveStaffMembers, getStaffMemberById, getStaffUsers } from './staffAuth';
+import { getActiveStaffMembers, getStaffMemberById, getStaffUsers, getStaffToken } from './staffAuth';
+import {
+  apiFetchStaffContacts,
+  apiFetchStaffCallLogs,
+  apiCreateStaffContact,
+  apiPatchStaffContact,
+  apiBulkImportStaffContacts,
+  apiBulkAssignStaffContacts,
+  apiCreateStaffCallLog,
+} from './staffApi';
 import type { AnalyticsPeriod } from './staffContactList';
 import { getPeriodStart } from './staffContactList';
 import {
@@ -123,6 +132,29 @@ export function saveCallLogs(logs: StaffCallLog[]) {
   localStorage.setItem(STORAGE_KEYS.callLogs, JSON.stringify(logs));
 }
 
+export async function syncStaffContactsDataFromServer(token: string): Promise<boolean> {
+  try {
+    const [contactsResult, logsResult] = await Promise.all([
+      apiFetchStaffContacts(token),
+      apiFetchStaffCallLogs(token),
+    ]);
+    let ok = true;
+    if (contactsResult.ok) {
+      saveContacts(contactsResult.contacts);
+    } else {
+      ok = false;
+    }
+    if (logsResult.ok) {
+      saveCallLogs(logsResult.logs);
+    } else {
+      ok = false;
+    }
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 export function getCallLogsForContact(contactId: string) {
   return getCallLogs()
     .filter((l) => l.contactId === contactId)
@@ -175,12 +207,22 @@ export function createCallLog(input: {
     durationMinutes: input.durationMinutes,
   };
   saveCallLogs([log, ...getCallLogs()]);
+
+  const token = getStaffToken();
+  if (token) {
+    apiCreateStaffCallLog(token, log).catch(() => {});
+  }
+
   return log;
 }
 
 export function updateContactStatus(contactId: string, status: ContactStatus) {
   const next = getContacts().map((c) => (c.id === contactId ? { ...c, status } : c));
   saveContacts(next);
+  const token = getStaffToken();
+  if (token) {
+    apiPatchStaffContact(token, contactId, { status }).catch(() => {});
+  }
 }
 
 export function reassignContact(contactId: string, assignedToId: string) {
@@ -188,6 +230,10 @@ export function reassignContact(contactId: string, assignedToId: string) {
     c.id === contactId ? { ...c, assignedToId } : c
   );
   saveContacts(next);
+  const token = getStaffToken();
+  if (token) {
+    apiPatchStaffContact(token, contactId, { assignedToId }).catch(() => {});
+  }
 }
 
 export function reassignContactsBulk(contactIds: string[], assignedToId: string) {
@@ -196,6 +242,10 @@ export function reassignContactsBulk(contactIds: string[], assignedToId: string)
     ids.has(c.id) ? { ...c, assignedToId } : c
   );
   saveContacts(next);
+  const token = getStaffToken();
+  if (token) {
+    apiBulkAssignStaffContacts(token, contactIds, assignedToId).catch(() => {});
+  }
 }
 
 export function updateContact(
@@ -206,6 +256,10 @@ export function updateContact(
     c.id === contactId ? { ...c, ...updates } : c
   );
   saveContacts(next);
+  const token = getStaffToken();
+  if (token) {
+    apiPatchStaffContact(token, contactId, updates).catch(() => {});
+  }
 }
 
 export function createContact(input: {
@@ -247,6 +301,12 @@ export function createContact(input: {
   };
 
   saveContacts([contact, ...getContacts()]);
+
+  const token = getStaffToken();
+  if (token) {
+    apiCreateStaffContact(token, contact).catch(() => {});
+  }
+
   return { ok: true, contact };
 }
 
@@ -377,6 +437,12 @@ export function importContactsBulk(
   });
 
   saveContacts([...toAdd, ...existing]);
+
+  const token = getStaffToken();
+  if (token && toAdd.length > 0) {
+    apiBulkImportStaffContacts(token, toAdd).catch(() => {});
+  }
+
   return { imported: toAdd.length, skipped, errors };
 }
 
