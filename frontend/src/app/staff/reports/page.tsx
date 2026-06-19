@@ -30,7 +30,7 @@ export default function StaffReportsPage() {
 
   const myCalls = calls.filter((c) => c.staffId === userId);
   const totalCalls = myCalls.length;
-  const convertedCalls = myCalls.filter(c => c.outcome === 'create_order' || c.outcome === 'interested').length;
+  const convertedCalls = myCalls.filter(c => c.outcome === 'converted').length;
 
   // Leaderboard for Staff Admin
   const leaderboard = useMemo(() => {
@@ -41,7 +41,7 @@ export default function StaffReportsPage() {
       const staffCalls = calls.filter(c => c.staffId === staff.id);
       
       const doneTasks = staffTasks.filter(t => t.status === 'done').length;
-      const convCalls = staffCalls.filter(c => c.outcome === 'create_order' || c.outcome === 'interested').length;
+      const convCalls = staffCalls.filter(c => c.outcome === 'converted').length;
       
       return {
         id: staff.id,

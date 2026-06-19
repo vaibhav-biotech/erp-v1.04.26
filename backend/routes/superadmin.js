@@ -320,7 +320,7 @@ router.get('/staff-analytics', async (req, res) => {
       const staffId = c.staffId;
       if (staffMap[staffId]) {
         staffMap[staffId].totalCalls += 1;
-        if (c.outcome === 'create_order' || c.outcome === 'interested') {
+        if (c.outcome === 'converted') {
           staffMap[staffId].convertedCalls += 1;
         }
       }
