@@ -25,8 +25,16 @@ interface AnalyticsData {
   leaderboard: StaffStat[];
 }
 
+interface DashboardStats {
+  totalStores: number;
+  totalCustomers: number;
+  totalOrders: number;
+  totalRevenue: number;
+}
+
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedStore, setSelectedStore] = useState<string>('all');
   const [stores, setStores] = useState<string[]>([]);
@@ -34,17 +42,25 @@ export default function AnalyticsPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch(buildApiUrl('/api/superadmin/staff-analytics'), {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('superadmin_token')}`
-          }
-        });
-        const json = await res.json();
-        if (json.success) {
-          setData(json.data);
-          // Extract unique stores
-          const uniqueStores = Array.from(new Set(json.data.leaderboard.map((s: StaffStat) => s.storeName)));
+        const headers = {
+          Authorization: `Bearer ${localStorage.getItem('superadmin_token')}`
+        };
+        const [staffRes, dashboardRes] = await Promise.all([
+          fetch(buildApiUrl('/api/superadmin/staff-analytics'), { headers }),
+          fetch(buildApiUrl('/api/superadmin/dashboard-stats'), { headers })
+        ]);
+        
+        const staffJson = await staffRes.json();
+        const dashboardJson = await dashboardRes.json();
+
+        if (staffJson.success) {
+          setData(staffJson.data);
+          const uniqueStores = Array.from(new Set(staffJson.data.leaderboard.map((s: StaffStat) => s.storeName)));
           setStores(uniqueStores as string[]);
+        }
+        
+        if (dashboardJson.success) {
+          setDashboardStats(dashboardJson.data);
         }
       } catch (err) {
         console.error('Failed to fetch analytics', err);
@@ -58,28 +74,28 @@ export default function AnalyticsPage() {
   const stats = [
     {
       label: 'Total Customers',
-      value: '1,234',
+      value: loading ? '...' : (dashboardStats?.totalCustomers || 0).toLocaleString(),
       icon: <FiUsers className="w-8 h-8" />,
       color: 'bg-blue-50',
       iconColor: 'text-blue-600',
     },
     {
       label: 'Total Orders',
-      value: '567',
+      value: loading ? '...' : (dashboardStats?.totalOrders || 0).toLocaleString(),
       icon: <FiShoppingCart className="w-8 h-8" />,
       color: 'bg-green-50',
       iconColor: 'text-green-600',
     },
     {
       label: 'Revenue',
-      value: '₹2,45,890',
+      value: loading ? '...' : `₹${(dashboardStats?.totalRevenue || 0).toLocaleString()}`,
       icon: <FiTrendingUp className="w-8 h-8" />,
       color: 'bg-purple-50',
       iconColor: 'text-purple-600',
     },
     {
       label: 'Active Stores',
-      value: stores.length || '3',
+      value: loading ? '...' : (dashboardStats?.totalStores || stores.length || 0).toString(),
       icon: <FiBarChart2 className="w-8 h-8" />,
       color: 'bg-orange-50',
       iconColor: 'text-orange-600',

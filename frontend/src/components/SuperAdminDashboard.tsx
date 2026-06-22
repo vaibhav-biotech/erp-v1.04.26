@@ -84,6 +84,7 @@ export default function SuperAdminDashboard() {
 
   const quickActions = [
     { title: 'View All Customers', icon: <FiUsers className="w-5 h-5" />, color: 'text-blue-600', link: '?page=all-customers' },
+    { title: 'View All Orders', icon: <FiShoppingCart className="w-5 h-5" />, color: 'text-indigo-600', link: '?page=all-orders' },
     { title: 'Manage Stores', icon: <FiShoppingCart className="w-5 h-5" />, color: 'text-green-600', link: '?page=manage-stores' },
     { title: 'Manage Admins', icon: <FiUsers className="w-5 h-5" />, color: 'text-purple-600', link: '?page=manage-admins' },
     { title: 'View All Staff', icon: <FiUsers className="w-5 h-5" />, color: 'text-blue-600', link: '?page=manage-staff' },
@@ -134,7 +135,7 @@ export default function SuperAdminDashboard() {
         className="bg-white rounded-lg shadow p-6"
       >
         <h2 className="font-playfair text-2xl font-bold text-gray-900 mb-6">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {quickActions.map((action, index) => (
             <a
               key={index}
