@@ -264,7 +264,7 @@ export default function GiftWrapSettingsPage() {
         <div>
           <div className="flex items-center gap-3">
             <FiGift size={28} className="text-amber-600" />
-            <h1 className="text-2xl font-bold text-gray-900">Gift Wrap Settings</h1>
+            
           </div>
           <p className="text-gray-600 mt-1">Manage gift wrap options available for customers</p>
         </div>

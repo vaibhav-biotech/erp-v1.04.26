@@ -161,7 +161,7 @@ export default function StoreAdminDashboard() {
             <div className="mb-8">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                  <p className="text-gray-600">Manage your product inventory</p>
+                  
                 </div>
                 <div className="flex gap-3 flex-wrap">
                   <button

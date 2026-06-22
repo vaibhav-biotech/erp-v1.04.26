@@ -45,7 +45,7 @@ export default function SuperAdminLayout({
       {/* Main Content Area with topbar space */}
       <div className="ml-64 flex-1 flex flex-col overflow-hidden">
         {/* Topbar - with proper spacing for sidebar */}
-        <div className="h-16 bg-white border-b border-gray-200 flex items-center px-8">
+        <div className="min-h-[4.5rem] bg-white border-b border-gray-200 flex items-center px-8">
           <Topbar />
         </div>
 

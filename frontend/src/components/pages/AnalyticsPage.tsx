@@ -211,7 +211,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Staff Stats Grid */}
-      <h2 className="font-playfair text-2xl font-bold text-gray-900 mt-8 pt-4 border-t">Staff Performance Output</h2>
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {staffStats.map((stat, index) => (
           <motion.div

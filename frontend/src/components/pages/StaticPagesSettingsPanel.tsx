@@ -132,7 +132,7 @@ export default function StaticPagesSettingsPanel() {
     <div className="bg-white rounded-lg shadow p-6 sm:p-8 mt-8">
       <div className="flex items-center justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Website Pages Content</h2>
+          
           <p className="mt-2 text-gray-600">Edit About Us, Contact Us, Privacy Policy, Terms and Shipping Policy pages.</p>
         </div>
       </div>

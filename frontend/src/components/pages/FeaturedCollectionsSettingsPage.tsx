@@ -310,7 +310,7 @@ export default function FeaturedCollectionsSettingsPage() {
     <div className="bg-white rounded-lg shadow p-6 sm:p-8">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Featured Collections</h1>
+          
           <p className="mt-2 text-gray-600">Create homepage collection cards powered by product tags.</p>
         </div>
         <Button variant="primary" onClick={openCreate}>+ Create Collection</Button>

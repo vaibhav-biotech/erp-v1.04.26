@@ -30,13 +30,13 @@ const AdminSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['super_admin', 'store_admin'],
+      enum: ['super_admin', 'inventory_admin', 'store_admin'],
       required: true,
       default: 'store_admin'
     },
     storeName: {
       type: String,
-      default: null // null for super_admin, store name for store_admin
+      default: null // null for central roles, store name for store_admin
     },
     permissions: {
       canEditProducts: { type: Boolean, default: true },

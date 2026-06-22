@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchWithStore } from '@/lib/storeConfig';
 import {
   FiHome,
   FiPackage,
   FiShoppingCart,
+  FiActivity,
   FiList,
   FiUsers,
   FiLogOut,
@@ -15,6 +16,7 @@ import {
   FiChevronRight,
   FiSettings,
   FiChevronDown,
+  FiTruck,
 } from 'react-icons/fi';
 
 interface Category {
@@ -49,14 +51,17 @@ export default function GroupedSidebar() {
   
   const router = useRouter();
   const searchParams = useSearchParams();
-  const currentPage = searchParams.get('page') || 'home';
+  const pathname = usePathname();
+  
+  const isProductDetailsPage = pathname?.includes('/products/');
+  const currentPage = isProductDetailsPage ? 'products' : (searchParams.get('page') || 'home');
   const currentCategory = searchParams.get('category') || '';
   
   const { logout, logoutAdmin, adminAuthenticated, admin, adminToken } = useAuth();
 
   // Fetch categories on mount
   useEffect(() => {
-    if (adminAuthenticated && admin?.role === 'store_admin' && adminToken) {
+    if (adminAuthenticated && (admin?.role === 'store_admin' || admin?.role === 'inventory_admin') && adminToken) {
       fetchCategories();
     }
   }, [adminAuthenticated, admin, adminToken]);
@@ -105,18 +110,14 @@ export default function GroupedSidebar() {
   const productItems: MenuItem[] = categories.map((cat) => ({
     id: `category-${cat._id}`,
     label: cat.name,
-    route: `/admin/dashboard/store-admin?page=products&category=${cat._id}&categoryName=${encodeURIComponent(cat.name)}`,
-    roles: ['store_admin'],
+    route: admin?.role === 'inventory_admin'
+      ? `/admin/dashboard/inventory-admin?page=products&category=${cat._id}&categoryName=${encodeURIComponent(cat.name)}`
+      : `/admin/dashboard/store-admin?page=products&category=${cat._id}&categoryName=${encodeURIComponent(cat.name)}`,
+    roles: ['store_admin', 'inventory_admin'],
   }));
 
   // Settings/Website items
   const settingsItems: MenuItem[] = [
-    {
-      id: 'categories',
-      label: 'Manage Categories',
-      route: '/admin/dashboard/store-admin?page=categories',
-      roles: ['store_admin'],
-    },
     {
       id: 'website-settings',
       label: 'Website Settings',
@@ -179,8 +180,43 @@ export default function GroupedSidebar() {
       id: 'home',
       label: 'Dashboard',
       icon: <FiHome className="w-5 h-5" />,
-      route: '/admin/dashboard/store-admin',
-      roles: ['store_admin'],
+      route: admin?.role === 'inventory_admin' ? '/admin/dashboard/inventory-admin' : '/admin/dashboard/store-admin',
+      roles: ['store_admin', 'inventory_admin'],
+    },
+    {
+      id: 'inventory',
+      label: 'Inventory',
+      icon: <FiPackage className="w-5 h-5" />,
+      route: '/admin/dashboard/inventory-admin?page=inventory',
+      roles: ['inventory_admin'],
+    },
+    {
+      id: 'purchase-orders',
+      label: 'Purchase Orders',
+      icon: <FiShoppingCart className="w-5 h-5" />,
+      route: '/admin/dashboard/inventory-admin?page=purchase-orders',
+      roles: ['inventory_admin', 'super_admin'],
+    },
+    {
+      id: 'suppliers',
+      label: 'Suppliers',
+      icon: <FiTruck className="w-5 h-5" />,
+      route: '/admin/dashboard/inventory-admin?page=suppliers',
+      roles: ['inventory_admin', 'super_admin'],
+    },
+    {
+      id: 'activity-log',
+      label: 'Activity Logs',
+      icon: <FiActivity className="w-5 h-5" />,
+      route: '/admin/dashboard/inventory-admin?page=activity-log',
+      roles: ['inventory_admin'],
+    },
+    {
+      id: 'categories',
+      label: 'Categories',
+      icon: <FiPackage className="w-5 h-5" />,
+      route: admin?.role === 'inventory_admin' ? '/admin/dashboard/inventory-admin?page=categories' : '/admin/dashboard/store-admin?page=categories',
+      roles: ['store_admin', 'inventory_admin'],
     },
     {
       id: 'orders',
@@ -210,7 +246,7 @@ export default function GroupedSidebar() {
       id: 'settings',
       label: 'Website Settings',
       icon: <FiSettings className="w-5 h-5" />,
-      items: settingsItems,
+      items: settingsItems.filter(item => item.roles?.includes(admin?.role || '')),
       isCollapsible: true,
     },
     {
@@ -224,10 +260,13 @@ export default function GroupedSidebar() {
           route: '/admin/dashboard/store-admin?page=account-tax',
           roles: ['store_admin'],
         },
-      ],
+      ].filter(item => item.roles?.includes(admin?.role || '')),
       isCollapsible: true,
     },
   ];
+
+  // Filter out groups that have 0 items due to role restrictions
+  const filteredGroups = groups.filter(g => g.items.length > 0);
 
   const isActive = (itemId: string, itemRoute: string): boolean => {
     if (itemId === 'home' && currentPage !== 'home') return false;
@@ -272,7 +311,7 @@ export default function GroupedSidebar() {
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {/* Top-level items */}
-        {topLevelItems.map((item) => (
+        {topLevelItems.filter(item => item.roles?.includes(admin?.role || '')).map((item) => (
           <button
             key={item.id}
             onClick={() => handleNavigate(item.route)}
@@ -289,7 +328,7 @@ export default function GroupedSidebar() {
         ))}
 
         {/* Grouped sections */}
-        {groups.map((group) => (
+        {filteredGroups.map((group) => (
           <div key={group.id} className="py-2">
             {/* Group header - collapsible */}
             <button

@@ -373,7 +373,7 @@ export default function LandingPageManager() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Landing Page</h1>
+        
         <p className="text-sm text-gray-600 mt-1">Hero banner manager (recommended banner size: 1920 × 600)</p>
       </div>
 

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { fetchWithStore } from '@/lib/storeConfig';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   FiEdit2,
   FiTrash2,
@@ -96,6 +97,11 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
   categoryId,
   categoryName,
 }) => {
+  const { admin } = useAuth();
+  const basePath = admin?.role === 'inventory_admin' 
+    ? '/admin/dashboard/inventory-admin' 
+    : '/admin/dashboard/store-admin';
+    
   const cacheKey = getProductsTableCacheKey(categoryId);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -103,6 +109,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'draft'>('all');
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [localSearchQuery, setLocalSearchQuery] = useState('');
   const [pagination, setPagination] = useState({
     currentPage: 1,
     pageSize: 10,
@@ -164,7 +171,6 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     }
   }, []);
 
-  // Fetch products
   useEffect(() => {
     if (skipInitialFetch) {
       setSkipInitialFetch(false);
@@ -172,7 +178,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     }
 
     fetchProducts();
-  }, [skipInitialFetch, pagination.currentPage, filterStatus, categoryId, categoryName]);
+  }, [skipInitialFetch, pagination.currentPage, pagination.pageSize, filterStatus, categoryId, categoryName]);
 
   useEffect(() => {
     fetchTopPicksConfig();
@@ -306,29 +312,6 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     }
   };
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      fetchProducts();
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') || undefined : undefined;
-      const response = await fetchWithStore(`/api/products/search?q=${encodeURIComponent(searchQuery)}`, {
-        token: adminToken,
-      });
-      if (!response.ok) throw new Error('Search failed');
-
-      const data = await response.json();
-      setProducts(data.data);
-    } catch (error) {
-      console.error('Error searching:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -358,20 +341,25 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     }
   };
 
-  const sortedProducts = [...products].sort((a, b) => {
-    let aValue: any = a[sortField];
-    let bValue: any = b[sortField];
+  const sortedProducts = [...products]
+    .filter(product => {
+      if (!localSearchQuery.trim()) return true;
+      return product.name.toLowerCase().includes(localSearchQuery.toLowerCase());
+    })
+    .sort((a, b) => {
+      let aValue: any = a[sortField];
+      let bValue: any = b[sortField];
 
-    // Handle dates
-    if (sortField === 'createdAt') {
-      aValue = new Date(aValue).getTime();
-      bValue = new Date(bValue).getTime();
-    }
+      // Handle dates
+      if (sortField === 'createdAt') {
+        aValue = new Date(aValue).getTime();
+        bValue = new Date(bValue).getTime();
+      }
 
-    if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
-    if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
-    return 0;
-  });
+      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return null;
@@ -395,7 +383,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     <div className="bg-white rounded-lg shadow-lg overflow-hidden">
       {/* Header with Search & Filter */}
       <div className="p-6 border-b border-gray-200">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Products</h2>
+        
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Search */}
@@ -405,18 +393,11 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
               <input
                 type="text"
                 placeholder="Search by product name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                value={localSearchQuery}
+                onChange={(e) => setLocalSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
               />
             </div>
-            <button
-              onClick={handleSearch}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-            >
-              Search
-            </button>
           </div>
 
           {/* Filter */}
@@ -556,7 +537,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
                       <Link
-                        href={`/admin/dashboard/store-admin/products/${product._id}`}
+                        href={`${basePath}/products/${product._id}`}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
                         title="View & Edit"
                       >
@@ -578,12 +559,28 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
         </table>
       </div>
 
-      {/* Pagination */}
-      {pagination.totalPages > 1 && (
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+      {/* Pagination & Page Size */}
+      <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
           <p className="text-sm text-gray-600">
-            Showing page {pagination.currentPage} of {pagination.totalPages} ({pagination.total} total)
+            Showing page {pagination.currentPage} of {Math.max(1, pagination.totalPages)} ({pagination.total} total)
           </p>
+          <div className="flex items-center gap-2 border-l border-gray-300 pl-3">
+            <span className="text-sm text-gray-600">Rows per page:</span>
+            <select
+              value={pagination.pageSize}
+              onChange={(e) => setPagination(prev => ({ ...prev, pageSize: Number(e.target.value), currentPage: 1 }))}
+              className="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-green-500"
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </div>
+        </div>
+
+        {pagination.totalPages > 1 && (
           <div className="flex gap-2">
             <button
               onClick={() => setPagination(prev => ({ ...prev, currentPage: Math.max(1, prev.currentPage - 1) }))}
@@ -600,8 +597,8 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
               Next
             </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

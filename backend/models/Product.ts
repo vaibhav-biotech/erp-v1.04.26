@@ -70,6 +70,11 @@ const productSchema = new Schema(
       min: [0, 'Price cannot be negative'],
       max: [999999, 'Price cannot exceed 999999']
     },
+    costPrice: {
+      type: Number,
+      default: 0,
+      min: [0, 'Cost price cannot be negative']
+    },
     discount: {
       type: Number,
       default: null

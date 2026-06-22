@@ -9,6 +9,9 @@ const {
 } = require('../services/bulkupload.service');
 const Category = require('../models/Category');
 const Product = require('../models/Product');
+const ActivityLog = require('../models/ActivityLog');
+const Admin = require('../models/Admin');
+const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 
@@ -196,12 +199,13 @@ router.post('/', async (req, res) => {
  */
 router.get('/', async (req, res) => {
   try {
-    const { category, status, limit, skip } = req.query;
+    const { category, status, stockStatus, limit, skip } = req.query;
 
     const result = await getAllProducts({
       storeName: req.storeName,
       category,
       status,
+      stockStatus,
       limit: limit ? parseInt(limit) : undefined,
       skip: skip ? parseInt(skip) : undefined
     });
@@ -289,10 +293,58 @@ router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const updates = req.body;
 
+    // Capture user making the request
+    let adminRole = null;
+    let adminEmail = null;
+    let adminId = null;
+
+    const token = req.headers.authorization?.split(' ')[1];
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-super-secret-key-change-in-production');
+        adminRole = decoded.role;
+        adminId = decoded.id;
+        
+        if (adminId) {
+          const adminObj = await Admin.findById(adminId);
+          if (adminObj) adminEmail = adminObj.email;
+        }
+      } catch (err) {
+        console.error('Invalid token during product update');
+      }
+    }
+
+    const oldProduct = await Product.findById(id);
+
     const result = await updateProduct(id, updates);
 
     if (!result.success) {
       return res.status(400).json(result);
+    }
+
+    // Log Activity for inventory_admin
+    if (adminRole === 'inventory_admin' && oldProduct) {
+      const details = [];
+      if (updates.stock !== undefined && Number(oldProduct.stock) !== Number(updates.stock)) {
+        details.push(`stock from ${oldProduct.stock} to ${updates.stock}`);
+      }
+      if (updates.costPrice !== undefined && Number(oldProduct.costPrice) !== Number(updates.costPrice)) {
+        details.push(`cost price from ₹${oldProduct.costPrice || 0} to ₹${updates.costPrice}`);
+      }
+
+      if (details.length > 0) {
+        try {
+          await ActivityLog.create({
+            adminId,
+            adminEmail: adminEmail || 'Unknown',
+            role: adminRole,
+            action: 'UPDATE_PRODUCT',
+            details: `Updated ${oldProduct.name}: changed ${details.join(', ')}`,
+          });
+        } catch (logErr) {
+          console.error('Failed to log product update activity:', logErr);
+        }
+      }
     }
 
     return res.status(200).json({

@@ -29,7 +29,7 @@ export default function WhyChooseUsSection() {
   return (
     <section className="py-8 sm:py-10">
       <div className="text-center mb-6 sm:mb-8">
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Why Choose Us</h2>
+        
         <p className="mt-2 text-sm sm:text-base text-gray-600">Quality and care you can always trust</p>
       </div>
 

@@ -200,8 +200,8 @@ export default function WebsiteSettingsPage() {
       <div className="bg-white rounded-lg shadow p-6 sm:p-8">
         <div className="flex items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Website Settings</h1>
-            <p className="mt-2 text-gray-600">Manage your store logo (horizontal format)</p>
+            
+            
           </div>
           <Button variant="primary" onClick={openCreate}>+ Add Logo</Button>
         </div>

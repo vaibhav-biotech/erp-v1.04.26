@@ -1,5 +1,6 @@
 const Product = require('../models/Product');
 const Category = require('../models/Category');
+const StockMovement = require('../models/StockMovement');
 const { uploadImageToS3 } = require('./s3.service');
 const { downloadFromGoogleDrive } = require('./drive.service');
 const { optimizeImage } = require('./imageOptimize.service');
@@ -418,6 +419,16 @@ const getAllProducts = async (filters) => {
       query.status = filters.status;
     }
 
+    if (filters?.stockStatus) {
+      if (filters.stockStatus === 'in-stock') {
+        query.stock = { $gt: 0 };
+      } else if (filters.stockStatus === 'low-stock') {
+        query.stock = { $gt: 0, $lt: 100 };
+      } else if (filters.stockStatus === 'out-of-stock') {
+        query.stock = 0;
+      }
+    }
+
     const limit = filters?.limit || 50;
     const skip = filters?.skip || 0;
 
@@ -484,8 +495,17 @@ const getProductById = async (productId) => {
  */
 const updateProduct = async (productId, updates) => {
   try {
-    // Validate updates
-    const validationResult = validateProduct({ ...updates });
+    // Fetch existing product to merge before validation
+    const existingProduct = await Product.findById(productId);
+    if (!existingProduct) {
+      return {
+        success: false,
+        error: 'Product not found'
+      };
+    }
+
+    // Validate merged updates
+    const validationResult = validateProduct({ ...existingProduct.toObject(), ...updates });
     if (!validationResult.isValid) {
       return {
         success: false,
@@ -500,6 +520,22 @@ const updateProduct = async (productId, updates) => {
         success: false,
         error: 'Product not found'
       };
+    }
+
+    // Log StockMovement if stock was updated
+    if (updates.stock !== undefined && existingProduct.stock !== updates.stock) {
+      const delta = updates.stock - existingProduct.stock;
+      try {
+        await StockMovement.create({
+          productId: product._id,
+          delta: delta,
+          reason: updates.stockMovementReason || 'Manual Adjustment',
+          notes: 'Updated via bulk/admin update'
+        });
+      } catch (err) {
+        console.error('Failed to log stock movement:', err);
+        // Do not fail the entire update if just the log fails
+      }
     }
 
     return {

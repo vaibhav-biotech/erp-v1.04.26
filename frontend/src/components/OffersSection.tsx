@@ -165,7 +165,7 @@ export default function OffersSection() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
           <div className="mb-5 sm:mb-6 text-center">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Special Offers</h2>
+            
             <p className="mt-1 text-sm sm:text-base text-gray-600">Limited time deals on plants & garden essentials</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6 auto-rows-max">
@@ -185,7 +185,7 @@ export default function OffersSection() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 relative z-10">
       <div className="mb-5 sm:mb-6 text-center">
-        <h2 className={`text-2xl sm:text-3xl font-bold ${backgroundImageUrl ? 'text-white drop-shadow-lg' : 'text-gray-900'}`}>Special Offers</h2>
+        
         <p className={`mt-1 text-sm sm:text-base ${backgroundImageUrl ? 'text-white/90 drop-shadow' : 'text-gray-600'}`}>Limited time deals on plants & garden essentials</p>
       </div>
 

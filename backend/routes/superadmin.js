@@ -30,10 +30,34 @@ router.get('/dashboard-stats', async (req, res) => {
     const totalStores = await Store.countDocuments();
     const totalCustomers = await Customer.countDocuments();
     
+    // Calculate Inventory Value & fetch cost prices
+    const Product = require('../models/Product');
+    const allProducts = await Product.find({});
+    const totalInventoryValue = allProducts.reduce((sum, p) => sum + ((p.costPrice || 0) * (p.stock || 0)), 0);
+
+    // Build cost price map for profit calculation
+    const costMap = {};
+    allProducts.forEach(p => {
+      costMap[p._id.toString()] = p.costPrice || 0;
+    });
+
     const db = mongoose.connection.db;
     const orders = await db.collection('orders').find({ paymentStatus: 'paid' }).toArray();
     const totalOrders = orders.length;
     const totalRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || order.total || 0), 0);
+    
+    // Calculate estimated Profit
+    let totalCostOfGoodsSold = 0;
+    orders.forEach(order => {
+      if (order.items && Array.isArray(order.items)) {
+        order.items.forEach(item => {
+          if (item.productId && costMap[item.productId.toString()]) {
+            totalCostOfGoodsSold += (costMap[item.productId.toString()] * (item.quantity || 1));
+          }
+        });
+      }
+    });
+    const totalProfit = totalRevenue - totalCostOfGoodsSold;
 
     return res.status(200).json({
       success: true,
@@ -41,7 +65,9 @@ router.get('/dashboard-stats', async (req, res) => {
         totalStores,
         totalCustomers,
         totalOrders,
-        totalRevenue
+        totalRevenue,
+        totalInventoryValue,
+        totalProfit
       }
     });
   } catch (error) {

@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin');
 const Store = require('../models/Store');
+const ActivityLog = require('../models/ActivityLog');
 
 const getDefaultTaxSettings = () => ({
   enabled: false,
@@ -74,6 +75,21 @@ router.post('/login', async (req, res) => {
     admin.lastLogin = new Date();
     await admin.save();
 
+    // Log Activity for inventory_admin
+    if (admin.role === 'inventory_admin') {
+      try {
+        await ActivityLog.create({
+          adminId: admin._id,
+          adminEmail: admin.email,
+          role: admin.role,
+          action: 'LOGIN',
+          details: 'Admin logged into the Inventory Dashboard',
+        });
+      } catch (logErr) {
+        console.error('Failed to log login activity:', logErr);
+      }
+    }
+
     const token = generateAdminToken(admin._id, admin.role, admin.storeName);
 
     res.status(200).json({
@@ -94,6 +110,26 @@ router.post('/login', async (req, res) => {
   } catch (error) {
     console.error('[Admin Login]', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/logout', verifyAdminToken, async (req, res) => {
+  try {
+    const admin = await Admin.findById(req.adminId);
+    if (admin && admin.role === 'inventory_admin') {
+      await ActivityLog.create({
+        adminId: admin._id,
+        adminEmail: admin.email,
+        role: admin.role,
+        action: 'LOGOUT',
+        details: 'Admin logged out of the Inventory Dashboard',
+      });
+    }
+    
+    res.status(200).json({ success: true, message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ success: false, error: 'Failed to log out' });
   }
 });
 
@@ -140,6 +176,12 @@ router.get('/dashboard-stats', verifyAdminToken, async (req, res) => {
     const totalCustomers = await Customer.countDocuments({ storeName });
     const totalProducts = await Product.countDocuments({ storeName });
     
+    // Inventory Calculations
+    const allProducts = await Product.find({ storeName });
+    const lowStock = allProducts.filter(p => p.stock < 10).length;
+    const totalInventoryValue = allProducts.reduce((sum, p) => sum + ((p.costPrice || 0) * (p.stock || 0)), 0);
+    const totalCategories = await mongoose.connection.db.collection('categories').countDocuments({});
+    
     const db = mongoose.connection.db;
     const orders = await db.collection('orders').find({ storeName, paymentStatus: 'paid' }).toArray();
     const totalOrders = orders.length;
@@ -151,7 +193,10 @@ router.get('/dashboard-stats', verifyAdminToken, async (req, res) => {
         totalCustomers,
         totalProducts,
         totalOrders,
-        totalRevenue
+        totalRevenue,
+        lowStock,
+        totalInventoryValue,
+        totalCategories
       }
     });
   } catch (error) {

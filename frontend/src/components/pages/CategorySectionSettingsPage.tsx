@@ -311,7 +311,7 @@ export default function CategorySectionSettingsPage() {
     <div className="bg-white rounded-lg shadow p-6 sm:p-8">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Category Section</h1>
+          
           <p className="mt-2 text-gray-600">Manage circular category icons to show below hero section.</p>
         </div>
         <Button variant="primary" onClick={openCreate}>+ Add Category Card</Button>

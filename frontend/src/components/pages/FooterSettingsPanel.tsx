@@ -96,7 +96,7 @@ export default function FooterSettingsPanel() {
   return (
     <div className="bg-white rounded-lg shadow p-6 sm:p-8 mt-8">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Footer Contact & Address</h2>
+        
         <p className="mt-2 text-gray-600">Edit footer contact details and address shown on all public pages.</p>
       </div>
 

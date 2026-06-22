@@ -232,7 +232,7 @@ export default function OrdersManagementPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
+          
           <p className="text-sm text-gray-600 mt-1">Fulfill orders, update tracking and generate invoices</p>
         </div>
         <button onClick={() => fetchOrders(true)} disabled={isRefreshing} className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">

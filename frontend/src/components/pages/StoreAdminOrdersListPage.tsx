@@ -118,7 +118,7 @@ export default function StoreAdminOrdersListPage() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
+          
           <p className="text-sm text-gray-600 mt-1">Click view to open complete order details page</p>
         </div>
         <button

@@ -99,7 +99,7 @@ export default function ProductDetailsPremium({ product, onAddToCart, onBuyNow }
               <div className="sticky top-4 space-y-6">
                 {/* Product Header */}
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
+                  
                   {product.subcategory && (
                     <p className="text-sm text-gray-600 mb-4">{product.subcategory}</p>
                   )}

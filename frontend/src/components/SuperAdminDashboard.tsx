@@ -97,12 +97,7 @@ export default function SuperAdminDashboard() {
       className="space-y-8"
     >
       {/* Welcome Header */}
-      <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-lg shadow-lg p-8 text-white">
-        <h1 className="font-playfair text-4xl font-bold mb-2">Welcome, Super Admin 🔐</h1>
-        <p className="font-montserrat text-green-50 text-lg">
-          You have full system access. Manage all stores, customers, and admins from here.
-        </p>
-      </div>
+      
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -134,7 +129,7 @@ export default function SuperAdminDashboard() {
         transition={{ delay: 0.4 }}
         className="bg-white rounded-lg shadow p-6"
       >
-        <h2 className="font-playfair text-2xl font-bold text-gray-900 mb-6">Quick Actions</h2>
+        
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {quickActions.map((action, index) => (
             <a
@@ -160,7 +155,7 @@ export default function SuperAdminDashboard() {
         transition={{ delay: 0.5 }}
         className="bg-white rounded-lg shadow p-6"
       >
-        <h2 className="font-playfair text-2xl font-bold text-gray-900 mb-4">System Overview</h2>
+        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="border-l-4 border-blue-500 pl-4 py-2">
             <h3 className="font-semibold text-gray-900 mb-2">🏪 Stores</h3>

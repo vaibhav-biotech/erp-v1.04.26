@@ -8,7 +8,7 @@ export interface Admin {
   email: string;
   firstName?: string;
   lastName?: string;
-  role?: 'super_admin' | 'store_admin';
+  role?: 'super_admin' | 'store_admin' | 'inventory_admin';
   storeName?: string | null;
   canAccessAllStores?: boolean;
 }
@@ -137,11 +137,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Admin logout
-  const logoutAdmin = useCallback(() => {
-    setAdmin(null);
-    setAdminToken(null);
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('admin');
+  const logoutAdmin = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      if (token) {
+        await fetch(buildApiUrl('/api/admin/logout'), {
+          method: 'POST',
+          headers: {
+            ...getApiHeaders(),
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      }
+    } catch (e) {
+      console.error('Logout failed:', e);
+    } finally {
+      setAdmin(null);
+      setAdminToken(null);
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('admin');
+    }
   }, []);
 
   // Customer login - PLAIN TEXT PASSWORD

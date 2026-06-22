@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   FiHome,
@@ -27,9 +27,11 @@ interface MenuItem {
   roles?: string[];
 }
 
-export default function Sidebar({ onPageChange, currentPage }: SidebarProps) {
+export default function Sidebar({ onPageChange, currentPage: propCurrentPage }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(true);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentPage = propCurrentPage || searchParams.get('page') || 'home';
   const { logout, logoutAdmin, adminAuthenticated, admin } = useAuth();
   
   const isAdminDashboard = adminAuthenticated;
@@ -38,10 +40,12 @@ export default function Sidebar({ onPageChange, currentPage }: SidebarProps) {
   const menuItems: MenuItem[] = isAdminDashboard ? [
     ...(admin?.role === 'super_admin' 
       ? [{ id: 'home', label: 'Dashboard', icon: <FiHome className="w-5 h-5" />, route: '/admin/dashboard/super-admin', roles: ['super_admin'] }]
+      : admin?.role === 'inventory_admin'
+      ? [{ id: 'home', label: 'Dashboard', icon: <FiHome className="w-5 h-5" />, route: '/admin/dashboard/inventory-admin', roles: ['inventory_admin'] }]
       : [{ id: 'home', label: 'Dashboard', icon: <FiHome className="w-5 h-5" />, route: '/admin/dashboard/store-admin', roles: ['store_admin'] }]
     ),
-    { id: 'products', label: 'Products', icon: <FiShoppingCart className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=products', roles: ['store_admin'] },
-    { id: 'categories', label: 'Categories', icon: <FiPackage className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=categories', roles: ['store_admin'] },
+    { id: 'products', label: 'Products', icon: <FiShoppingCart className="w-5 h-5" />, route: '/admin/dashboard/inventory-admin?page=products', roles: ['inventory_admin', 'store_admin'] },
+    { id: 'categories', label: 'Categories', icon: <FiPackage className="w-5 h-5" />, route: '/admin/dashboard/inventory-admin?page=categories', roles: ['inventory_admin', 'store_admin'] },
     { id: 'landing', label: 'Landing Page', icon: <FiHome className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=landing', roles: ['store_admin'] },
     { id: 'website-settings', label: 'Website Settings', icon: <FiPackage className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=website-settings', roles: ['store_admin'] },
     { id: 'orders', label: 'Orders', icon: <FiList className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=orders', roles: ['store_admin'] },

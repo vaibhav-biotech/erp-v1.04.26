@@ -359,7 +359,7 @@ export default function GiftSectionSettingsPage() {
     <div className="bg-white rounded-lg shadow p-6 sm:p-8">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gift Section</h1>
+          
           <p className="mt-2 text-gray-600">Manage homepage gift banner shown below offers.</p>
         </div>
         <Button variant="primary" onClick={openCreate}>+ Add Banner</Button>

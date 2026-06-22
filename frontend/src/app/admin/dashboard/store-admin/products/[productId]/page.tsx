@@ -341,7 +341,7 @@ export default function StoreAdminProductDetailsPage() {
           <Link href="/admin/dashboard/store-admin?page=products" className="inline-flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900">
             <FiArrowLeft /> Back to Products
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900 mt-2">Product Details</h1>
+          
           <p className="text-sm text-gray-600 mt-1">View and edit complete product information with image preview.</p>
         </div>
 

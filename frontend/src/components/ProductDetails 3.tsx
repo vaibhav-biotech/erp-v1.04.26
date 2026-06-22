@@ -117,7 +117,7 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
           <div className="space-y-3">
             {/* Product Name & Rating */}
             <div className="space-y-1">
-              <h1 className="text-2xl font-bold text-black">{prod.name}</h1>
+              
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
                   <span className="text-yellow-500 text-lg">★★★★☆</span>
@@ -233,13 +233,13 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
 
             {/* About Section */}
             <div className="mt-8 pt-8 border-t border-gray-200 space-y-4">
-              <h2 className="text-2xl font-bold text-black">About</h2>
+              
               <p className="text-gray-700 leading-relaxed text-sm">{prod.description}</p>
             </div>
 
             {/* Care Instructions */}
             <div className="space-y-4 pb-8">
-              <h2 className="text-2xl font-bold text-black">Care Guide</h2>
+              
               <div className="space-y-3">
                 {prod.care.map((item, idx) => (
                   <div key={idx} className="border-l-2 border-gray-300 pl-3">

@@ -296,7 +296,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
       >
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900">Bulk Upload Products</h2>
+          
           <button
             onClick={handleClose}
             className="text-gray-500 hover:text-gray-700 transition"

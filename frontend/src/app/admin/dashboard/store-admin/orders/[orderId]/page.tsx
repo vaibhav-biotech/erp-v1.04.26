@@ -274,7 +274,7 @@ export default function StoreAdminOrderDetailsPage() {
           >
             <FiArrowLeft /> Back to Orders
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900 mt-2">Order {order.orderNumber || order.orderId || order._id}</h1>
+          
           <p className="text-sm text-gray-600 mt-1">Placed {order.createdAt ? new Date(order.createdAt).toLocaleString() : '-'}</p>
         </div>
 

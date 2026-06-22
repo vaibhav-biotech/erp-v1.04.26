@@ -165,6 +165,30 @@ router.post('/', async (req, res) => {
     const db = mongoose.connection.db;
     const result = await db.collection('orders').insertOne(orderData);
 
+    // Deduct stock and log stock movement
+    const Product = require('../models/Product');
+    const StockMovement = require('../models/StockMovement');
+    
+    for (const item of items) {
+      if (item.productId) {
+        try {
+          await Product.findByIdAndUpdate(item.productId, {
+            $inc: { stock: -item.quantity }
+          });
+          
+          await StockMovement.create({
+            productId: item.productId,
+            delta: -item.quantity,
+            reason: 'Order',
+            referenceId: orderData.orderNumber,
+            notes: 'Customer order placed'
+          });
+        } catch (err) {
+          console.error(`Failed to deduct stock for product ${item.productId}:`, err);
+        }
+      }
+    }
+
     console.log('✅ Order created:', orderData.orderNumber);
 
     res.status(201).json({
