@@ -45,6 +45,18 @@ export default function SuperAdminPage() {
         return <ManageAllStaffPage />;
       case 'all-orders':
         return <ManageAllOrdersPage />;
+      case 'products':
+        return <div className="p-8 text-center text-gray-500">Products Module (Coming Soon)</div>;
+      case 'inventory':
+        return <div className="p-8 text-center text-gray-500">Inventory Module (Coming Soon)</div>;
+      case 'finance':
+        return <div className="p-8 text-center text-gray-500">Finance Module (Coming Soon)</div>;
+      case 'replysys':
+        return <div className="p-8 text-center text-gray-500">ReplySys Module (Coming Soon)</div>;
+      case 'reports':
+        return <div className="p-8 text-center text-gray-500">Reports Module (Coming Soon)</div>;
+      case 'settings':
+        return <div className="p-8 text-center text-gray-500">Settings Module (Coming Soon)</div>;
       default:
         return <SuperAdminDashboard />;
     }

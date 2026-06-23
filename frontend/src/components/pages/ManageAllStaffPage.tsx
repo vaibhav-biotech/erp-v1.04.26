@@ -169,10 +169,17 @@ export default function ManageAllStaffPage() {
     {
       key: 'jobRoles',
       label: 'Role',
-      render: (value) => (
-        <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-          {value && value[0] ? String(value[0]).replace('_', ' ').toUpperCase() : 'N/A'}
-        </span>
+      render: (value, row: any) => (
+        <div className="flex flex-col gap-1 items-start">
+          <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+            {value && value[0] ? String(value[0]).replace('_', ' ').toUpperCase() : 'N/A'}
+          </span>
+          {row.role === 'store_admin' && (
+            <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 shadow-sm border border-purple-200">
+              STORE ADMIN
+            </span>
+          )}
+        </div>
       ),
     },
     {
@@ -318,11 +325,10 @@ export default function ManageAllStaffPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Store Assignment (Identifier)</label>
                   <input
                     type="text"
-                    required
                     value={formData.storeName}
                     onChange={e => setFormData({ ...formData, storeName: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                    placeholder="e.g. plantsingarden"
+                    placeholder="e.g. plantsingarden (Leave blank for unassigned)"
                   />
                   <p className="mt-1 text-xs text-gray-500">The storeName identifier the staff belongs to.</p>
                 </div>

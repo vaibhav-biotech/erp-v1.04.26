@@ -45,7 +45,7 @@ const staffMemberSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['staff', 'staff_admin'],
+      enum: ['staff', 'staff_admin', 'store_admin'],
       required: true,
     },
     jobRoles: {
@@ -68,7 +68,7 @@ const staffMemberSchema = new mongoose.Schema(
     storeName: {
       type: String,
       lowercase: true,
-      default: 'plantsingarden',
+      default: '',
       index: true,
     },
   },

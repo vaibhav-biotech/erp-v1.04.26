@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import Sidebar from '@/components/Sidebar';
+import GroupedSidebar from '@/components/GroupedSidebar';
 import Topbar from '@/components/Topbar';
 
 export default function SuperAdminLayout({
@@ -38,8 +38,8 @@ export default function SuperAdminLayout({
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar - fixed width */}
-      <div className="w-64 fixed left-0 top-0 h-screen overflow-hidden">
-        <Sidebar />
+      <div className="w-64 fixed left-0 top-0 h-screen overflow-hidden z-50">
+        <GroupedSidebar />
       </div>
 
       {/* Main Content Area with topbar space */}

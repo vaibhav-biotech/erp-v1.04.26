@@ -17,6 +17,8 @@ import {
   FiSettings,
   FiChevronDown,
   FiTruck,
+  FiBarChart2,
+  FiTrendingUp,
 } from 'react-icons/fi';
 
 interface Category {
@@ -180,8 +182,8 @@ export default function GroupedSidebar() {
       id: 'home',
       label: 'Dashboard',
       icon: <FiHome className="w-5 h-5" />,
-      route: admin?.role === 'inventory_admin' ? '/admin/dashboard/inventory-admin' : '/admin/dashboard/store-admin',
-      roles: ['store_admin', 'inventory_admin'],
+      route: admin?.role === 'super_admin' ? '/admin/dashboard/super-admin' : (admin?.role === 'inventory_admin' ? '/admin/dashboard/inventory-admin' : '/admin/dashboard/store-admin'),
+      roles: ['store_admin', 'inventory_admin', 'super_admin'],
     },
     {
       id: 'inventory',
@@ -195,14 +197,14 @@ export default function GroupedSidebar() {
       label: 'Purchase Orders',
       icon: <FiShoppingCart className="w-5 h-5" />,
       route: '/admin/dashboard/inventory-admin?page=purchase-orders',
-      roles: ['inventory_admin', 'super_admin'],
+      roles: ['inventory_admin'],
     },
     {
       id: 'suppliers',
       label: 'Suppliers',
       icon: <FiTruck className="w-5 h-5" />,
       route: '/admin/dashboard/inventory-admin?page=suppliers',
-      roles: ['inventory_admin', 'super_admin'],
+      roles: ['inventory_admin'],
     },
     {
       id: 'activity-log',
@@ -231,6 +233,84 @@ export default function GroupedSidebar() {
       icon: <FiUsers className="w-5 h-5" />,
       route: '/admin/dashboard/store-admin?page=customers',
       roles: ['store_admin'],
+    },
+    // ---- SUPER ADMIN ITEMS ----
+    {
+      id: 'super-stores',
+      label: 'Stores',
+      icon: <FiShoppingCart className="w-5 h-5" />,
+      route: '/admin/dashboard/super-admin?page=manage-stores',
+      roles: ['super_admin'],
+    },
+    {
+      id: 'super-orders',
+      label: 'Orders',
+      icon: <FiShoppingCart className="w-5 h-5" />,
+      route: '/admin/dashboard/super-admin?page=all-orders',
+      roles: ['super_admin'],
+    },
+    {
+      id: 'super-customers',
+      label: 'Customers',
+      icon: <FiUsers className="w-5 h-5" />,
+      route: '/admin/dashboard/super-admin?page=all-customers',
+      roles: ['super_admin'],
+    },
+    {
+      id: 'super-products',
+      label: 'Products',
+      icon: <FiPackage className="w-5 h-5" />,
+      route: '/admin/dashboard/super-admin?page=products',
+      roles: ['super_admin'],
+    },
+    {
+      id: 'super-inventory',
+      label: 'Inventory',
+      icon: <FiPackage className="w-5 h-5" />,
+      route: '/admin/dashboard/super-admin?page=inventory',
+      roles: ['super_admin'],
+    },
+    {
+      id: 'super-finance',
+      label: 'Finance',
+      icon: <FiBarChart2 className="w-5 h-5" />,
+      route: '/admin/dashboard/super-admin?page=finance',
+      roles: ['super_admin'],
+    },
+    {
+      id: 'super-replysys',
+      label: 'ReplySys',
+      icon: <FiActivity className="w-5 h-5" />,
+      route: '/admin/dashboard/super-admin?page=replysys',
+      roles: ['super_admin'],
+    },
+    {
+      id: 'super-staff',
+      label: 'Staff',
+      icon: <FiUsers className="w-5 h-5" />,
+      route: '/admin/dashboard/super-admin?page=manage-staff',
+      roles: ['super_admin'],
+    },
+    {
+      id: 'super-analytics',
+      label: 'Analytics',
+      icon: <FiTrendingUp className="w-5 h-5" />,
+      route: '/admin/dashboard/super-admin?page=analytics',
+      roles: ['super_admin'],
+    },
+    {
+      id: 'super-reports',
+      label: 'Reports',
+      icon: <FiList className="w-5 h-5" />,
+      route: '/admin/dashboard/super-admin?page=reports',
+      roles: ['super_admin'],
+    },
+    {
+      id: 'super-settings',
+      label: 'Settings',
+      icon: <FiSettings className="w-5 h-5" />,
+      route: '/admin/dashboard/super-admin?page=settings',
+      roles: ['super_admin'],
     },
   ];
 

@@ -10,8 +10,6 @@ interface StatCard {
   title: string;
   value: string;
   icon: React.ReactNode;
-  color: string;
-  borderColor: string;
 }
 
 export default function SuperAdminDashboard() {
@@ -55,32 +53,36 @@ export default function SuperAdminDashboard() {
     {
       title: 'Total Stores',
       value: isLoading ? '...' : String(dashboardStats.totalStores),
-      icon: <FiShoppingCart className="w-8 h-8" />,
-      color: 'bg-blue-50',
-      borderColor: 'border-blue-500',
+      icon: <FiShoppingCart className="w-6 h-6" />,
     },
     {
       title: 'Total Customers',
       value: isLoading ? '...' : String(dashboardStats.totalCustomers),
-      icon: <FiUsers className="w-8 h-8" />,
-      color: 'bg-green-50',
-      borderColor: 'border-green-500',
+      icon: <FiUsers className="w-6 h-6" />,
     },
     {
       title: 'Total Orders',
       value: isLoading ? '...' : String(dashboardStats.totalOrders),
-      icon: <FiTrendingUp className="w-8 h-8" />,
-      color: 'bg-purple-50',
-      borderColor: 'border-purple-500',
+      icon: <FiTrendingUp className="w-6 h-6" />,
     },
     {
       title: 'Total Revenue',
       value: isLoading ? '...' : `₹${dashboardStats.totalRevenue.toLocaleString('en-IN')}`,
-      icon: <FiBarChart2 className="w-8 h-8" />,
-      color: 'bg-orange-50',
-      borderColor: 'border-orange-500',
+      icon: <FiBarChart2 className="w-6 h-6" />,
     },
   ];
+
+  const KpiCard = ({ title, value, icon }: StatCard) => (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 flex items-center justify-between hover:shadow-md transition-shadow">
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{title}</p>
+        <p className="text-2xl font-bold text-gray-900">{value}</p>
+      </div>
+      <div className="text-gray-400">
+        {icon}
+      </div>
+    </div>
+  );
 
   const quickActions = [
     { title: 'View All Customers', icon: <FiUsers className="w-5 h-5" />, color: 'text-blue-600', link: '?page=all-customers' },
@@ -100,24 +102,15 @@ export default function SuperAdminDashboard() {
       
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {stats.map((stat, index) => (
           <motion.div
             key={index}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className={`${stat.color} rounded-lg shadow p-6 border-l-4 ${stat.borderColor}`}
           >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="font-montserrat text-sm text-gray-600 mb-2">{stat.title}</p>
-                <p className="font-playfair text-3xl font-bold text-gray-900">{stat.value}</p>
-              </div>
-              <div className="text-gray-400">
-                {stat.icon}
-              </div>
-            </div>
+            <KpiCard {...stat} />
           </motion.div>
         ))}
       </div>

@@ -49,7 +49,7 @@ export default function PurchaseOrderForm({ isOpen, onClose, onSave, poToEdit }:
       }
       if (prodRes.ok) {
         const prodJson = await prodRes.json();
-        setProducts(prodJson.data?.products || []);
+        setProducts(prodJson.data || []);
       }
     } catch (e) {
       console.error('Failed to load form data', e);

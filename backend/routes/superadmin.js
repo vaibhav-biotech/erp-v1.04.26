@@ -84,7 +84,66 @@ router.get('/dashboard-stats', async (req, res) => {
 router.get('/stores', async (req, res) => {
   try {
     const stores = await Store.find().sort({ createdAt: -1 });
-    return res.status(200).json({ success: true, data: stores });
+    const Product = require('../models/Product');
+    const Admin = require('../models/Admin');
+    const StaffMember = require('../models/StaffMember');
+    
+    // Convert to plain objects to attach new fields
+    const storesData = stores.map(s => s.toObject());
+    
+    // Fetch all related data
+    const allCustomers = await Customer.find({});
+    const allAdmins = await Admin.find({ role: 'store_admin' });
+    const allStaffAdmins = await StaffMember.find({ role: 'store_admin' });
+    const db = mongoose.connection.db;
+    const allOrders = await db.collection('orders').find({}).toArray();
+
+    storesData.forEach(store => {
+      const sName = store.storeName;
+      const dName = store.name ? store.name.toLowerCase() : '';
+      
+      const isMatch = (val) => {
+        if (!val) return false;
+        const normalizedVal = val.toLowerCase().trim();
+        return normalizedVal === sName || 
+               normalizedVal === dName || 
+               normalizedVal.replace(/\s+/g, '') === sName;
+      };
+      
+      // Filter related data for this store
+      const storeOrders = allOrders.filter(o => isMatch(o.storeName));
+      const storeCustomers = allCustomers.filter(c => isMatch(c.store) || isMatch(c.storeName));
+      const storeAdmins = allAdmins.filter(a => isMatch(a.storeName));
+      const storeStaffAdmins = allStaffAdmins.filter(sa => isMatch(sa.storeName));
+
+      // Aggregations
+      store.ordersCount = storeOrders.length;
+      store.customersCount = storeCustomers.length;
+      
+      const revenueOrders = storeOrders.filter(o => o.paymentStatus === 'paid' || o.paymentMethod === 'COD' || o.orderStatus === 'completed');
+      store.revenue = revenueOrders.reduce((sum, o) => sum + (o.totalAmount || o.total || 0), 0);
+      
+      if (storeStaffAdmins.length > 0) {
+        store.adminName = storeStaffAdmins[0].name;
+        store.adminAssignedAt = storeStaffAdmins[0].updatedAt;
+      } else if (storeAdmins.length > 0) {
+        store.adminName = `${storeAdmins[0].firstName} ${storeAdmins[0].lastName}`;
+        store.adminAssignedAt = storeAdmins[0].createdAt;
+      } else {
+        store.adminName = 'Unassigned';
+        store.adminAssignedAt = null;
+      }
+
+      // Mock Health Score Calculation
+      let healthScore = 100;
+      if (store.ordersCount === 0) healthScore -= 10;
+      if (store.adminName === 'Unassigned') healthScore -= 20;
+      if (store.status === 'suspended') healthScore = 0;
+      
+      store.healthScore = healthScore;
+    });
+
+    return res.status(200).json({ success: true, data: storesData });
   } catch (error) {
     console.error('[Superadmin Get Stores Error]', error);
     return res.status(500).json({ success: false, error: error.message });
@@ -120,6 +179,59 @@ router.post('/stores', async (req, res) => {
     return res.status(201).json({ success: true, data: newStore });
   } catch (error) {
     console.error('[Superadmin Create Store Error]', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Assign a staff member as store admin
+router.put('/stores/:storeName/assign-admin', async (req, res) => {
+  try {
+    const { storeName } = req.params;
+    const { staffId } = req.body;
+    
+    if (!staffId) {
+      return res.status(400).json({ success: false, error: 'staffId is required' });
+    }
+
+    const StaffMember = require('../models/StaffMember');
+    const staff = await StaffMember.findOne({ id: staffId });
+    
+    if (!staff) {
+      return res.status(404).json({ success: false, error: 'Staff member not found' });
+    }
+
+    const Store = require('../models/Store');
+    const store = await Store.findOne({ storeName: storeName.toLowerCase().trim().replace(/\s+/g, '') });
+    
+    if (!store) {
+      return res.status(404).json({ success: false, error: 'Store not found' });
+    }
+
+    // Unassign previous StaffMember admins for this store
+    const previousStaffAdmins = await StaffMember.find({ storeName: store.storeName, role: 'store_admin' });
+    for (const prevStaff of previousStaffAdmins) {
+      prevStaff.role = 'staff';
+      prevStaff.storeName = ''; // or default back to something else, empty string means unassigned
+      await prevStaff.save();
+    }
+
+    // Unassign previous traditional Admins for this store (if any)
+    const Admin = require('../models/Admin');
+    const previousAdmins = await Admin.find({ storeName: store.storeName, role: 'store_admin' });
+    for (const prevAdmin of previousAdmins) {
+      prevAdmin.isActive = false; // suspend old admins, or change storeName
+      prevAdmin.storeName = 'unassigned';
+      await prevAdmin.save();
+    }
+
+    // Update staff to be store admin for this store
+    staff.role = 'store_admin';
+    staff.storeName = store.storeName;
+    await staff.save();
+
+    return res.status(200).json({ success: true, message: 'Store admin assigned successfully' });
+  } catch (error) {
+    console.error('[Superadmin Assign Admin Error]', error);
     return res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -200,8 +312,8 @@ router.post('/staff', async (req, res) => {
     const StaffMember = require('../models/StaffMember');
     const { name, username, password, role, storeName } = req.body;
     
-    if (!name || !username || !password || !role || !storeName) {
-      return res.status(400).json({ success: false, error: 'All fields are required' });
+    if (!name || !username || !password || !role) {
+      return res.status(400).json({ success: false, error: 'All fields are required except Store Assignment' });
     }
 
     const existingStaff = await StaffMember.findOne({ username });
@@ -213,11 +325,11 @@ router.post('/staff', async (req, res) => {
       id: crypto.randomUUID(),
       name,
       username,
-      email: `${username}@${storeName.toLowerCase().trim().replace(/\s+/g, '')}.com`, // Mock email since frontend doesn't send it
+      email: `${username}@${(storeName || 'company').toLowerCase().trim().replace(/\s+/g, '')}.com`, // Mock email since frontend doesn't send it
       password,
       role: 'staff', // Schema restricts to staff or staff_admin
       jobRoles: [role], // Use jobRoles for frontend's role
-      storeName: storeName.toLowerCase().trim().replace(/\s+/g, ''),
+      storeName: storeName ? storeName.toLowerCase().trim().replace(/\s+/g, '') : '',
       active: true
     });
 

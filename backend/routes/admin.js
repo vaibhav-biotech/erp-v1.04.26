@@ -62,8 +62,19 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Email and password required' });
     }
 
-    const admin = await Admin.findOne({ email }).select('+password');
-    if (!admin || !admin.isActive) {
+    let admin = await Admin.findOne({ email }).select('+password');
+    let isStaffAdmin = false;
+
+    if (!admin) {
+      const StaffMember = require('../models/StaffMember');
+      admin = await StaffMember.findOne({
+        $or: [{ email }, { username: email }],
+        role: 'store_admin'
+      }).select('+password');
+      isStaffAdmin = !!admin;
+    }
+
+    if (!admin || (isStaffAdmin ? !admin.active : !admin.isActive)) {
       return res.status(401).json({ success: false, error: 'Invalid email or password' });
     }
 
@@ -72,8 +83,10 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid email or password' });
     }
 
-    admin.lastLogin = new Date();
-    await admin.save();
+    if (!isStaffAdmin) {
+      admin.lastLogin = new Date();
+      await admin.save();
+    }
 
     // Log Activity for inventory_admin
     if (admin.role === 'inventory_admin') {
@@ -97,13 +110,13 @@ router.post('/login', async (req, res) => {
       data: {
         token,
         admin: {
-          _id: admin._id,
+          _id: admin._id || admin.id,
           email: admin.email,
-          firstName: admin.firstName,
-          lastName: admin.lastName,
+          firstName: isStaffAdmin ? admin.name.split(' ')[0] : admin.firstName,
+          lastName: isStaffAdmin ? admin.name.split(' ').slice(1).join(' ') : admin.lastName,
           role: admin.role,
           storeName: admin.storeName ? admin.storeName.toLowerCase() : null,
-          canAccessAllStores: admin.role === 'super_admin'
+          canAccessAllStores: admin.role === 'super_admin' || admin.role === 'staff_admin'
         }
       }
     });
