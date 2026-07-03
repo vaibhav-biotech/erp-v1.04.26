@@ -342,6 +342,19 @@ const processBulkUpload = async (products, options = {}) => {
       console.log(`     Benefits: ${JSON.stringify(productData.benefits)}`);
       console.log(`     Care: ${JSON.stringify(productData.care)}`);
 
+      // Check for exact duplicate
+      const duplicateCheck = await Product.findOne({
+        name: productData.name,
+        category: productData.category,
+        subcategory: productData.subcategory,
+        originalPrice: productData.originalPrice,
+        finalPrice: productData.finalPrice
+      });
+
+      if (duplicateCheck) {
+        throw new Error('Exact duplicate product already exists');
+      }
+
       // Step 2d: Save to MongoDB
       console.log(`  💾 Saving to MongoDB...`);
       const newProduct = new Product(productData);
