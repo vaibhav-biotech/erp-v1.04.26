@@ -5,6 +5,7 @@ const {
   getProductById,
   updateProduct,
   deleteProduct,
+  bulkDeleteProducts,
   searchProducts
 } = require('../services/bulkupload.service');
 const Category = require('../models/Category');
@@ -382,6 +383,73 @@ router.delete('/:id', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: error.message || 'Failed to delete product'
+    });
+  }
+});
+
+/**
+ * POST /api/products/bulk-delete
+ * Delete multiple products by IDs
+ */
+router.post('/bulk-delete', async (req, res) => {
+  try {
+    const { productIds } = req.body;
+
+    if (!Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'productIds array is required' });
+    }
+
+    // Capture user making the request
+    let adminRole = null;
+    let adminEmail = null;
+    let adminId = null;
+
+    const token = req.headers.authorization?.split(' ')[1];
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-super-secret-key-change-in-production');
+        adminRole = decoded.role;
+        adminId = decoded.id;
+        
+        if (adminId) {
+          const adminObj = await Admin.findById(adminId);
+          if (adminObj) adminEmail = adminObj.email;
+        }
+      } catch (err) {
+        console.error('Invalid token during bulk delete');
+      }
+    }
+
+    const result = await bulkDeleteProducts(productIds);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    // Log Activity for inventory_admin or superadmin
+    if (adminRole && result.deletedCount > 0) {
+      try {
+        await ActivityLog.create({
+          adminId,
+          adminEmail: adminEmail || 'Unknown',
+          role: adminRole,
+          action: 'BULK_DELETE_PRODUCTS',
+          details: `Bulk deleted ${result.deletedCount} products.`,
+        });
+      } catch (logErr) {
+        console.error('Failed to log bulk product deletion activity:', logErr);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to bulk delete products'
     });
   }
 });

@@ -123,6 +123,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     productCount: 4,
   });
   const [updatingTopPickId, setUpdatingTopPickId] = useState<string | null>(null);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [initialized, setInitialized] = useState(false);
   const [skipInitialFetch, setSkipInitialFetch] = useState(false);
 
@@ -322,7 +323,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
   };
 
   const handleDelete = async (productId: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
+    if (!window.confirm('Are you sure you want to delete this product?')) return;
 
     try {
       const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') || undefined : undefined;
@@ -338,6 +339,29 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     } catch (error) {
       console.error('Error deleting product:', error);
       alert('Failed to delete product');
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedProductIds.length === 0) return;
+    if (!window.confirm(`WARNING: Are you sure you want to permanently delete these ${selectedProductIds.length} products? This cannot be undone.`)) return;
+
+    try {
+      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') || undefined : undefined;
+      const response = await fetchWithStore('/api/products/bulk-delete', {
+        method: 'POST',
+        token: adminToken,
+        body: JSON.stringify({ productIds: selectedProductIds })
+      });
+
+      if (!response.ok) throw new Error('Bulk delete failed');
+
+      setProducts(products.filter(p => !selectedProductIds.includes(p._id)));
+      setSelectedProductIds([]);
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      console.error('Error bulk deleting products:', error);
+      alert('Failed to bulk delete products');
     }
   };
 
@@ -384,6 +408,19 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
       {/* Header with Search & Filter */}
       <div className="p-6 border-b border-gray-200">
         
+        {selectedProductIds.length > 0 && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+            <span className="text-red-700 font-medium">
+              {selectedProductIds.length} products selected
+            </span>
+            <button
+              onClick={handleBulkDelete}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium flex items-center gap-2"
+            >
+              <FiTrash2 size={16} /> Delete Selected
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Search */}
@@ -425,6 +462,16 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
+              <th className="px-6 py-3 text-left">
+                <input
+                  type="checkbox"
+                  className="rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer w-4 h-4"
+                  checked={sortedProducts.length > 0 && selectedProductIds.length === sortedProducts.length}
+                  onChange={(e) => {
+                    setSelectedProductIds(e.target.checked ? sortedProducts.map(p => p._id) : []);
+                  }}
+                />
+              </th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
                 <button
                   onClick={() => handleSort('name')}
@@ -469,19 +516,33 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
                   Loading products...
                 </td>
               </tr>
             ) : sortedProducts.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
                   No products found
                 </td>
               </tr>
             ) : (
               sortedProducts.map((product) => (
-                <tr key={product._id} className="border-b border-gray-200 hover:bg-gray-50 transition">
+                <tr key={product._id} className={`border-b border-gray-200 transition ${selectedProductIds.includes(product._id) ? 'bg-green-50' : 'hover:bg-gray-50'}`}>
+                  <td className="px-6 py-4">
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer w-4 h-4"
+                      checked={selectedProductIds.includes(product._id)}
+                      onChange={(e) => {
+                        setSelectedProductIds(prev =>
+                          e.target.checked
+                            ? [...prev, product._id]
+                            : prev.filter(id => id !== product._id)
+                        );
+                      }}
+                    />
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       {product.images[0] && (

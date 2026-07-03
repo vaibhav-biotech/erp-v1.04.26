@@ -577,6 +577,26 @@ const deleteProduct = async (productId) => {
 };
 
 /**
+ * Bulk delete products
+ */
+const bulkDeleteProducts = async (productIds) => {
+  try {
+    const result = await Product.deleteMany({ _id: { $in: productIds } });
+
+    return {
+      success: true,
+      message: `${result.deletedCount} products deleted successfully`,
+      deletedCount: result.deletedCount
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message || 'Failed to bulk delete products'
+    };
+  }
+};
+
+/**
  * Search products by name
  */
 const searchProducts = async (query, limit = 20, storeName) => {
@@ -621,5 +641,6 @@ module.exports = {
   getProductById,
   updateProduct,
   deleteProduct,
+  bulkDeleteProducts,
   searchProducts
 };
