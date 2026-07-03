@@ -86,6 +86,31 @@ router.post('/migrate', async (req, res) => {
 });
 
 /**
+ * POST /api/products/bulk-check-duplicates
+ * Checks an array of products for exact duplicates.
+ */
+router.post('/bulk-check-duplicates', async (req, res) => {
+  try {
+    const { products } = req.body;
+    if (!Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({ success: false, error: 'Products array is required' });
+    }
+    
+    const { checkBulkDuplicates } = require('../services/bulkupload.service');
+    const result = await checkBulkDuplicates(products);
+    
+    if (!result.success) {
+      return res.status(500).json(result);
+    }
+    
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('Bulk Check Duplicates Error:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
  * POST /api/products/bulk-upload
  * Starts async bulk upload; poll GET /bulk-upload/status/:jobId for progress.
  */

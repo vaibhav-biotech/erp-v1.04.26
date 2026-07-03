@@ -58,6 +58,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
     failureCount: 0,
   });
   const [allowDuplicates, setAllowDuplicates] = useState(false);
+  const [duplicateNames, setDuplicateNames] = useState<string[]>([]);
 
   const isAcceptedFile = (f: File) => {
     const ext = f.name.split('.').pop()?.toLowerCase();
@@ -167,6 +168,27 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
     
     if (!products || products.length === 0) {
       return;
+    }
+
+    // Check for duplicates
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/products/bulk-check-duplicates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ products }),
+      });
+      const data = await response.json();
+      if (data.success && data.duplicates && data.duplicates.length > 0) {
+        setDuplicateNames(data.duplicates);
+      } else {
+        setDuplicateNames([]);
+      }
+    } catch (err) {
+      console.error('Error checking duplicates:', err);
+      setDuplicateNames([]);
+    } finally {
+      setIsLoading(false);
     }
 
     // Step 2: Show preview
@@ -285,6 +307,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
       successCount: 0,
       failureCount: 0,
     });
+    setDuplicateNames([]);
     onClose();
   };
 
@@ -381,20 +404,6 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
                   <li>• Live progress while uploading; retry failed rows after</li>
                 </ul>
 
-                <div className="mb-4 mt-2 p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-900">
-                  <p className="font-semibold mb-1">⚠️ Duplicate Prevention</p>
-                  <p>By default, exact duplicate products (same name, category, and prices) are skipped to prevent clutter.</p>
-                  <label className="flex items-center gap-2 mt-3 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={allowDuplicates}
-                      onChange={(e) => setAllowDuplicates(e.target.checked)}
-                      className="rounded border-gray-300 text-amber-600 focus:ring-amber-500 w-4 h-4"
-                    />
-                    <span className="font-medium">Allow exact duplicates (skip duplicate check)</span>
-                  </label>
-                </div>
-
                 {/* Instructions Expandable */}
                 {showInstructions && (
                   <div className="mt-4 p-3 bg-white rounded border border-blue-300 max-h-64 overflow-y-auto">
@@ -462,6 +471,36 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">Review the data before uploading</p>
               </div>
+
+              {duplicateNames.length > 0 && (
+                <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <FiAlertCircle className="text-amber-600 mt-0.5 flex-shrink-0" size={20} />
+                    <div>
+                      <h4 className="text-amber-900 font-semibold mb-1">
+                        Duplicate Products Detected ({duplicateNames.length})
+                      </h4>
+                      <p className="text-amber-800 text-sm mb-3">
+                        The following exact products already exist in the database and will be skipped by default:
+                      </p>
+                      <ul className="text-amber-700 text-sm list-disc pl-5 mb-4 max-h-32 overflow-y-auto space-y-1">
+                        {duplicateNames.map((name, i) => (
+                          <li key={i}>{name}</li>
+                        ))}
+                      </ul>
+                      <label className="flex items-center gap-2 cursor-pointer select-none bg-white/50 p-2 rounded w-max border border-amber-200">
+                        <input
+                          type="checkbox"
+                          checked={allowDuplicates}
+                          onChange={(e) => setAllowDuplicates(e.target.checked)}
+                          className="rounded border-gray-300 text-amber-600 focus:ring-amber-500 w-4 h-4"
+                        />
+                        <span className="font-medium text-amber-900">Override: Allow uploading these duplicates anyway</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <BulkUploadPreviewTable products={parsedProducts} />
 

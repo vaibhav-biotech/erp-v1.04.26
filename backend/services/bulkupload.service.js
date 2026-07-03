@@ -620,14 +620,52 @@ const bulkDeleteProducts = async (productIds) => {
 
     return {
       success: true,
-      message: `${result.deletedCount} products deleted successfully`,
-      deletedCount: result.deletedCount
+      count: result.deletedCount,
+      deletedIds: productIds
     };
   } catch (error) {
+    console.error('Bulk Delete Error:', error);
     return {
       success: false,
       error: error.message || 'Failed to bulk delete products'
     };
+  }
+};
+
+/**
+ * Checks an array of product payloads for exact duplicates in the database.
+ * Returns an array of product names that already exist.
+ */
+const checkBulkDuplicates = async (products) => {
+  try {
+    const duplicateNames = [];
+    for (const product of products) {
+      // Calculate dynamic price exactly as processBulkUpload does
+      let finalPrice = product.finalPrice;
+      let originalPrice = product.originalPrice;
+      
+      if (product.sizeVariants && product.sizeVariants.length > 0) {
+        const lowestVariant = product.sizeVariants.reduce((min, v) => (v.price < min.price ? v : min), product.sizeVariants[0]);
+        finalPrice = lowestVariant.price;
+        originalPrice = lowestVariant.originalPrice || lowestVariant.price;
+      }
+
+      const duplicateCheck = await Product.findOne({
+        name: product.name,
+        category: product.category,
+        subcategory: product.subcategory,
+        originalPrice,
+        finalPrice
+      });
+
+      if (duplicateCheck) {
+        duplicateNames.push(product.name);
+      }
+    }
+    return { success: true, duplicates: duplicateNames };
+  } catch (error) {
+    console.error('Check Bulk Duplicates Error:', error);
+    return { success: false, error: error.message };
   }
 };
 
@@ -677,5 +715,6 @@ module.exports = {
   updateProduct,
   deleteProduct,
   bulkDeleteProducts,
+  checkBulkDuplicates,
   searchProducts
 };
