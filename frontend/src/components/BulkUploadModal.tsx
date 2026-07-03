@@ -100,6 +100,27 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
     setCachedFileData(null);
     const products = await parseExcelToProducts(selectedFile, false);
     if (products && products.length > 0) {
+      // Check for duplicates
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/products/bulk-check-duplicates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ products }),
+        });
+        const data = await response.json();
+        if (data.success && data.duplicates && data.duplicates.length > 0) {
+          setDuplicateNames(data.duplicates);
+        } else {
+          setDuplicateNames([]);
+        }
+      } catch (err) {
+        console.error('Error checking duplicates:', err);
+        setDuplicateNames([]);
+      } finally {
+        setIsLoading(false);
+      }
+      
       setCurrentStep('preview');
     }
   };
@@ -170,28 +191,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
       return;
     }
 
-    // Check for duplicates
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/products/bulk-check-duplicates', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ products }),
-      });
-      const data = await response.json();
-      if (data.success && data.duplicates && data.duplicates.length > 0) {
-        setDuplicateNames(data.duplicates);
-      } else {
-        setDuplicateNames([]);
-      }
-    } catch (err) {
-      console.error('Error checking duplicates:', err);
-      setDuplicateNames([]);
-    } finally {
-      setIsLoading(false);
-    }
-
-    // Step 2: Show preview
+    // Since duplicates are already checked in selectAndParseFile, we just move to preview.
     setCurrentStep('preview');
   };
 
@@ -502,7 +502,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
                 </div>
               )}
 
-              <BulkUploadPreviewTable products={parsedProducts} />
+              <BulkUploadPreviewTable products={parsedProducts} duplicateNames={duplicateNames} />
 
               {/* Action Buttons */}
               <div className="flex gap-3 justify-end">

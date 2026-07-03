@@ -130,9 +130,10 @@ const COLUMNS: { key: string; label: string; width?: string; render: (p: ParsedP
 
 interface BulkUploadPreviewTableProps {
   products: ParsedProduct[];
+  duplicateNames?: string[];
 }
 
-export default function BulkUploadPreviewTable({ products }: BulkUploadPreviewTableProps) {
+export default function BulkUploadPreviewTable({ products, duplicateNames = [] }: BulkUploadPreviewTableProps) {
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [page, setPage] = useState(0);
   const pageSize = 10;
@@ -171,10 +172,11 @@ export default function BulkUploadPreviewTable({ products }: BulkUploadPreviewTa
               {pageProducts.map((product, idx) => {
                 const rowIndex = page * pageSize + idx;
                 const isOpen = expandedRow === rowIndex;
+                const isDuplicate = duplicateNames.includes(product.name);
                 return (
                   <React.Fragment key={rowIndex}>
                     <tr
-                      className={`border-b border-gray-100 ${isOpen ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+                      className={`border-b border-gray-100 ${isOpen ? 'bg-blue-50' : isDuplicate ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-gray-50'}`}
                     >
                       {COLUMNS.map((col) => (
                         <td

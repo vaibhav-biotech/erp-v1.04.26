@@ -639,11 +639,26 @@ const bulkDeleteProducts = async (productIds) => {
 const checkBulkDuplicates = async (products) => {
   try {
     const duplicateNames = [];
+    
+    // Fetch all categories once to avoid repeated DB calls
+    const categories = await Category.find({});
+    const categoryMap = {};
+    categories.forEach(c => {
+      categoryMap[c.name.toLowerCase()] = c._id;
+    });
+
     for (const product of products) {
-      // Calculate dynamic price exactly as processBulkUpload does
-      let finalPrice = product.finalPrice;
-      let originalPrice = product.originalPrice;
+      // Find category ID
+      const categoryId = categoryMap[(product.category || '').toLowerCase()];
+      if (!categoryId) {
+        continue; // If category doesn't exist, product won't upload anyway, or isn't a duplicate
+      }
+
+      let originalPrice = parseFloat(product.originalPrice) || 0;
+      let discount = parseFloat(product.discount) || 0;
+      let finalPrice = discount > 0 ? originalPrice - (originalPrice * (discount / 100)) : originalPrice;
       
+      // Calculate dynamic price exactly as processBulkUpload does
       if (product.sizeVariants && product.sizeVariants.length > 0) {
         const lowestVariant = product.sizeVariants.reduce((min, v) => (v.price < min.price ? v : min), product.sizeVariants[0]);
         finalPrice = lowestVariant.price;
@@ -652,7 +667,7 @@ const checkBulkDuplicates = async (products) => {
 
       const duplicateCheck = await Product.findOne({
         name: product.name,
-        category: product.category,
+        category: categoryId,
         subcategory: product.subcategory,
         originalPrice,
         finalPrice
