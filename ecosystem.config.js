@@ -8,6 +8,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3001,
+        NEXT_PUBLIC_API_URL: 'http://localhost:5051',
       },
     },
     {
