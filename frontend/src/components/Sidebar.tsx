@@ -39,23 +39,23 @@ export default function Sidebar({ onPageChange, currentPage: propCurrentPage }: 
   
   const menuItems: MenuItem[] = isAdminDashboard ? [
     ...(admin?.role === 'super_admin' 
-      ? [{ id: 'home', label: 'Dashboard', icon: <FiHome className="w-5 h-5" />, route: '/admin/dashboard/super-admin', roles: ['super_admin'] }]
+      ? [{ id: 'home', label: 'Dashboard', icon: <FiHome className="w-5 h-5" />, route: '/superadmin', roles: ['super_admin'] }]
       : admin?.role === 'inventory_admin'
-      ? [{ id: 'home', label: 'Dashboard', icon: <FiHome className="w-5 h-5" />, route: '/admin/dashboard/inventory-admin', roles: ['inventory_admin'] }]
+      ? [{ id: 'home', label: 'Dashboard', icon: <FiHome className="w-5 h-5" />, route: '/inventory', roles: ['inventory_admin'] }]
       : [{ id: 'home', label: 'Dashboard', icon: <FiHome className="w-5 h-5" />, route: '/admin/dashboard/store-admin', roles: ['store_admin'] }]
     ),
-    { id: 'products', label: 'Products', icon: <FiShoppingCart className="w-5 h-5" />, route: '/admin/dashboard/inventory-admin?page=products', roles: ['inventory_admin', 'store_admin'] },
-    { id: 'categories', label: 'Categories', icon: <FiPackage className="w-5 h-5" />, route: '/admin/dashboard/inventory-admin?page=categories', roles: ['inventory_admin', 'store_admin'] },
+    { id: 'products', label: 'Products', icon: <FiShoppingCart className="w-5 h-5" />, route: '/inventory?page=products', roles: ['inventory_admin', 'store_admin'] },
+    { id: 'categories', label: 'Categories', icon: <FiPackage className="w-5 h-5" />, route: '/inventory?page=categories', roles: ['inventory_admin', 'store_admin'] },
     { id: 'landing', label: 'Landing Page', icon: <FiHome className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=landing', roles: ['store_admin'] },
     { id: 'website-settings', label: 'Website Settings', icon: <FiPackage className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=website-settings', roles: ['store_admin'] },
     { id: 'orders', label: 'Orders', icon: <FiList className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=orders', roles: ['store_admin'] },
     { id: 'customers', label: 'Customers', icon: <FiUsers className="w-5 h-5" />, route: '/admin/dashboard/store-admin?page=customers', roles: ['store_admin'] },
-    { id: 'all-customers', label: 'All Customers', icon: <FiUsers className="w-5 h-5" />, route: '/admin/dashboard/super-admin?page=all-customers', roles: ['super_admin'] },
-    { id: 'analytics', label: 'Analytics', icon: <FiPackage className="w-5 h-5" />, route: '/admin/dashboard/super-admin?page=analytics', roles: ['super_admin'] },
-    { id: 'manage-stores', label: 'Manage Stores', icon: <FiPackage className="w-5 h-5" />, route: '/admin/dashboard/super-admin?page=manage-stores', roles: ['super_admin'] },
-    { id: 'manage-admins', label: 'Manage Admins', icon: <FiUsers className="w-5 h-5" />, route: '/admin/dashboard/super-admin?page=manage-admins', roles: ['super_admin'] },
-    { id: 'manage-staff', label: 'Manage Staff', icon: <FiUsers className="w-5 h-5" />, route: '/admin/dashboard/super-admin?page=manage-staff', roles: ['super_admin'] },
-    { id: 'all-orders', label: 'All Orders', icon: <FiList className="w-5 h-5" />, route: '/admin/dashboard/super-admin?page=all-orders', roles: ['super_admin'] },
+    { id: 'all-customers', label: 'All Customers', icon: <FiUsers className="w-5 h-5" />, route: '/superadmin?page=all-customers', roles: ['super_admin'] },
+    { id: 'analytics', label: 'Analytics', icon: <FiPackage className="w-5 h-5" />, route: '/superadmin?page=analytics', roles: ['super_admin'] },
+    { id: 'manage-stores', label: 'Manage Stores', icon: <FiPackage className="w-5 h-5" />, route: '/superadmin?page=manage-stores', roles: ['super_admin'] },
+    { id: 'manage-admins', label: 'Manage Admins', icon: <FiUsers className="w-5 h-5" />, route: '/superadmin?page=manage-admins', roles: ['super_admin'] },
+    { id: 'manage-staff', label: 'Manage Staff', icon: <FiUsers className="w-5 h-5" />, route: '/superadmin?page=manage-staff', roles: ['super_admin'] },
+    { id: 'all-orders', label: 'All Orders', icon: <FiList className="w-5 h-5" />, route: '/superadmin?page=all-orders', roles: ['super_admin'] },
   ] : [
     { id: 'home', label: 'Home', icon: <FiHome className="w-5 h-5" />, route: '/dashboard?page=home' },
     { id: 'categories', label: 'Categories', icon: <FiPackage className="w-5 h-5" />, route: '/dashboard?page=categories' },

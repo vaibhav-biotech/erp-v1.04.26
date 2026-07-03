@@ -239,7 +239,7 @@ export default function ManageAllStaffPage() {
           actions={true}
           onEdit={(row: any) => handleOpenModal(row)}
           onDelete={(id) => handleDelete(id)}
-          onView={(row: any) => router.push(`/admin/dashboard/super-admin/manage-staff/${row._id}`)}
+          onView={(row: any) => router.push(`/superadmin/manage-staff/${row._id}`)}
           selectable={false}
         />
       )}

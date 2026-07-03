@@ -16,25 +16,22 @@ export default function StaffAssignStoresModal({
   onSaved,
 }: StaffAssignStoresModalProps) {
   const stores = getActiveStores();
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string>('');
   const [error, setError] = useState('');
 
   useEffect(() => {
-    setSelected(getStaffStoreIds(member.id));
+    const assignedStores = getStaffStoreIds(member.id);
+    setSelected(assignedStores.length > 0 ? assignedStores[0] : '');
   }, [member.id]);
 
   const toggle = (storeId: string) => {
-    setSelected((prev) =>
-      prev.includes(storeId) ? prev.filter((id) => id !== storeId) : [...prev, storeId]
-    );
+    setSelected(storeId);
   };
-
-  const selectAll = () => setSelected(stores.map((s) => s.id));
-  const clearAll = () => setSelected([]);
 
   const save = () => {
     setError('');
-    const result = setStaffStoreIds(member.id, selected);
+    // Save as a single-element array to keep compatibility with staffStores.ts for now
+    const result = setStaffStoreIds(member.id, selected ? [selected] : []);
     if (!result.ok) {
       setError(result.error);
       return;
@@ -62,21 +59,13 @@ export default function StaffAssignStoresModal({
           <div className="flex gap-2 mt-3">
             <button
               type="button"
-              onClick={selectAll}
-              disabled={!stores.length}
-              className="text-xs font-medium px-3 py-1.5 rounded-xl border border-gray-200 hover:bg-gray-50 disabled:opacity-40"
-            >
-              Select all
-            </button>
-            <button
-              type="button"
-              onClick={clearAll}
+              onClick={() => setSelected('')}
               className="text-xs font-medium px-3 py-1.5 rounded-xl border border-gray-200 hover:bg-gray-50"
             >
-              Clear all
+              Clear selection
             </button>
             <span className="text-xs text-gray-500 ml-auto self-center">
-              {selected.length} selected
+              {selected ? '1 selected' : 'None selected'}
             </span>
           </div>
         </div>
@@ -88,7 +77,7 @@ export default function StaffAssignStoresModal({
             </li>
           ) : (
             stores.map((s) => {
-              const checked = selected.includes(s.id);
+              const checked = selected === s.id;
               return (
                 <li key={s.id}>
                   <label
@@ -99,10 +88,11 @@ export default function StaffAssignStoresModal({
                     }`}
                   >
                     <input
-                      type="checkbox"
+                      type="radio"
+                      name="storeSelection"
                       checked={checked}
                       onChange={() => toggle(s.id)}
-                      className="rounded border-gray-300 text-gray-900"
+                      className="rounded-full border-gray-300 text-gray-900"
                     />
                     <span className="text-sm font-medium text-gray-900">{s.name}</span>
                     {s.city && <span className="text-xs text-gray-500 ml-auto">{s.city}</span>}

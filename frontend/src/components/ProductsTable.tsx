@@ -99,7 +99,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
 }) => {
   const { admin } = useAuth();
   const basePath = admin?.role === 'inventory_admin' 
-    ? '/admin/dashboard/inventory-admin' 
+    ? '/inventory' 
     : '/admin/dashboard/store-admin';
     
   const cacheKey = getProductsTableCacheKey(categoryId);

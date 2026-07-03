@@ -196,7 +196,7 @@ export default function StaffDetailsPage({ params }: PageProps) {
     >
       <div className="flex items-center gap-4">
         <button 
-          onClick={() => router.push('/admin/dashboard/super-admin?page=manage-staff')}
+          onClick={() => router.push('/superadmin?page=manage-staff')}
           className="p-2 hover:bg-gray-100 rounded-lg transition"
         >
           <FiArrowLeft className="w-6 h-6 text-gray-600" />

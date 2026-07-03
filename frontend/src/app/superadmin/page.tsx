@@ -21,7 +21,7 @@ export default function SuperAdminPage() {
   // Redirect if not authenticated or not super admin
   useEffect(() => {
     if (!adminAuthenticated || admin?.role !== 'super_admin') {
-      router.push('/admin');
+      router.push('/superadmin/login');
     }
   }, [adminAuthenticated, admin, router]);
 

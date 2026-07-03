@@ -13,9 +13,9 @@ export default function AdminDashboard() {
     if (!adminAuthenticated) {
       router.push('/admin');
     } else if (admin?.role === 'super_admin') {
-      router.push('/admin/dashboard/super-admin');
+      router.push('/superadmin');
     } else if (admin?.role === 'inventory_admin') {
-      router.push('/admin/dashboard/inventory-admin');
+      router.push('/inventory');
     } else if (admin?.role === 'store_admin') {
       router.push('/admin/dashboard/store-admin');
     }

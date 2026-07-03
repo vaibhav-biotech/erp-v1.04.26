@@ -2,17 +2,17 @@ const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
 
-const getCollection = () => mongoose.connection.db.collection('landing_banners');
-const getTopPicksCollection = () => mongoose.connection.db.collection('landing_top_picks');
-const getOffersCollection = () => mongoose.connection.db.collection('landing_offers');
-const getOfferBackgroundsCollection = () => mongoose.connection.db.collection('landing_offer_backgrounds');
-const getCategorySectionsCollection = () => mongoose.connection.db.collection('landing_category_sections');
-const getFeaturedCollectionsCollection = () => mongoose.connection.db.collection('landing_featured_collections');
-const getFeaturedCollectionBackgroundsCollection = () => mongoose.connection.db.collection('landing_featured_collection_backgrounds');
-const getGiftBannersCollection = () => mongoose.connection.db.collection('landing_gift_banners');
-const getWebsiteLogosCollection = () => mongoose.connection.db.collection('landing_website_logos');
-const getStaticPagesCollection = () => mongoose.connection.db.collection('landing_static_pages');
-const getFooterSettingsCollection = () => mongoose.connection.db.collection('landing_footer_settings');
+const getCollection = () => mongoose.connection.collection('landing_banners');
+const getTopPicksCollection = () => mongoose.connection.collection('landing_top_picks');
+const getOffersCollection = () => mongoose.connection.collection('landing_offers');
+const getOfferBackgroundsCollection = () => mongoose.connection.collection('landing_offer_backgrounds');
+const getCategorySectionsCollection = () => mongoose.connection.collection('landing_category_sections');
+const getFeaturedCollectionsCollection = () => mongoose.connection.collection('landing_featured_collections');
+const getFeaturedCollectionBackgroundsCollection = () => mongoose.connection.collection('landing_featured_collection_backgrounds');
+const getGiftBannersCollection = () => mongoose.connection.collection('landing_gift_banners');
+const getWebsiteLogosCollection = () => mongoose.connection.collection('landing_website_logos');
+const getStaticPagesCollection = () => mongoose.connection.collection('landing_static_pages');
+const getFooterSettingsCollection = () => mongoose.connection.collection('landing_footer_settings');
 
 const ALLOWED_STATIC_PAGE_SLUGS = new Set([
   'about-us',

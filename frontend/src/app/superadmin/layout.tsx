@@ -1,24 +1,31 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import GroupedSidebar from '@/components/GroupedSidebar';
 import Topbar from '@/components/Topbar';
 
-export default function InventoryAdminLayout({
+export default function SuperAdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const { adminAuthenticated, adminLoading, admin } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const isLoginPage = pathname?.endsWith('/login');
 
   useEffect(() => {
-    if (!adminLoading && (!adminAuthenticated || admin?.role !== 'inventory_admin')) {
-      router.push('/admin');
+    if (isLoginPage) return;
+    if (!adminLoading && (!adminAuthenticated || admin?.role !== 'super_admin')) {
+      router.push('/superadmin/login');
     }
-  }, [adminLoading, adminAuthenticated, admin, router]);
+  }, [adminLoading, adminAuthenticated, admin, router, isLoginPage]);
+
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
 
   if (adminLoading) {
     return (
@@ -31,14 +38,14 @@ export default function InventoryAdminLayout({
     );
   }
 
-  if (!adminAuthenticated || admin?.role !== 'inventory_admin') {
+  if (!adminAuthenticated || admin?.role !== 'super_admin') {
     return null;
   }
 
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar - fixed width */}
-      <div className="w-64 fixed left-0 top-0 h-screen overflow-hidden">
+      <div className="w-64 fixed left-0 top-0 h-screen overflow-hidden z-50">
         <GroupedSidebar />
       </div>
 

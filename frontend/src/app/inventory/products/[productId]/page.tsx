@@ -338,7 +338,7 @@ export default function InventoryAdminProductDetailsPage() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <Link href="/admin/dashboard/inventory-admin?page=products" className="inline-flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900">
+          <Link href="/inventory?page=products" className="inline-flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900">
             <FiArrowLeft /> Back to Products
           </Link>
           

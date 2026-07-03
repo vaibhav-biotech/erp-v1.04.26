@@ -64,7 +64,7 @@ export default function InventoryAdminPage() {
   // Redirect if not authenticated or not inventory admin
   useEffect(() => {
     if (!adminAuthenticated || admin?.role !== 'inventory_admin') {
-      router.push('/admin');
+      router.push('/inventory/login');
     }
   }, [adminAuthenticated, admin, router]);
 

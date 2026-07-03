@@ -44,11 +44,12 @@ async function upsertDemoUser(user) {
     existing.phone = user.phone;
     existing.active = user.active;
     existing.password = user.password;
+    if (!existing.storeName) existing.storeName = 'plantsingarden';
     await existing.save();
     return 'updated';
   }
 
-  await StaffMember.create(user);
+  await StaffMember.create({ ...user, storeName: 'plantsingarden' });
   return 'created';
 }
 

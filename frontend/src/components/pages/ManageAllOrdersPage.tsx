@@ -140,7 +140,7 @@ export default function ManageAllOrdersPage() {
             columns={columns}
             data={orders}
             actions={true}
-            onView={(row) => router.push(`/admin/dashboard/super-admin/all-orders/${row._id}`)}
+            onView={(row) => router.push(`/superadmin/all-orders/${row._id}`)}
             selectable={false}
           />
         )}

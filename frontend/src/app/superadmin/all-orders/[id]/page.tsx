@@ -82,7 +82,7 @@ export default function OrderDetailsPage({ params }: PageProps) {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button 
-            onClick={() => router.push('/admin/dashboard/super-admin?page=all-orders')}
+            onClick={() => router.push('/superadmin?page=all-orders')}
             className="p-2 hover:bg-gray-100 rounded-lg transition"
           >
             <FiArrowLeft className="w-6 h-6 text-gray-600" />
