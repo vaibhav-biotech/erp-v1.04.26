@@ -91,7 +91,7 @@ router.post('/migrate', async (req, res) => {
  */
 router.post('/bulk-upload', async (req, res) => {
   try {
-    const { products } = req.body;
+    const { products, allowDuplicates = false } = req.body;
 
     if (!Array.isArray(products) || products.length === 0) {
       return res.status(400).json({
@@ -118,7 +118,7 @@ router.post('/bulk-upload', async (req, res) => {
 
     setImmediate(async () => {
       try {
-        const result = await processBulkUpload(products, { jobId });
+        const result = await processBulkUpload(products, { jobId, allowDuplicates });
         completeBulkUploadJob(jobId, result);
       } catch (error) {
         console.error('Bulk Upload Job Error:', error);

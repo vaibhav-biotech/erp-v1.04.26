@@ -343,16 +343,25 @@ const processBulkUpload = async (products, options = {}) => {
       console.log(`     Care: ${JSON.stringify(productData.care)}`);
 
       // Check for exact duplicate
-      const duplicateCheck = await Product.findOne({
-        name: productData.name,
-        category: productData.category,
-        subcategory: productData.subcategory,
-        originalPrice: productData.originalPrice,
-        finalPrice: productData.finalPrice
-      });
+      if (!options.allowDuplicates) {
+        const duplicateCheck = await Product.findOne({
+          name: productData.name,
+          category: productData.category,
+          subcategory: productData.subcategory,
+          originalPrice: productData.originalPrice,
+          finalPrice: productData.finalPrice
+        });
 
-      if (duplicateCheck) {
-        throw new Error('Exact duplicate product already exists');
+        if (duplicateCheck) {
+          throw new Error('Exact duplicate product already exists');
+        }
+      }
+
+      // Sync base prices with the lowest variant price
+      if (productData.sizeVariants && productData.sizeVariants.length > 0) {
+        const lowestVariant = productData.sizeVariants.reduce((min, v) => (v.price < min.price ? v : min), productData.sizeVariants[0]);
+        productData.finalPrice = lowestVariant.price;
+        productData.originalPrice = lowestVariant.originalPrice || lowestVariant.price;
       }
 
       // Step 2d: Save to MongoDB
@@ -517,8 +526,21 @@ const updateProduct = async (productId, updates) => {
       };
     }
 
+    const mergedData = { ...existingProduct.toObject(), ...updates };
+
+    // Sync base prices with the lowest variant price
+    if (mergedData.sizeVariants && mergedData.sizeVariants.length > 0) {
+      const lowestVariant = mergedData.sizeVariants.reduce((min, v) => (v.price < min.price ? v : min), mergedData.sizeVariants[0]);
+      mergedData.finalPrice = lowestVariant.price;
+      mergedData.originalPrice = lowestVariant.originalPrice || lowestVariant.price;
+      
+      // Ensure the computed prices are set on the updates object so they get saved
+      updates.finalPrice = mergedData.finalPrice;
+      updates.originalPrice = mergedData.originalPrice;
+    }
+
     // Validate merged updates
-    const validationResult = validateProduct({ ...existingProduct.toObject(), ...updates });
+    const validationResult = validateProduct(mergedData);
     if (!validationResult.isValid) {
       return {
         success: false,

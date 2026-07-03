@@ -57,6 +57,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
     successCount: 0,
     failureCount: 0,
   });
+  const [allowDuplicates, setAllowDuplicates] = useState(false);
 
   const isAcceptedFile = (f: File) => {
     const ext = f.name.split('.').pop()?.toLowerCase();
@@ -223,7 +224,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
       const response = await fetch('/api/products/bulk-upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ products }),
+        body: JSON.stringify({ products, allowDuplicates }),
       });
 
       const body = await response.json();
@@ -379,6 +380,20 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
                   <li>• Original Price optional (uses highest variant if empty)</li>
                   <li>• Live progress while uploading; retry failed rows after</li>
                 </ul>
+
+                <div className="mb-4 mt-2 p-3 bg-amber-50 border border-amber-200 rounded text-sm text-amber-900">
+                  <p className="font-semibold mb-1">⚠️ Duplicate Prevention</p>
+                  <p>By default, exact duplicate products (same name, category, and prices) are skipped to prevent clutter.</p>
+                  <label className="flex items-center gap-2 mt-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={allowDuplicates}
+                      onChange={(e) => setAllowDuplicates(e.target.checked)}
+                      className="rounded border-gray-300 text-amber-600 focus:ring-amber-500 w-4 h-4"
+                    />
+                    <span className="font-medium">Allow exact duplicates (skip duplicate check)</span>
+                  </label>
+                </div>
 
                 {/* Instructions Expandable */}
                 {showInstructions && (
