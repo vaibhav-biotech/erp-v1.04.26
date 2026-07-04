@@ -66,7 +66,6 @@ router.post('/manual', async (req, res) => {
   try {
     const {
       customerId,
-      customerInfo, // { firstName, lastName, email, phone, address }
       items,
       paymentMethod,
       notes,
@@ -77,6 +76,7 @@ router.post('/manual', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
+    let customerInfo = req.body.customerInfo;
     let finalCustomerId = customerId;
     let orderAddress = { 
       firstName: '', lastName: '', street: '', city: '', state: '', zipCode: '', country: '', phone: '' 
@@ -105,6 +105,23 @@ router.post('/manual', async (req, res) => {
       
       if (customerInfo.address) {
         orderAddress = { ...orderAddress, ...customerInfo.address };
+      }
+    } else if (finalCustomerId) {
+      const Customer = require('../models/Customer');
+      const existingCustomer = await Customer.findById(finalCustomerId);
+      if (existingCustomer) {
+        customerInfo = {
+          firstName: existingCustomer.firstName,
+          lastName: existingCustomer.lastName,
+          email: existingCustomer.email,
+          phone: existingCustomer.phone,
+        };
+        orderAddress = {
+          firstName: existingCustomer.firstName,
+          lastName: existingCustomer.lastName,
+          phone: existingCustomer.phone,
+          street: '', city: '', state: '', zipCode: '', country: ''
+        };
       }
     } else if (!finalCustomerId) {
        return res.status(400).json({ success: false, message: 'Customer ID or Customer Info required' });
