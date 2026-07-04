@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
-export default function InventoryLoginPage() {
+export default function AccountsLoginPage() {
   const router = useRouter();
   const { loginAdmin, adminAuthenticated, admin, logout } = useAuth();
   
@@ -16,7 +16,11 @@ export default function InventoryLoginPage() {
 
   useEffect(() => {
     if (adminAuthenticated && admin) {
-      router.push('/inventory');
+      if (admin.role === 'accountant' || admin.role === 'super_admin') {
+        router.push('/accounts');
+      } else {
+        router.push('/inventory'); // fallback if other roles end up here
+      }
     }
   }, [adminAuthenticated, admin, router]);
 
@@ -26,10 +30,7 @@ export default function InventoryLoginPage() {
     setLoading(true);
 
     try {
-      // Get updated admin from AuthContext if possible, but router.push might happen before state updates.
-      // Next time useEffect runs, it will correct the route if they are accountant. 
       await loginAdmin(email, password);
-      // Let the useEffect handle the correct router push based on role
     } catch (err: any) {
       setError(err.message || 'Login failed. Please try again.');
       setPassword('');
@@ -45,16 +46,16 @@ export default function InventoryLoginPage() {
         className="hidden lg:flex w-1/2 flex-col items-center justify-center text-white p-12 relative bg-cover bg-center transition-all duration-1000"
         style={{ backgroundImage: `url('https://plants-mall-website.s3.ap-southeast-2.amazonaws.com/products/1779692487018-8d425e4b-c33c-47ac-9138-759bf30adfd1.jpg')` }}
       >
-        <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"></div>
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"></div>
         <div className="max-w-md text-center space-y-6 relative z-10">
           <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mx-auto backdrop-blur-sm border border-white/20">
             <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="text-4xl font-bold tracking-tight">Central Inventory</h2>
-          <p className="text-green-100 text-lg">
-            Track stock levels, manage purchase orders, and monitor your entire supply chain seamlessly.
+          <h2 className="text-4xl font-bold tracking-tight">Accounts Portal</h2>
+          <p className="text-gray-200 text-lg">
+            Manage your store orders, invoices, purchase orders, and supplier payments in one centralized dashboard.
           </p>
         </div>
       </div>
@@ -63,8 +64,8 @@ export default function InventoryLoginPage() {
       <div className="w-full lg:w-1/2 flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div className="w-full max-w-md space-y-8 bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900">Central Inventory Portal</h1>
-            <p className="mt-2 text-gray-600">Sign in to your inventory admin account</p>
+            <h1 className="text-3xl font-bold text-gray-900">Accounts Portal</h1>
+            <p className="mt-2 text-gray-600">Sign in to your accountant account</p>
           </div>
 
           {/* Login Form */}
@@ -86,10 +87,10 @@ export default function InventoryLoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="inventory@vaibhav.com"
+                placeholder="accountant@vaibhav.com"
                 required
                 disabled={loading}
-                className="mt-2 block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                className="mt-2 block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
               />
             </div>
 
@@ -106,16 +107,16 @@ export default function InventoryLoginPage() {
                 placeholder="••••••••"
                 required
                 disabled={loading}
-                className="mt-2 block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
+                className="mt-2 block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
               />
             </div>
 
             {/* Test Credentials Info */}
             <div className="space-y-4">
-              <div className="rounded-xl bg-green-50 p-4 border border-green-100">
-                <p className="text-sm font-medium text-green-900 mb-2">Test Credentials (Central Inventory):</p>
-                <div className="text-sm text-green-800 space-y-1">
-                  <p><strong>Inventory Admin:</strong> inventory@vaibhav.com / password123</p>
+              <div className="rounded-xl bg-blue-50 p-4 border border-blue-100">
+                <p className="text-sm font-medium text-blue-900 mb-2">Test Credentials (Accounts Portal):</p>
+                <div className="text-sm text-blue-800 space-y-1">
+                  <p><strong>Accountant:</strong> accountant@vaibhav.com / password123</p>
                 </div>
               </div>
             </div>
@@ -124,7 +125,7 @@ export default function InventoryLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full px-4 py-3 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
@@ -132,7 +133,7 @@ export default function InventoryLoginPage() {
 
           {/* Footer Links */}
           <div className="text-center mt-6">
-            <Link href="/" className="text-sm text-gray-500 hover:text-green-600 font-medium">
+            <Link href="/" className="text-sm text-gray-500 hover:text-blue-600 font-medium">
               ← Back to Home
             </Link>
           </div>

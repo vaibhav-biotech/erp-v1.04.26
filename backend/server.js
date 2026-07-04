@@ -14,6 +14,7 @@ const superadminRouter = require('./routes/superadmin');
 const inventoryRouter = require('./routes/inventory');
 const suppliersRouter = require('./routes/suppliers');
 const purchaseOrdersRouter = require('./routes/purchaseOrders');
+const accountsRouter = require('./routes/accounts');
 const storeRouter = require('./middleware/storeRouter'); // NEW: Store detection middleware
 const verifyAdminToken = require('./middleware/verifyAdminToken');
 
@@ -556,6 +557,7 @@ app.use('/api/superadmin', superadminRouter);
 app.use('/api/inventory', inventoryRouter);
 app.use('/api/suppliers', suppliersRouter);
 app.use('/api/purchase-orders', purchaseOrdersRouter);
+app.use('/api/accounts', accountsRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

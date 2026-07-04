@@ -18,7 +18,10 @@ interface Category {
   displayOrder?: number;
 }
 
+import { useAuth } from '@/contexts/AuthContext';
+
 export default function CategoriesPage() {
+  const { admin } = useAuth();
   const { fetchCategories, deleteCategory, loading, error } = useCategories();
   const [categories, setCategories] = useState<Category[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -106,9 +109,11 @@ export default function CategoriesPage() {
     <div className="space-y-8">
       <div className="flex justify-between items-center">
         <h1 className="text-4xl font-bold text-black">Categories</h1>
-        <Button variant="primary" onClick={() => setShowForm(true)}>
-          + Add Category
-        </Button>
+        {admin?.role !== 'store_admin' && (
+          <Button variant="primary" onClick={() => setShowForm(true)}>
+            + Add Category
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -191,11 +196,13 @@ export default function CategoriesPage() {
             onDelete={(row: Category) => handleDelete(row._id)}
             selectable={false}
             actions={true}
-            draggable={true}
+            draggable={admin?.role !== 'store_admin'}
             draggedId={draggedId}
             onDragStart={handleDragStart}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
+            disableEdit={admin?.role === 'store_admin'}
+            disableDelete={admin?.role === 'store_admin'}
           />
         </div>
       )}

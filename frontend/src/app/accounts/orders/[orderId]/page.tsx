@@ -96,7 +96,7 @@ const getStepIcon = (status: string) => {
   return <FiClock className="text-gray-500" />;
 };
 
-export default function StoreAdminOrderDetailsPage() {
+export default function AccountsOrderDetailsPage() {
   const { adminToken } = useAuth();
   const params = useParams<{ orderId: string }>();
   const orderId = params?.orderId;
@@ -129,7 +129,7 @@ export default function StoreAdminOrderDetailsPage() {
       setIsLoading(true);
       setError('');
 
-      const response = await fetch(buildApiUrl(`/api/orders/${orderId}`), {
+      const response = await fetch(buildApiUrl(`/api/accounts/orders/${orderId}`), {
         headers: getApiHeaders(adminToken),
       });
       const payload = await response.json();
@@ -183,7 +183,7 @@ export default function StoreAdminOrderDetailsPage() {
       if (customerUpdate.trim()) body.customerUpdate = customerUpdate.trim();
       if (internalNote.trim()) body.internalNote = internalNote.trim();
 
-      const response = await fetch(buildApiUrl(`/api/orders/${orderId}`), {
+      const response = await fetch(buildApiUrl(`/api/accounts/orders/${orderId}`), {
         method: 'PATCH',
         headers: getApiHeaders(adminToken),
         body: JSON.stringify(body),
@@ -213,7 +213,7 @@ export default function StoreAdminOrderDetailsPage() {
       setMessage('');
       setError('');
 
-      const response = await fetch(buildApiUrl(`/api/orders/${orderId}/invoice`), {
+      const response = await fetch(buildApiUrl(`/api/accounts/orders/${orderId}/invoice`), {
         method: 'POST',
         headers: getApiHeaders(adminToken),
       });
@@ -248,7 +248,7 @@ export default function StoreAdminOrderDetailsPage() {
     return (
       <div className="p-8">
         <Link
-          href="/admin/dashboard/store-admin?page=orders"
+          href="/accounts?page=accounts-orders"
           className="inline-flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900"
         >
           <FiArrowLeft /> Back to Orders
@@ -270,7 +270,7 @@ export default function StoreAdminOrderDetailsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Link
-            href="/admin/dashboard/store-admin?page=orders"
+            href="/accounts?page=accounts-orders"
             className="inline-flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900"
           >
             <FiArrowLeft /> Back to Orders

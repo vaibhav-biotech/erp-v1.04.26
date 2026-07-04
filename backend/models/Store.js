@@ -31,6 +31,10 @@ const StoreSchema = new mongoose.Schema(
       type: String,
       default: ''
     },
+    invoiceCode: {
+      type: String,
+      default: '01'
+    },
     isActive: {
       type: Boolean,
       default: true

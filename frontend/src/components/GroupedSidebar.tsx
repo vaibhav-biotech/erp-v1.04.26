@@ -45,9 +45,7 @@ interface MenuItem {
 
 export default function GroupedSidebar() {
   const [isOpen, setIsOpen] = useState(true);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
-    new Set(['products', 'settings', 'account'])
-  );
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
   
@@ -182,8 +180,8 @@ export default function GroupedSidebar() {
       id: 'home',
       label: 'Dashboard',
       icon: <FiHome className="w-5 h-5" />,
-      route: admin?.role === 'super_admin' ? '/superadmin' : (admin?.role === 'inventory_admin' ? '/inventory' : '/admin/dashboard/store-admin'),
-      roles: ['store_admin', 'inventory_admin', 'super_admin'],
+      route: admin?.role === 'super_admin' ? '/superadmin' : (admin?.role === 'inventory_admin' ? '/inventory' : (admin?.role === 'accountant' ? '/accounts' : '/admin/dashboard/store-admin')),
+      roles: ['store_admin', 'inventory_admin', 'super_admin', 'accountant'],
     },
     {
       id: 'inventory',
@@ -196,15 +194,30 @@ export default function GroupedSidebar() {
       id: 'purchase-orders',
       label: 'Purchase Orders',
       icon: <FiShoppingCart className="w-5 h-5" />,
-      route: '/inventory?page=purchase-orders',
-      roles: ['inventory_admin'],
+      route: '/accounts?page=purchase-orders',
+      roles: ['accountant', 'super_admin'],
     },
     {
       id: 'suppliers',
       label: 'Suppliers',
       icon: <FiTruck className="w-5 h-5" />,
-      route: '/inventory?page=suppliers',
-      roles: ['inventory_admin'],
+      route: '/accounts?page=suppliers',
+      roles: ['accountant', 'super_admin'],
+    },
+
+    {
+      id: 'accounts-orders',
+      label: 'Store Orders',
+      icon: <FiList className="w-5 h-5" />,
+      route: '/accounts?page=accounts-orders',
+      roles: ['accountant', 'super_admin'],
+    },
+    {
+      id: 'accounts-invoices',
+      label: 'Invoices',
+      icon: <FiList className="w-5 h-5" />,
+      route: '/accounts?page=accounts-invoices',
+      roles: ['accountant', 'super_admin'],
     },
     {
       id: 'activity-log',

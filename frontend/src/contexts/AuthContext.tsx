@@ -8,7 +8,7 @@ export interface Admin {
   email: string;
   firstName?: string;
   lastName?: string;
-  role?: 'super_admin' | 'store_admin' | 'inventory_admin';
+  role?: 'super_admin' | 'store_admin' | 'inventory_admin' | 'accountant';
   storeName?: string | null;
   canAccessAllStores?: boolean;
 }

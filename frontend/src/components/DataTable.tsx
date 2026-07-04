@@ -23,6 +23,8 @@ interface DataTableProps {
   onDragStart?: (e: React.DragEvent, row: any) => void;
   onDragOver?: (e: React.DragEvent) => void;
   onDrop?: (e: React.DragEvent, row: any) => void;
+  disableEdit?: boolean;
+  disableDelete?: boolean;
 }
 
 export default function DataTable({
@@ -39,6 +41,8 @@ export default function DataTable({
   onDragStart,
   onDragOver,
   onDrop,
+  disableEdit = false,
+  disableDelete = false,
 }: DataTableProps) {
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
 
@@ -181,8 +185,11 @@ export default function DataTable({
                     {onEdit && (
                       <button
                         onClick={() => onEdit(row)}
-                        className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded transition-colors"
-                        title="Edit"
+                        disabled={disableEdit}
+                        className={disableEdit 
+                          ? "text-gray-400 bg-gray-50 p-2 rounded cursor-not-allowed" 
+                          : "text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded transition-colors"}
+                        title={disableEdit ? "Edit Disabled" : "Edit"}
                       >
                         <svg
                           className="w-4 h-4"
@@ -202,8 +209,11 @@ export default function DataTable({
                     {onDelete && (
                       <button
                         onClick={() => onDelete(row)}
-                        className="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded transition-colors"
-                        title="Delete"
+                        disabled={disableDelete}
+                        className={disableDelete
+                          ? "text-gray-400 bg-gray-50 p-2 rounded cursor-not-allowed"
+                          : "text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded transition-colors"}
+                        title={disableDelete ? "Delete Disabled" : "Delete"}
                       >
                         <svg
                           className="w-4 h-4"

@@ -61,6 +61,149 @@ const getStoreTaxSettings = async (storeName) => {
   };
 };
 
+// Manual Order Creation (Admin)
+router.post('/manual', async (req, res) => {
+  try {
+    const {
+      customerId,
+      customerInfo, // { firstName, lastName, email, phone, address }
+      items,
+      paymentMethod,
+      notes,
+      customDiscount = 0,
+    } = req.body;
+
+    if (!items || items.length === 0 || !paymentMethod) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
+
+    let finalCustomerId = customerId;
+    let orderAddress = { 
+      firstName: '', lastName: '', street: '', city: '', state: '', zipCode: '', country: '', phone: '' 
+    };
+
+    // If no customerId provided, attempt to create a new customer
+    if (!finalCustomerId && customerInfo && customerInfo.email) {
+      const Customer = require('../models/Customer');
+      const bcrypt = require('bcryptjs');
+      
+      let existingCustomer = await Customer.findOne({ email: customerInfo.email });
+      if (existingCustomer) {
+        finalCustomerId = existingCustomer._id;
+      } else {
+        const hashedPassword = await bcrypt.hash(Math.random().toString(36).slice(-8), 10);
+        const newCustomer = new Customer({
+          firstName: customerInfo.firstName,
+          lastName: customerInfo.lastName,
+          email: customerInfo.email,
+          phone: customerInfo.phone || '0000000000',
+          password: hashedPassword,
+        });
+        await newCustomer.save();
+        finalCustomerId = newCustomer._id;
+      }
+      
+      if (customerInfo.address) {
+        orderAddress = { ...orderAddress, ...customerInfo.address };
+      }
+    } else if (!finalCustomerId) {
+       return res.status(400).json({ success: false, message: 'Customer ID or Customer Info required' });
+    }
+
+    const storeName = normalizeStoreName(req.storeName || 'plantsingarden');
+    const taxSettings = await getStoreTaxSettings(storeName);
+    const effectiveTaxRate = taxSettings.enabled ? taxSettings.rate : 0;
+
+    const subtotal = items.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0);
+    const afterDiscount = Math.max(0, subtotal - Number(customDiscount));
+    const tax = Math.round(afterDiscount * (effectiveTaxRate / 100) * 100) / 100;
+    const shipping = afterDiscount >= 60 ? 0 : 50;
+    const total = afterDiscount + tax + shipping;
+
+    const now = new Date();
+    const initialPaymentStatus = String(paymentMethod || '').toLowerCase() === 'cod' ? 'cod_pending' : 'paid';
+
+    const orderData = {
+      _id: new mongoose.Types.ObjectId(),
+      customerId: toObjectId(finalCustomerId),
+      customerInfo: customerInfo ? { firstName: customerInfo.firstName, lastName: customerInfo.lastName, phone: customerInfo.phone, email: customerInfo.email } : undefined,
+      items: items.map(item => ({
+        _id: new mongoose.Types.ObjectId(),
+        productId: item.productId,
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+      address: orderAddress,
+      shippingAddress: orderAddress,
+      paymentMethod,
+      paymentStatus: initialPaymentStatus,
+      orderStatus: 'confirmed', // Auto-confirm manual orders
+      subtotal,
+      discount: Number(customDiscount),
+      tax,
+      taxRate: effectiveTaxRate,
+      shipping,
+      total,
+      notes: notes || 'Manual order created by admin',
+      storeName,
+      orderNumber: `ORDER-${Date.now()}`,
+      statusHistory: [
+        {
+          _id: new mongoose.Types.ObjectId(),
+          status: 'confirmed',
+          note: 'Manual order created by store admin',
+          createdAt: now,
+          visibility: 'admin',
+        },
+      ],
+      paymentHistory: [
+        {
+          _id: new mongoose.Types.ObjectId(),
+          status: initialPaymentStatus,
+          note: `Payment status set to ${formatPaymentStatusLabel(initialPaymentStatus)}`,
+          createdAt: now,
+        },
+      ],
+      trackingUpdates: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const db = mongoose.connection.db;
+    await db.collection('orders').insertOne(orderData);
+
+    const Product = require('../models/Product');
+    const StockMovement = require('../models/StockMovement');
+    
+    for (const item of items) {
+      if (item.productId) {
+        try {
+          await Product.findByIdAndUpdate(item.productId, { $inc: { stock: -item.quantity } });
+          await StockMovement.create({
+            productId: item.productId,
+            delta: -item.quantity,
+            reason: 'Order',
+            referenceId: orderData.orderNumber,
+            notes: 'Manual admin order placed'
+          });
+        } catch (err) {
+          console.error(`Failed to deduct stock for product ${item.productId}:`, err);
+        }
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Manual Order created successfully',
+      data: orderData
+    });
+  } catch (error) {
+    console.error('Create manual order error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Create Order
 router.post('/', async (req, res) => {
   try {

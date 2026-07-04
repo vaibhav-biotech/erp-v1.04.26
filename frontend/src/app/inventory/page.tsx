@@ -24,8 +24,6 @@ import OffersManager from '@/components/pages/OffersManager';
 import OfferBackgroundManager from '@/components/pages/OfferBackgroundManager';
 import InventoryAdminDashboard from '@/components/InventoryAdminDashboard';
 import InventoryTable from '@/components/InventoryTable';
-import PurchaseOrdersPage from '@/components/pages/PurchaseOrdersPage';
-import SuppliersPage from '@/components/pages/SuppliersPage';
 import ActivityLogPage from '@/components/pages/ActivityLogPage';
 
 const BulkUploadModal = dynamic(() => import('@/components/BulkUploadModal'), { ssr: false });
@@ -61,9 +59,9 @@ export default function InventoryAdminPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [currentPage, setCurrentPage] = useState('home');
 
-  // Redirect if not authenticated or not inventory admin
+  // Redirect if not authenticated or not inventory admin/super admin
   useEffect(() => {
-    if (!adminAuthenticated || admin?.role !== 'inventory_admin') {
+    if (!adminAuthenticated || (admin?.role !== 'inventory_admin' && admin?.role !== 'super_admin')) {
       router.push('/inventory/login');
     }
   }, [adminAuthenticated, admin, router]);
@@ -210,10 +208,7 @@ export default function InventoryAdminPage() {
         return <InventoryTable />;
       case 'activity-log':
         return <ActivityLogPage />;
-      case 'purchase-orders':
-        return <PurchaseOrdersPage />;
-      case 'suppliers':
-        return <SuppliersPage />;
+
       case 'categories':
         return <CategoriesPage />;
       case 'orders':
@@ -245,6 +240,7 @@ export default function InventoryAdminPage() {
         return <GiftWrapSettingsPage />;
       case 'account-tax':
         return <AccountTaxSettingsPage />;
+
       default:
         return <InventoryAdminDashboard />;
     }

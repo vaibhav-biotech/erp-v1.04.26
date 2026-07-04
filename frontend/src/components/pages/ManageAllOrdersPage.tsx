@@ -21,6 +21,10 @@ export default function ManageAllOrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const ORDER_STATUS_OPTIONS = ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled', 'returned'];
+  const PAYMENT_STATUS_OPTIONS = ['pending', 'paid', 'failed', 'refunded', 'cod_pending'];
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -46,6 +50,31 @@ export default function ManageAllOrdersPage() {
       fetchOrders();
     }
   }, [adminToken]);
+
+  const handleUpdateStatus = async (orderId: string, field: 'orderStatus' | 'paymentStatus', value: string) => {
+    if (!adminToken) return;
+    try {
+      setUpdatingId(orderId);
+      const response = await fetch(buildApiUrl(`/api/superadmin/orders/${orderId}`), {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ [field]: value })
+      });
+      if(response.ok) {
+        setOrders(orders.map((o) => o._id === orderId ? { ...o, [field]: value } : o));
+      } else {
+        alert('Failed to update status');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Failed to update status');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -84,23 +113,37 @@ export default function ManageAllOrdersPage() {
     },
     { 
       key: 'orderStatus', 
-      label: 'Status',
-      render: (val: string) => (
-        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(val)}`}>
-          {val ? val.replace('_', ' ').toUpperCase() : 'UNKNOWN'}
-        </span>
+      label: 'Order Status',
+      render: (val: string, row: any) => (
+        <select
+          value={val || 'pending'}
+          disabled={updatingId === row._id}
+          onChange={(e) => handleUpdateStatus(row._id, 'orderStatus', e.target.value)}
+          className={`inline-block px-2 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${getStatusBadge(val)}`}
+        >
+          {ORDER_STATUS_OPTIONS.map(opt => (
+            <option key={opt} value={opt}>{opt.replace('_', ' ').toUpperCase()}</option>
+          ))}
+        </select>
       )
     },
     { 
       key: 'paymentStatus', 
-      label: 'Payment',
-      render: (val: string) => (
-        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-          val === 'paid' ? 'bg-green-50 text-green-700' : 
-          val === 'failed' ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700'
-        }`}>
-          {val ? val.replace('_', ' ').toUpperCase() : 'UNKNOWN'}
-        </span>
+      label: 'Payment Status',
+      render: (val: string, row: any) => (
+        <select
+          value={val || 'pending'}
+          disabled={updatingId === row._id}
+          onChange={(e) => handleUpdateStatus(row._id, 'paymentStatus', e.target.value)}
+          className={`inline-block px-2 py-1 rounded-full text-xs font-medium border-0 cursor-pointer ${
+            val === 'paid' ? 'bg-green-50 text-green-700' : 
+            val === 'failed' ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700'
+          }`}
+        >
+          {PAYMENT_STATUS_OPTIONS.map(opt => (
+            <option key={opt} value={opt}>{opt.replace('_', ' ').toUpperCase()}</option>
+          ))}
+        </select>
       )
     },
     { 
