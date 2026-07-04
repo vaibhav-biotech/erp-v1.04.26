@@ -1,12 +1,14 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FiEye } from 'react-icons/fi';
+import { FiEye, FiPlus } from 'react-icons/fi';
+import CreateOrderModal from '@/components/CreateOrderModal';
 
 export default function AccountsOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const [filterStore, setFilterStore] = useState('all');
   const [filterStartDate, setFilterStartDate] = useState('');
@@ -83,7 +85,16 @@ export default function AccountsOrdersPage() {
   return (
     <div>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h1 className="text-3xl font-bold text-gray-900">Store Orders</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-3xl font-bold text-gray-900">Store Orders</h1>
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition shadow-sm"
+          >
+            <FiPlus />
+            Create Order
+          </button>
+        </div>
         
         <div className="flex flex-wrap gap-3">
           <select 
@@ -203,6 +214,12 @@ export default function AccountsOrdersPage() {
             </table>
           )}
         </div>
+
+      <CreateOrderModal 
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onOrderCreated={fetchOrders}
+      />
     </div>
   );
 }
