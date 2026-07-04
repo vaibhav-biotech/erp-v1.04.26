@@ -70,6 +70,7 @@ router.post('/manual', async (req, res) => {
       paymentMethod,
       notes,
       customDiscount = 0,
+      orderDate, // Optional backdated date
     } = req.body;
 
     if (!items || items.length === 0 || !paymentMethod) {
@@ -137,7 +138,7 @@ router.post('/manual', async (req, res) => {
     const shipping = afterDiscount >= 60 ? 0 : 50;
     const total = afterDiscount + tax + shipping;
 
-    const now = new Date();
+    const now = orderDate ? new Date(orderDate) : new Date();
     const initialPaymentStatus = String(paymentMethod || '').toLowerCase() === 'cod' ? 'cod_pending' : 'paid';
 
     const orderData = {
@@ -669,6 +670,7 @@ router.patch('/:orderId', async (req, res) => {
 router.post('/:orderId/invoice', async (req, res) => {
   try {
     const { orderId } = req.params;
+    const { invoiceDate } = req.body || {};
     const storeName = req.storeName || 'plantsingarden';
     const orderObjectId = toObjectId(orderId);
 
@@ -692,7 +694,7 @@ router.post('/:orderId/invoice', async (req, res) => {
       });
     }
 
-    const now = new Date();
+    const now = invoiceDate ? new Date(invoiceDate) : new Date();
     const invoiceNumber =
       order?.invoice?.invoiceNumber ||
       `INV-${String(storeName).replace(/\s+/g, '').toUpperCase()}-${Date.now()}`;

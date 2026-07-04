@@ -382,6 +382,7 @@ router.patch('/orders/:orderId', async (req, res) => {
 router.post('/orders/:orderId/invoice', async (req, res) => {
   try {
     const { orderId } = req.params;
+    const { invoiceDate } = req.body || {};
     const orderObjectId = mongoose.Types.ObjectId.isValid(orderId) ? new mongoose.Types.ObjectId(orderId) : null;
 
     if (!orderObjectId) {
@@ -395,7 +396,7 @@ router.post('/orders/:orderId/invoice', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
 
-    const now = new Date();
+    const now = invoiceDate ? new Date(invoiceDate) : new Date();
     const invoiceNumber =
       order?.invoice?.invoiceNumber ||
       await generateInvoiceNumber(order.storeName);

@@ -14,6 +14,7 @@ import {
 } from 'react-icons/fi';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 import { useAuth } from '@/contexts/AuthContext';
+import GenerateInvoiceModal from '@/components/GenerateInvoiceModal';
 
 interface OrderItem {
   productId?: string;
@@ -104,7 +105,7 @@ export default function AccountsOrderDetailsPage() {
   const [order, setOrder] = useState<OrderData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isGeneratingInvoice, setIsGeneratingInvoice] = useState(false);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
@@ -193,42 +194,13 @@ export default function AccountsOrderDetailsPage() {
       if (!response.ok || !payload.success) {
         throw new Error(payload.message || 'Failed to update order');
       }
-
-      setMessage('Order updated successfully.');
-      setCustomerUpdate('');
-      setInternalNote('');
-      await loadOrder();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update order');
+      setOrder(payload.data);
+      setMessage('Order updated successfully!');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to update order');
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const generateInvoice = async () => {
-    if (!adminToken || !orderId) return;
-
-    try {
-      setIsGeneratingInvoice(true);
-      setMessage('');
-      setError('');
-
-      const response = await fetch(buildApiUrl(`/api/accounts/orders/${orderId}/invoice`), {
-        method: 'POST',
-        headers: getApiHeaders(adminToken),
-      });
-      const payload = await response.json();
-
-      if (!response.ok || !payload.success) {
-        throw new Error(payload.message || 'Failed to generate invoice');
-      }
-
-      setMessage('Invoice generated successfully.');
-      await loadOrder();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate invoice');
-    } finally {
-      setIsGeneratingInvoice(false);
     }
   };
 
@@ -281,8 +253,8 @@ export default function AccountsOrderDetailsPage() {
 
         <div className="flex gap-2">
           <button
-            onClick={generateInvoice}
-            disabled={isGeneratingInvoice || order.invoice?.generated}
+            onClick={() => setIsInvoiceModalOpen(true)}
+            disabled={order.invoice?.generated}
             className={`px-4 py-2 rounded-lg border text-sm flex items-center gap-2 ${
               order.invoice?.generated
                 ? 'bg-green-50 border-green-200 text-green-700 cursor-not-allowed'
@@ -294,7 +266,7 @@ export default function AccountsOrderDetailsPage() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                 Invoice Generated {order.invoice?.invoiceNumber ? `(${order.invoice.invoiceNumber})` : ''}
               </>
-            ) : isGeneratingInvoice ? 'Generating...' : 'Generate Invoice'}
+            ) : 'Generate Invoice Preview'}
           </button>
           <button
             onClick={printInvoice}
@@ -533,6 +505,18 @@ export default function AccountsOrderDetailsPage() {
           </div>
         </div>
       </div>
+
+      <GenerateInvoiceModal
+        isOpen={isInvoiceModalOpen}
+        onClose={() => setIsInvoiceModalOpen(false)}
+        onSuccess={(updatedOrder) => {
+          setOrder(updatedOrder);
+          setMessage('Invoice generated successfully!');
+          setTimeout(() => setMessage(''), 3000);
+        }}
+        order={order}
+        isAccountantMode={true}
+      />
     </div>
   );
 }
