@@ -18,8 +18,12 @@ export default function AccountsLoginPage() {
     if (adminAuthenticated && admin) {
       if (admin.role === 'accountant' || admin.role === 'super_admin') {
         router.push('/accounts');
+      } else if (admin.role === 'inventory_admin') {
+        router.push('/inventory');
+      } else if (admin.role === 'store_admin') {
+        router.push('/admin/dashboard/store-admin');
       } else {
-        router.push('/inventory'); // fallback if other roles end up here
+        router.push('/staff');
       }
     }
   }, [adminAuthenticated, admin, router]);

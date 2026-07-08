@@ -117,6 +117,8 @@ export default function AccountsOrderDetailsPage() {
   const [estimatedDeliveryDate, setEstimatedDeliveryDate] = useState('');
   const [customerUpdate, setCustomerUpdate] = useState('');
   const [internalNote, setInternalNote] = useState('');
+  const [shippingCharge, setShippingCharge] = useState('');
+  const [discount, setDiscount] = useState('');
 
   const itemCount = useMemo(
     () => (order?.items || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0),
@@ -152,6 +154,8 @@ export default function AccountsOrderDetailsPage() {
           ? String(nextOrder.tracking?.estimatedDelivery || nextOrder.tracking?.estimatedDeliveryDate).slice(0, 10)
           : ''
       );
+      setShippingCharge((nextOrder.shipping ?? nextOrder.shippingCost ?? 0).toString());
+      setDiscount(((nextOrder as any).discount ?? 0).toString());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch order details');
       setOrder(null);
@@ -183,6 +187,8 @@ export default function AccountsOrderDetailsPage() {
       if (estimatedDeliveryDate) body.estimatedDelivery = estimatedDeliveryDate;
       if (customerUpdate.trim()) body.customerUpdate = customerUpdate.trim();
       if (internalNote.trim()) body.internalNote = internalNote.trim();
+      if (shippingCharge !== '') body.shipping = shippingCharge;
+      if (discount !== '') body.discount = discount;
 
       const response = await fetch(buildApiUrl(`/api/accounts/orders/${orderId}`), {
         method: 'PATCH',
@@ -480,14 +486,38 @@ export default function AccountsOrderDetailsPage() {
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <FiFileText /> Billing
             </h2>
-            <div className="space-y-2 text-sm text-gray-700">
-              <div className="flex justify-between">
+            <div className="space-y-3 text-sm text-gray-700">
+              <div className="flex justify-between items-center">
                 <span>Subtotal</span>
                 <span>₹{Number(order.subtotal || order.total || 0).toFixed(2)}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span>Shipping</span>
-                <span>₹{Number(order.shipping ?? order.shippingCost ?? 0).toFixed(2)}</span>
+                <div className="flex items-center gap-1">
+                  <span>₹</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={shippingCharge}
+                    onChange={(e) => setShippingCharge(e.target.value)}
+                    className="w-20 border border-gray-300 rounded px-2 py-1 text-right text-sm"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Discount</span>
+                <div className="flex items-center gap-1">
+                  <span>₹</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={discount}
+                    onChange={(e) => setDiscount(e.target.value)}
+                    className="w-20 border border-gray-300 rounded px-2 py-1 text-right text-sm"
+                  />
+                </div>
               </div>
               <div className="border-t border-gray-100 pt-2 flex justify-between font-semibold text-gray-900">
                 <span>Total</span>

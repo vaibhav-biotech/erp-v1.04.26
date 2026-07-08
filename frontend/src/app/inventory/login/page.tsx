@@ -16,7 +16,15 @@ export default function InventoryLoginPage() {
 
   useEffect(() => {
     if (adminAuthenticated && admin) {
-      router.push('/inventory');
+      if (admin.role === 'inventory_admin' || admin.role === 'super_admin') {
+        router.push('/inventory');
+      } else if (admin.role === 'accountant') {
+        router.push('/accounts');
+      } else if (admin.role === 'store_admin') {
+        router.push('/admin/dashboard/store-admin');
+      } else {
+        router.push('/staff');
+      }
     }
   }, [adminAuthenticated, admin, router]);
 

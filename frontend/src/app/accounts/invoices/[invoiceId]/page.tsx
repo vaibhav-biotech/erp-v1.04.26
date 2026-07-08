@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FiArrowLeft, FiPrinter, FiDownload } from 'react-icons/fi';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 import { useAuth } from '@/contexts/AuthContext';
+import { numberToWords } from '@/utils/numberToWords';
 
 export default function AccountsInvoiceViewPage() {
   const { adminToken } = useAuth();
@@ -63,6 +64,18 @@ export default function AccountsInvoiceViewPage() {
     );
   }
 
+  const billDate = new Date(invoice.createdAt || invoice.generatedAt).toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  }).toUpperCase().replace(/ /g, ' - ');
+
+  const netTotal = Number(invoice.total || 0);
+  const paymentDateStr = invoice.paymentDate ? new Date(invoice.paymentDate).toLocaleDateString('en-GB', {
+    day: '2-digit', month: 'short', year: 'numeric'
+  }).toUpperCase().replace(/ /g, ' - ') : 'PENDING';
+  const storeNameStr = invoice.storeName || 'PLANTS IN GARDEN';
+
   return (
     <div className="max-w-4xl mx-auto py-8">
       <div className="flex justify-between items-center mb-8 print:hidden">
@@ -86,104 +99,132 @@ export default function AccountsInvoiceViewPage() {
         </div>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-10 print:border-none print:shadow-none print:p-0">
-        <div className="flex justify-between items-start border-b border-gray-100 pb-8 mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900 tracking-tight">INVOICE</h1>
-            <p className="text-gray-500 mt-2">#{invoice.invoiceNumber}</p>
-          </div>
-          <div className="text-right">
-            <h2 className="text-lg font-bold text-gray-900">{invoice.store?.name || 'Company Name'}</h2>
-            <p className="text-gray-500 mt-1 text-sm">Generated on {new Date(invoice.createdAt).toLocaleDateString()}</p>
-            {invoice.status && (
-              <div className="flex gap-2 justify-end mt-3">
-                <span className={`inline-block px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wider ${
-                  invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
-                  invoice.status === 'failed' ? 'bg-red-100 text-red-800' :
-                  invoice.status === 'refunded' ? 'bg-gray-200 text-gray-800' :
-                  'bg-yellow-100 text-yellow-800'
-                }`}>
-                  Pay: {String(invoice.status).replace(/_/g, ' ')}
-                </span>
-                {invoice.orderStatus && (
-                  <span className={`inline-block px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wider ${
-                    invoice.orderStatus === 'delivered' ? 'bg-green-100 text-green-800' :
-                    invoice.orderStatus === 'shipped' ? 'bg-blue-100 text-blue-800' :
-                    invoice.orderStatus === 'processing' ? 'bg-indigo-100 text-indigo-800' :
-                    invoice.orderStatus === 'cancelled' ? 'bg-red-100 text-red-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    Ord: {String(invoice.orderStatus).replace(/_/g, ' ')}
-                  </span>
-                )}
-              </div>
-            )}
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          @page { size: A4; margin: 10mm; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+      `}} />
+
+      <div className="bg-white border border-gray-300 p-8 print:p-2 print:border-none font-sans max-w-[800px] mx-auto text-black print:w-full print:max-w-none">
+        {/* Header */}
+        <div className="border-b-2 border-green-700 pb-2 mb-2 text-center text-gray-800">
+          <h1 className="text-3xl text-[#7cb342] uppercase mb-1 font-bold tracking-widest" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+            {storeNameStr}
+          </h1>
+          <p className="text-xs font-semibold text-gray-800">Nursery :- Near Add.: Masoba Phata, Khatate Wasti, Peth Gaon Road, Sortapwadi, Pune Solapur Highway, Maharashtra 412110 India</p>
+          <p className="text-xs text-gray-800">Website – Plantingarden.com</p>
+          <div className="flex justify-between mt-2 text-xs font-bold px-4">
+            <p>Mob No. : +91 7840996890</p>
+            <p>Email : <a href="mailto:plantnpot887@gmail.com" className="text-blue-600 underline">plantnpot887@gmail.com</a></p>
           </div>
         </div>
 
-        <div className="flex justify-between mb-10">
-          <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Billed To</p>
-            <p className="text-gray-900 font-medium">{invoice.customerName || 'N/A'}</p>
-            {invoice.orderId && <p className="text-sm text-gray-500 mt-1">Order Ref: {invoice.orderId}</p>}
+        {/* Info Section */}
+        <div className="flex border border-gray-400 mb-3 text-sm">
+          <div className="w-1/2 p-2 border-r border-gray-400">
+            <h3 className="font-bold mb-1">Buyer</h3>
+            <p className="font-semibold">{invoice.customerName || 'Customer'}</p>
+            {invoice.customerEmail && <p>{invoice.customerEmail}</p>}
+            <p>{invoice.shippingAddress?.address || 'Address Not Provided'}</p>
+            <p>{[invoice.shippingAddress?.city, invoice.shippingAddress?.state, invoice.shippingAddress?.postalCode].filter(Boolean).join(', ')}</p>
           </div>
-        </div>
-
-        <div className="mb-8">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Item Description</th>
-                <th className="py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-24">Qty</th>
-                <th className="py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider w-32">Rate</th>
-                <th className="py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider w-32">Amount</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {(invoice.lineItems || []).map((item: any, idx: number) => (
-                <tr key={idx}>
-                  <td className="py-4 text-sm text-gray-900">{item.name || item.description || 'Item'}</td>
-                  <td className="py-4 text-sm text-gray-700 text-center">{item.quantity || 1}</td>
-                  <td className="py-4 text-sm text-gray-700 text-right">₹{Number(item.unitPrice || item.rate || 0).toFixed(2)}</td>
-                  <td className="py-4 text-sm text-gray-900 font-medium text-right">₹{Number(item.amount || (item.quantity * item.rate) || 0).toFixed(2)}</td>
-                </tr>
-              ))}
-              {(!invoice.lineItems || invoice.lineItems.length === 0) && (
+          <div className="w-1/2 p-2">
+            <h2 className="text-xl font-bold text-red-600 mb-1 text-center">BILL OF SUPPLY</h2>
+            <table className="w-full text-xs">
+              <tbody>
                 <tr>
-                  <td colSpan={4} className="py-6 text-center text-sm text-gray-500">No line items detailed.</td>
+                  <td className="font-bold py-1">Sub Bill No :</td>
+                  <td>{invoice.invoiceNumber}</td>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="flex justify-end">
-          <div className="w-64 space-y-3">
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>Subtotal</span>
-              <span>₹{Number(invoice.subtotal || invoice.total || 0).toFixed(2)}</span>
-            </div>
-            {invoice.shipping > 0 && (
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>Shipping</span>
-                <span>₹{Number(invoice.shipping).toFixed(2)}</span>
-              </div>
-            )}
-            {invoice.tax > 0 && (
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>Tax</span>
-                <span>₹{Number(invoice.tax).toFixed(2)}</span>
-              </div>
-            )}
-            <div className="flex justify-between text-lg font-bold text-gray-900 border-t border-gray-200 pt-3 mt-3">
-              <span>Total</span>
-              <span>₹{Number(invoice.total || 0).toFixed(2)}</span>
-            </div>
+                <tr>
+                  <td className="font-bold py-1">Date :</td>
+                  <td>{billDate}</td>
+                </tr>
+                <tr>
+                  <td className="font-bold py-1">GSTIN No :</td>
+                  <td>27AFFPN3601Q1Z5</td>
+                </tr>
+                <tr>
+                  <td className="font-bold py-1">PAN :</td>
+                  <td>AFFPN3601Q</td>
+                </tr>
+                <tr>
+                  <td className="font-bold py-1">Payment Date :</td>
+                  <td>{paymentDateStr}</td>
+                </tr>
+                <tr>
+                  <td className="font-bold py-1">Dispatching Center :</td>
+                  <td>{invoice.dispatchingCenter || 'AKOT, DIST. AKOLA'}</td>
+                </tr>
+                <tr>
+                  <td className="font-bold py-1">Shipping Details :</td>
+                  <td>{invoice.shippingDetail || ''}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <div className="mt-16 pt-8 border-t border-gray-100 text-sm text-gray-500">
-          <p>This is a computer generated invoice and does not require a physical signature.</p>
+        {/* Table */}
+        <table className="w-full border-collapse border border-gray-400 text-sm mb-3">
+          <thead>
+            <tr className="border-b border-gray-400">
+              <th className="border-r border-gray-400 p-1 px-2 text-left">Plant</th>
+              <th className="border-r border-gray-400 p-1 px-2 text-left">Variety</th>
+              <th className="border-r border-gray-400 p-1 px-2 text-center w-24">Quantity</th>
+              <th className="border-r border-gray-400 p-1 px-2 text-right w-32">Rate/Unit (₹)</th>
+              <th className="p-1 px-2 text-right w-32">Total (₹)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(invoice.lineItems || []).map((item: any, idx: number) => (
+              <React.Fragment key={idx}>
+                <tr className="border-b border-gray-400">
+                  <td className="border-r border-gray-400 p-1 px-2">{item.name || item.description || 'Product'}</td>
+                  <td className="border-r border-gray-400 p-1 px-2">{item.variety || ''}</td>
+                  <td className="border-r border-gray-400 p-1 px-2 text-center">{item.quantity || 1}</td>
+                  <td className="border-r border-gray-400 p-1 px-2 text-right">{Number(item.unitPrice || item.rate || item.price || 0).toFixed(2)}</td>
+                  <td className="p-1 px-2 text-right">{Number(item.amount || ((item.quantity||1) * (item.unitPrice||item.price||item.rate||0))).toFixed(2)}</td>
+                </tr>
+                {item.extraDescription && (
+                  <tr className="border-b border-gray-400">
+                    <td colSpan={5} className="p-1 px-2 text-gray-800 text-xs italic">
+                      {item.extraDescription}
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            ))}
+            <tr className="border-b border-gray-400">
+              <td colSpan={3} className="border-r border-gray-400 p-1 px-2 text-right font-bold">Gross Total (₹)</td>
+              <td className="p-1 px-2 text-right font-bold">{Number(invoice.subtotal || 0).toFixed(2)}</td>
+            </tr>
+            {Number(invoice.shipping || 0) > 0 && (
+              <tr className="border-b border-gray-400">
+                <td colSpan={3} className="border-r border-gray-400 p-1 px-2 text-right">Shipping (₹)</td>
+                <td className="p-1 px-2 text-right">{Number(invoice.shipping || 0).toFixed(2)}</td>
+              </tr>
+            )}
+            <tr className="border-b border-gray-400">
+              <td colSpan={3} className="border-r border-gray-400 p-1 px-2 text-right">Discount</td>
+              <td className="p-1 px-2 text-right">{Number(invoice.discount || 0).toFixed(2)}</td>
+            </tr>
+            <tr className="border-b border-gray-400 bg-gray-50">
+              <td colSpan={3} className="border-r border-gray-400 p-1 px-2 text-right font-bold text-base">Net Total (₹)</td>
+              <td className="p-1 px-2 text-right font-bold text-base">{netTotal.toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td colSpan={4} className="p-1 px-2 font-bold uppercase text-xs">
+                IN WORD : RUPEES {numberToWords(Math.round(netTotal))} ONLY
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Footer */}
+        <div className="mt-12 flex justify-end items-end mb-2 px-4">
+          <span className="font-bold text-sm whitespace-nowrap">Authorised Signatory</span>
         </div>
       </div>
     </div>

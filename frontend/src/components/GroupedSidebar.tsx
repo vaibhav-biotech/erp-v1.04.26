@@ -54,7 +54,21 @@ export default function GroupedSidebar() {
   const pathname = usePathname();
   
   const isProductDetailsPage = pathname?.includes('/products/');
-  const currentPage = isProductDetailsPage ? 'products' : (searchParams.get('page') || 'home');
+  
+  let derivedPage = searchParams.get('page');
+  if (!derivedPage) {
+    if (pathname?.includes('/accounts/invoices/')) derivedPage = 'accounts-invoices';
+    else if (pathname?.includes('/accounts/orders/')) derivedPage = 'accounts-orders';
+    else if (pathname?.includes('/admin/dashboard/store-admin/orders/')) derivedPage = 'orders';
+    else if (pathname?.includes('/admin/dashboard/store-admin/customers/')) derivedPage = 'customers';
+    else if (pathname?.includes('/superadmin/orders/')) derivedPage = 'super-orders';
+    else if (pathname?.includes('/superadmin/stores/')) derivedPage = 'super-stores';
+    else if (pathname?.includes('/superadmin/customers/')) derivedPage = 'super-customers';
+    else if (isProductDetailsPage) derivedPage = 'products';
+    else derivedPage = 'home';
+  }
+  
+  const currentPage = derivedPage;
   const currentCategory = searchParams.get('category') || '';
   
   const { logout, logoutAdmin, adminAuthenticated, admin, adminToken } = useAuth();

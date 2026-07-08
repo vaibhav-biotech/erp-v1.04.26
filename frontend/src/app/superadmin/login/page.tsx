@@ -7,19 +7,28 @@ import Link from 'next/link';
 
 export default function SuperAdminLoginPage() {
   const router = useRouter();
-  const { loginAdmin, adminAuthenticated, logout } = useAuth();
+  const { loginAdmin, adminAuthenticated, admin, logout } = useAuth();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Redirect if already logged in
   useEffect(() => {
-    if (adminAuthenticated) {
-      router.push('/superadmin');
+    if (adminAuthenticated && admin) {
+      if (admin.role === 'super_admin') {
+        router.push('/superadmin');
+      } else if (admin.role === 'inventory_admin') {
+        router.push('/inventory');
+      } else if (admin.role === 'accountant') {
+        router.push('/accounts');
+      } else if (admin.role === 'store_admin') {
+        router.push('/admin/dashboard/store-admin');
+      } else {
+        router.push('/staff');
+      }
     }
-  }, [adminAuthenticated, router]);
+  }, [adminAuthenticated, admin, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

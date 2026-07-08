@@ -71,6 +71,12 @@ router.post('/manual', async (req, res) => {
       notes,
       customDiscount = 0,
       orderDate, // Optional backdated date
+      applyGst = true,
+      shippingCharge = null,
+      storeId,
+      paymentDate,
+      dispatchingCenter = 'AKOT, DIST. AKOLA',
+      shippingDetail = ''
     } = req.body;
 
     if (!items || items.length === 0 || !paymentMethod) {
@@ -130,12 +136,12 @@ router.post('/manual', async (req, res) => {
 
     const storeName = normalizeStoreName(req.storeName || 'plantsingarden');
     const taxSettings = await getStoreTaxSettings(storeName);
-    const effectiveTaxRate = taxSettings.enabled ? taxSettings.rate : 0;
+    const effectiveTaxRate = (applyGst && taxSettings.enabled) ? taxSettings.rate : 0;
 
     const subtotal = items.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0);
     const afterDiscount = Math.max(0, subtotal - Number(customDiscount));
     const tax = Math.round(afterDiscount * (effectiveTaxRate / 100) * 100) / 100;
-    const shipping = afterDiscount >= 60 ? 0 : 50;
+    const shipping = shippingCharge !== null ? Number(shippingCharge) : (afterDiscount >= 60 ? 0 : 50);
     const total = afterDiscount + tax + shipping;
 
     const now = orderDate ? new Date(orderDate) : new Date();
@@ -151,6 +157,8 @@ router.post('/manual', async (req, res) => {
         name: item.name,
         quantity: item.quantity,
         price: item.price,
+        variety: item.variety || '',
+        extraDescription: item.extraDescription || '',
       })),
       address: orderAddress,
       shippingAddress: orderAddress,
@@ -161,9 +169,13 @@ router.post('/manual', async (req, res) => {
       discount: Number(customDiscount),
       tax,
       taxRate: effectiveTaxRate,
-      shipping,
-      total,
-      notes: notes || 'Manual order created by admin',
+      shipping: shipping,
+      total: total,
+      totalAmount: total,
+      paymentDate: paymentDate ? new Date(paymentDate) : null,
+      dispatchingCenter,
+      shippingDetail,
+      store: storeId ? new mongoose.Types.ObjectId(storeId) : undefined,
       storeName,
       orderNumber: `ORDER-${Date.now()}`,
       statusHistory: [

@@ -3,7 +3,9 @@ const mongoose = require('mongoose');
 const orderItemSchema = new mongoose.Schema({
   description: { type: String, required: true },
   quantity: { type: Number, required: true, min: 1 },
-  price: { type: Number, required: true, min: 0 }
+  price: { type: Number, required: true, min: 0 },
+  variety: { type: String, default: '' },
+  extraDescription: { type: String, default: '' }
 });
 
 const OrderSchema = new mongoose.Schema(
@@ -30,6 +32,16 @@ const OrderSchema = new mongoose.Schema(
       required: true,
       min: 0
     },
+    shipping: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    discount: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
     status: {
       type: String,
       enum: ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'],
@@ -43,6 +55,15 @@ const OrderSchema = new mongoose.Schema(
     source: {
       type: String, // e.g., 'Shopify', 'WooCommerce', 'Manual'
       default: 'Manual'
+    },
+    paymentDate: {
+      type: Date
+    },
+    dispatchingCenter: {
+      type: String
+    },
+    shippingDetail: {
+      type: String
     }
   },
   {

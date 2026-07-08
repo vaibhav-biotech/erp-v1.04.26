@@ -106,6 +106,20 @@ router.get('/dashboard', async (req, res) => {
 
 // --- Invoices ---
 
+// Fetch all active stores for dropdowns
+router.get('/stores', async (req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    const stores = await db.collection('stores')
+      .find({ isActive: true })
+      .project({ _id: 1, name: 1, storeName: 1, domain: 1 })
+      .toArray();
+    res.json({ success: true, data: stores });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Get all invoices across all stores (both manual and auto-generated from orders)
 router.get('/invoices', async (req, res) => {
   try {
@@ -238,7 +252,12 @@ router.get('/orders/:orderId', async (req, res) => {
 router.patch('/orders/:orderId', async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { paymentStatus, orderStatus, courierName, trackingNumber, trackingUrl, estimatedDelivery, customerUpdate, internalNote, statusNote, paymentNote } = req.body;
+    const { 
+      paymentStatus, orderStatus, courierName, trackingNumber, trackingUrl, 
+      estimatedDelivery, customerUpdate, internalNote, statusNote, paymentNote, 
+      shipping, discount,
+      paymentDate, dispatchingCenter, shippingDetail, items
+    } = req.body;
     const orderObjectId = mongoose.Types.ObjectId.isValid(orderId) ? new mongoose.Types.ObjectId(orderId) : null;
 
     if (!orderObjectId) {
@@ -255,6 +274,37 @@ router.patch('/orders/:orderId', async (req, res) => {
     const now = new Date();
     const setPayload = { updatedAt: now };
     const pushPayload = {};
+
+    if (paymentDate !== undefined) setPayload.paymentDate = paymentDate ? new Date(paymentDate) : null;
+    if (dispatchingCenter !== undefined) setPayload.dispatchingCenter = dispatchingCenter;
+    if (shippingDetail !== undefined) setPayload.shippingDetail = shippingDetail;
+    
+    // Update items if provided (to handle variety and extraDescription updates)
+    if (items && Array.isArray(items)) {
+      setPayload.items = items.map(item => ({
+        ...item,
+        productId: item.productId || item._id, // fallback if needed
+      }));
+    }
+
+    if (shipping !== undefined || discount !== undefined) {
+      const newShipping = shipping !== undefined ? Number(shipping) : Number(existingOrder.shipping || 0);
+      const newDiscount = discount !== undefined ? Number(discount) : Number(existingOrder.discount || 0);
+      const subtotal = Number(existingOrder.subtotal || existingOrder.totalAmount || 0) - Number(existingOrder.tax || 0) - Number(existingOrder.shipping || 0) + Number(existingOrder.discount || 0); // approximation if subtotal missing
+      const actualSubtotal = existingOrder.subtotal !== undefined ? Number(existingOrder.subtotal) : subtotal;
+      const newTotal = actualSubtotal + Number(existingOrder.tax || 0) + newShipping - newDiscount;
+      
+      setPayload.shipping = newShipping;
+      setPayload.discount = newDiscount;
+      setPayload.total = newTotal;
+      setPayload.totalAmount = newTotal;
+
+      if (existingOrder.invoice && existingOrder.invoice.generated) {
+        setPayload['invoice.shipping'] = newShipping;
+        setPayload['invoice.discount'] = newDiscount;
+        setPayload['invoice.total'] = newTotal;
+      }
+    }
 
     // 1. Payment Status Update
     if (paymentStatus && paymentStatus !== existingOrder.paymentStatus) {
@@ -275,11 +325,13 @@ router.patch('/orders/:orderId', async (req, res) => {
           invoiceNumber,
           generatedAt: now,
           currency: 'INR',
-          lineItems: (existingOrder.items || []).map((item) => ({
+          lineItems: (items && Array.isArray(items) ? items : (existingOrder.items || [])).map((item) => ({
             name: item.name,
             quantity: item.quantity,
             unitPrice: Number(item.price || 0),
             amount: Number(item.price || 0) * Number(item.quantity || 0),
+            variety: item.variety || '',
+            extraDescription: item.extraDescription || '',
           })),
           subtotal: Number(existingOrder.subtotal || 0),
           tax: Number(existingOrder.tax || 0),
