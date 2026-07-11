@@ -134,7 +134,7 @@ router.post('/manual', async (req, res) => {
        return res.status(400).json({ success: false, message: 'Customer ID or Customer Info required' });
     }
 
-    const storeName = req.body.customStoreName ? normalizeStoreName(req.body.customStoreName) : normalizeStoreName(req.storeName || 'plantsingarden');
+    const storeName = req.body.customStoreName ? req.body.customStoreName : normalizeStoreName(req.storeName || 'plantsingarden');
     const taxSettings = await getStoreTaxSettings(storeName);
     const effectiveTaxRate = (applyGst && taxSettings.enabled) ? taxSettings.rate : 0;
 
