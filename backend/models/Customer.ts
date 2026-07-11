@@ -13,6 +13,13 @@ export interface ICustomer extends Document {
     notifications: boolean;
     newsletter: boolean;
   };
+  address?: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
   createdAt: Date;
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
@@ -66,6 +73,13 @@ const CustomerSchema = new Schema<ICustomer>(
         type: Boolean,
         default: true,
       },
+    },
+    address: {
+      street: { type: String, trim: true, default: '' },
+      city: { type: String, trim: true, default: '' },
+      state: { type: String, trim: true, default: '' },
+      zipCode: { type: String, trim: true, default: '' },
+      country: { type: String, trim: true, default: 'India' },
     },
   },
   { timestamps: true }

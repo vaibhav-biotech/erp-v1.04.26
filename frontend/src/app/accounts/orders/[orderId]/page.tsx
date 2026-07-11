@@ -109,10 +109,6 @@ export default function AccountsOrderDetailsPage() {
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  
-  const [isDatesModalOpen, setIsDatesModalOpen] = useState(false);
-  const [modalPaymentDate, setModalPaymentDate] = useState('');
-  const [modalOrderDate, setModalOrderDate] = useState('');
 
   const [orderStatus, setOrderStatus] = useState('pending');
   const [paymentStatus, setPaymentStatus] = useState('pending');
@@ -174,13 +170,7 @@ export default function AccountsOrderDetailsPage() {
   }, [adminToken, orderId]);
 
   const handleUpdateClick = () => {
-    if (paymentStatus === 'paid' && order?.paymentStatus !== 'paid') {
-      setModalPaymentDate(order?.paymentDate ? new Date(order.paymentDate).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
-      setModalOrderDate(order?.createdAt ? new Date(order.createdAt).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
-      setIsDatesModalOpen(true);
-    } else {
-      saveOrderUpdates();
-    }
+    saveOrderUpdates();
   };
 
   const saveOrderUpdates = async (overridePaymentDate?: string, overrideCreatedAt?: string) => {
@@ -566,32 +556,6 @@ export default function AccountsOrderDetailsPage() {
         isAccountantMode={true}
       />
 
-      {/* Dates Confirmation Modal */}
-      {isDatesModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <h2 className="text-xl font-playfair font-bold text-gray-900 mb-4">Confirm Dates</h2>
-            <p className="text-sm text-gray-500 mb-4">Please confirm or update the payment and order dates before marking this order as paid.</p>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Order Date</label>
-                <input type="date" value={modalOrderDate} onChange={e => setModalOrderDate(e.target.value)} className="w-full border-gray-300 rounded-lg p-2 border focus:ring-black focus:border-black" />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Payment Date</label>
-                <input type="date" value={modalPaymentDate} onChange={e => setModalPaymentDate(e.target.value)} className="w-full border-gray-300 rounded-lg p-2 border focus:ring-black focus:border-black" />
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => setIsDatesModalOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg border border-gray-200 shadow-sm transition-colors">Cancel</button>
-              <button onClick={() => {
-                setIsDatesModalOpen(false);
-                saveOrderUpdates(modalPaymentDate, modalOrderDate);
-              }} className="px-4 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-lg shadow-sm transition-colors">Confirm & Save</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

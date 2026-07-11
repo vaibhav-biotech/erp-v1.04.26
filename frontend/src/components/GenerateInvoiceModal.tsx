@@ -15,6 +15,8 @@ interface GenerateInvoiceModalProps {
 
 export default function GenerateInvoiceModal({ isOpen, onClose, onSuccess, order, isAccountantMode = false }: GenerateInvoiceModalProps) {
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentDate, setPaymentDate] = useState(order?.paymentDate ? new Date(order.paymentDate).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
+  const [orderDate, setOrderDate] = useState(order?.createdAt ? new Date(order.createdAt).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { adminToken } = useAuth();
@@ -32,7 +34,11 @@ export default function GenerateInvoiceModal({ isOpen, onClose, onSuccess, order
       const res = await fetchWithStore(buildApiUrl(endpoint), {
         method: 'POST',
         token: adminToken || undefined,
-        body: JSON.stringify({ invoiceDate: invoiceDate ? new Date(invoiceDate).toISOString() : undefined })
+        body: JSON.stringify({ 
+          invoiceDate: invoiceDate ? new Date(invoiceDate).toISOString() : undefined,
+          paymentDate: paymentDate ? new Date(paymentDate).toISOString() : undefined,
+          orderDate: orderDate ? new Date(orderDate).toISOString() : undefined
+        })
       });
       const data = await res.json();
       if (data.success) {
@@ -82,20 +88,51 @@ export default function GenerateInvoiceModal({ isOpen, onClose, onSuccess, order
               </div>
             )}
 
-            {/* Date Override Setting */}
-            <div className="mb-8 p-4 bg-blue-50 border border-blue-100 rounded-lg flex flex-col sm:flex-row items-center gap-4 justify-between">
-              <div>
-                <h4 className="text-sm font-semibold text-blue-900 flex items-center gap-2">
-                  <FiCalendar /> Invoice Generation Date
-                </h4>
-                <p className="text-xs text-blue-700 mt-1">This will be printed on the invoice. Adjust for backdating.</p>
+            {/* Date Override Settings */}
+            <div className="mb-8 p-4 bg-blue-50 border border-blue-100 rounded-lg flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row items-center gap-4 justify-between">
+                <div>
+                  <h4 className="text-sm font-semibold text-blue-900 flex items-center gap-2">
+                    <FiCalendar /> Invoice Generation Date
+                  </h4>
+                  <p className="text-xs text-blue-700 mt-1">This will be printed on the invoice. Adjust for backdating.</p>
+                </div>
+                <input
+                  type="date"
+                  value={invoiceDate}
+                  onChange={(e) => setInvoiceDate(e.target.value)}
+                  className="px-4 py-2 border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
               </div>
-              <input
-                type="date"
-                value={invoiceDate}
-                onChange={(e) => setInvoiceDate(e.target.value)}
-                className="px-4 py-2 border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              />
+              <hr className="border-blue-200" />
+              <div className="flex flex-col sm:flex-row items-center gap-4 justify-between">
+                <div>
+                  <h4 className="text-sm font-semibold text-blue-900 flex items-center gap-2">
+                    <FiCalendar /> Order Date (Bill Date)
+                  </h4>
+                  <p className="text-xs text-blue-700 mt-1">Updates the order's creation date. Printed as 'Date' on invoice.</p>
+                </div>
+                <input
+                  type="date"
+                  value={orderDate}
+                  onChange={(e) => setOrderDate(e.target.value)}
+                  className="px-4 py-2 border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row items-center gap-4 justify-between">
+                <div>
+                  <h4 className="text-sm font-semibold text-blue-900 flex items-center gap-2">
+                    <FiCalendar /> Payment Date
+                  </h4>
+                  <p className="text-xs text-blue-700 mt-1">Updates the order's payment date. Printed on invoice.</p>
+                </div>
+                <input
+                  type="date"
+                  value={paymentDate}
+                  onChange={(e) => setPaymentDate(e.target.value)}
+                  className="px-4 py-2 border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
             </div>
 
             {/* Invoice Preview */}

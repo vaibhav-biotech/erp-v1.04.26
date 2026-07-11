@@ -341,37 +341,6 @@ router.patch('/orders/:orderId', async (req, res) => {
         createdAt: now,
       });
 
-      // Auto-generate invoice when payment status is updated (if not already generated)
-      if (!existingOrder.invoice || !existingOrder.invoice.generated) {
-        const invoiceNumber = await generateInvoiceNumber(existingOrder.storeName);
-        setPayload.invoice = {
-          generated: true,
-          invoiceNumber,
-          generatedAt: now,
-          currency: 'INR',
-          lineItems: (items && Array.isArray(items) ? items : (existingOrder.items || [])).map((item) => ({
-            name: item.name,
-            quantity: item.quantity,
-            unitPrice: Number(item.price || 0),
-            amount: Number(item.price || 0) * Number(item.quantity || 0),
-            variety: item.variety || '',
-            extraDescription: item.extraDescription || '',
-          })),
-          subtotal: Number(existingOrder.subtotal || 0),
-          tax: Number(existingOrder.tax || 0),
-          shipping: Number(existingOrder.shipping || 0),
-          total: Number(existingOrder.total || 0),
-        };
-        
-        if (!pushPayload.trackingUpdates) pushPayload.trackingUpdates = [];
-        pushPayload.trackingUpdates.push({
-          _id: new mongoose.Types.ObjectId(),
-          message: `Auto-Invoice generated (${invoiceNumber}) due to payment status change`,
-          location: null,
-          createdAt: now,
-          visibility: 'internal',
-        });
-      }
     } else if (paymentNote) {
       if (!pushPayload.paymentHistory) pushPayload.paymentHistory = [];
       pushPayload.paymentHistory.push({
@@ -459,7 +428,7 @@ router.patch('/orders/:orderId', async (req, res) => {
 router.post('/orders/:orderId/invoice', async (req, res) => {
   try {
     const { orderId } = req.params;
-    const { invoiceDate } = req.body || {};
+    const { invoiceDate, orderDate, paymentDate } = req.body || {};
     const orderObjectId = mongoose.Types.ObjectId.isValid(orderId) ? new mongoose.Types.ObjectId(orderId) : null;
 
     if (!orderObjectId) {
@@ -495,13 +464,22 @@ router.post('/orders/:orderId/invoice', async (req, res) => {
       total: Number(order.total || 0),
     };
 
+    const setFields = {
+      invoice: invoicePayload,
+      updatedAt: now,
+    };
+
+    if (orderDate) {
+      setFields.createdAt = new Date(orderDate);
+    }
+    if (paymentDate) {
+      setFields.paymentDate = new Date(paymentDate);
+    }
+
     await db.collection('orders').updateOne(
       { _id: orderObjectId },
       {
-        $set: {
-          invoice: invoicePayload,
-          updatedAt: now,
-        },
+        $set: setFields,
         $push: {
           trackingUpdates: {
             _id: new mongoose.Types.ObjectId(),

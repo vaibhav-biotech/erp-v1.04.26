@@ -104,9 +104,10 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
   };
 
   useEffect(() => {
+    if (selectedCustomerId) return; // Prevent searching immediately after selecting
     if (customerSearch.length > 2) searchCustomers();
     else setCustomers([]);
-  }, [customerSearch]);
+  }, [customerSearch, selectedCustomerId]);
 
   useEffect(() => {
     if (productSearch.length > 2) searchProducts();
@@ -343,7 +344,10 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                       type="text"
                       placeholder="Search by email, phone, or name..."
                       value={customerSearch}
-                      onChange={(e) => setCustomerSearch(e.target.value)}
+                      onChange={(e) => {
+                        setCustomerSearch(e.target.value);
+                        if (selectedCustomerId) setSelectedCustomerId('');
+                      }}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                     />
                   </div>
@@ -352,7 +356,22 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                       {customers.map(c => (
                         <button
                           key={c._id}
-                          onClick={() => { setSelectedCustomerId(c._id); setCustomerSearch(c.email); setCustomers([]); }}
+                          onClick={() => { 
+                            setSelectedCustomerId(c._id); 
+                            setCustomerSearch(c.email); 
+                            setCustomers([]); 
+                            if (c.address) {
+                              setShippingAddress({
+                                street: c.address.street || '',
+                                city: c.address.city || '',
+                                state: c.address.state || '',
+                                zipCode: c.address.zipCode || '',
+                                country: c.address.country || 'India'
+                              });
+                            } else {
+                              setShippingAddress({ street: '', city: '', state: '', zipCode: '', country: 'India' });
+                            }
+                          }}
                           className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-100 last:border-0 transition"
                         >
                           <p className="font-semibold text-gray-900">{c.firstName} {c.lastName}</p>

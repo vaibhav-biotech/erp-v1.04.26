@@ -105,6 +105,13 @@ router.post('/manual', async (req, res) => {
           email: customerInfo.email,
           phone: customerInfo.phone || '0000000000',
           password: hashedPassword,
+          address: req.body.shippingAddress ? {
+            street: req.body.shippingAddress.street || '',
+            city: req.body.shippingAddress.city || '',
+            state: req.body.shippingAddress.state || '',
+            zipCode: req.body.shippingAddress.zipCode || '',
+            country: req.body.shippingAddress.country || 'India'
+          } : undefined
         });
         await newCustomer.save();
         finalCustomerId = newCustomer._id;
@@ -127,12 +134,26 @@ router.post('/manual', async (req, res) => {
           firstName: existingCustomer.firstName,
           lastName: existingCustomer.lastName,
           phone: existingCustomer.phone,
-          street: req.body.shippingAddress?.street || '',
-          city: req.body.shippingAddress?.city || '',
-          state: req.body.shippingAddress?.state || '',
-          zipCode: req.body.shippingAddress?.zipCode || '',
-          country: req.body.shippingAddress?.country || 'India'
+          street: req.body.shippingAddress?.street || existingCustomer.address?.street || '',
+          city: req.body.shippingAddress?.city || existingCustomer.address?.city || '',
+          state: req.body.shippingAddress?.state || existingCustomer.address?.state || '',
+          zipCode: req.body.shippingAddress?.zipCode || existingCustomer.address?.zipCode || '',
+          country: req.body.shippingAddress?.country || existingCustomer.address?.country || 'India'
         };
+
+        if (req.body.shippingAddress) {
+          await Customer.findByIdAndUpdate(finalCustomerId, {
+            $set: {
+              address: {
+                street: req.body.shippingAddress.street || '',
+                city: req.body.shippingAddress.city || '',
+                state: req.body.shippingAddress.state || '',
+                zipCode: req.body.shippingAddress.zipCode || '',
+                country: req.body.shippingAddress.country || 'India'
+              }
+            }
+          });
+        }
       }
     } else if (!finalCustomerId) {
        return res.status(400).json({ success: false, message: 'Customer ID or Customer Info required' });
@@ -701,7 +722,6 @@ router.post('/:orderId/invoice', async (req, res) => {
     const db = mongoose.connection.db;
     const order = await db.collection('orders').findOne({
       _id: orderObjectId,
-      storeName: { $in: getStoreAliases(storeName) },
     });
 
     if (!order) {
