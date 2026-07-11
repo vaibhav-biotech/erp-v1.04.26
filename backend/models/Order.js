@@ -54,7 +54,7 @@ const OrderSchema = new mongoose.Schema(
     },
     source: {
       type: String, // e.g., 'Shopify', 'WooCommerce', 'Manual'
-      default: 'Manual'
+      default: 'Website'
     },
     paymentDate: {
       type: Date

@@ -39,6 +39,7 @@ export const InventoryTable: React.FC = () => {
     totalCategories: 0,
     lowStock: 0,
     totalValue: 0,
+    retailValue: 0,
     stockUnits: 0
   });
 
@@ -60,6 +61,7 @@ export const InventoryTable: React.FC = () => {
             totalCategories: json.data.totalCategories || 0, // Mocked or fetched elsewhere
             lowStock: json.data.lowStockCount || 0,
             totalValue: json.data.inventoryValue || 0,
+            retailValue: json.data.stockValue || 0,
             stockUnits: json.data.stockUnits || 0
           });
         }
@@ -188,22 +190,26 @@ export const InventoryTable: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex flex-col">
           <span className="text-sm font-medium text-gray-500 mb-1">Total Products</span>
-          <span className="text-3xl font-bold text-gray-900">{dashboardStats.totalProducts}</span>
+          <span className="text-2xl font-bold text-gray-900">{dashboardStats.totalProducts}</span>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex flex-col">
           <span className="text-sm font-medium text-gray-500 mb-1">Low Stock Alerts</span>
-          <span className="text-3xl font-bold text-red-600">{dashboardStats.lowStock}</span>
+          <span className="text-2xl font-bold text-red-600">{dashboardStats.lowStock}</span>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex flex-col">
-          <span className="text-sm font-medium text-gray-500 mb-1">Total Stock Units</span>
-          <span className="text-3xl font-bold text-gray-900">{dashboardStats.stockUnits.toLocaleString('en-IN')}</span>
+          <span className="text-sm font-medium text-gray-500 mb-1">Stock Units</span>
+          <span className="text-2xl font-bold text-gray-900">{dashboardStats.stockUnits.toLocaleString('en-IN')}</span>
         </div>
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex flex-col">
-          <span className="text-sm font-medium text-gray-500 mb-1">Inventory Value</span>
-          <span className="text-3xl font-bold text-blue-600">₹{dashboardStats.totalValue.toLocaleString('en-IN')}</span>
+          <span className="text-sm font-medium text-gray-500 mb-1">Cost Value</span>
+          <span className="text-2xl font-bold text-blue-600">₹{dashboardStats.totalValue.toLocaleString('en-IN')}</span>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 flex flex-col">
+          <span className="text-sm font-medium text-gray-500 mb-1">Retail Value</span>
+          <span className="text-2xl font-bold text-green-600">₹{dashboardStats.retailValue.toLocaleString('en-IN')}</span>
         </div>
       </div>
 

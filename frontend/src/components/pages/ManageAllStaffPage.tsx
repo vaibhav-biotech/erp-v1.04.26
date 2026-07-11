@@ -8,6 +8,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { buildApiUrl } from '@/lib/storeConfig';
 
+import { getTasks, updateTaskStatus, reassignTask, getAttendance, getStaffMembersOnly } from '@/lib/staffAuth';
+import StaffTasksTable from '@/components/staff/StaffTasksTable';
+import StaffMonthlyAttendanceTable from '@/components/staff/StaffMonthlyAttendanceTable';
+import { buildMonthlyReport, formatYearMonth } from '@/lib/staffAttendance';
+
+
 interface Staff {
   _id: string;
   name: string;
@@ -24,6 +30,18 @@ export default function ManageAllStaffPage() {
   const router = useRouter();
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Tabs State
+  const [activeTab, setActiveTab] = useState<'employees' | 'tasks' | 'attendance'>('employees');
+  
+  // Mock data states for superadmin views
+  const [allTasks, setAllTasks] = useState(getTasks());
+  const [attendanceReport, setAttendanceReport] = useState(() => {
+    const staff = getStaffMembersOnly();
+    const staffIds = staff.map(s => s.id);
+    return buildMonthlyReport(getAttendance(), staffIds, formatYearMonth(new Date()));
+  });
+
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -215,33 +233,84 @@ export default function ManageAllStaffPage() {
         <div className="flex items-center gap-3">
           <FiBriefcase className="text-blue-600 w-8 h-8" />
           <div>
-            <h1 className="font-playfair text-3xl text-gray-900">Manage All Staff</h1>
+            <h1 className="font-playfair text-3xl text-gray-900">Manage Staff Operations</h1>
             <p className="font-montserrat text-sm text-gray-600">
-              Manage staff members across all stores.
+              Overview of all employees, tasks, and attendance.
             </p>
           </div>
         </div>
-        <button
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm font-medium"
-        >
-          <FiPlus size={18} />
-          Add Staff
-        </button>
+        {activeTab === 'employees' && (
+          <button
+            onClick={() => handleOpenModal()}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm font-medium"
+          >
+            <FiPlus size={18} />
+            Add Staff
+          </button>
+        )}
       </div>
 
-      {loading ? (
-        <div className="p-8 text-center text-gray-500">Loading staff directory...</div>
-      ) : (
-        <DataTable
-          columns={columns}
-          data={staffList}
-          actions={true}
-          onEdit={(row: any) => handleOpenModal(row)}
-          onDelete={(id) => handleDelete(id)}
-          onView={(row: any) => router.push(`/superadmin/manage-staff/${row._id}`)}
-          selectable={false}
-        />
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {(['employees', 'tasks', 'attendance'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`
+                whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm
+                ${activeTab === tab 
+                  ? 'border-blue-500 text-blue-600' 
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }
+              `}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {activeTab === 'employees' && (
+        loading ? (
+          <div className="p-8 text-center text-gray-500">Loading staff directory...</div>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={staffList}
+            actions={true}
+            onEdit={(row: any) => handleOpenModal(row)}
+            onDelete={(id) => handleDelete(id)}
+            onView={(row: any) => router.push(`/superadmin/manage-staff/${row._id}`)}
+            selectable={false}
+          />
+        )
+      )}
+
+      {activeTab === 'tasks' && (
+        <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+          <StaffTasksTable
+            tasks={allTasks}
+            onStatusChange={(id, status) => {
+              if(updateTaskStatus(id, status)) setAllTasks(getTasks());
+            }}
+            onReassign={(id, assigneeId) => {
+              if(reassignTask(id, assigneeId)) setAllTasks(getTasks());
+            }}
+            showAssignee={true}
+            showCreatedBy={true}
+            allowReassign={true}
+          />
+        </div>
+      )}
+
+      {activeTab === 'attendance' && (
+        <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+          <StaffMonthlyAttendanceTable
+            rows={attendanceReport}
+            yearMonth={formatYearMonth(new Date())}
+            variant="summary"
+          />
+        </div>
       )}
 
       {/* Add/Edit Modal */}

@@ -222,7 +222,7 @@ export default function GroupedSidebar() {
     {
       id: 'accounts-orders',
       label: 'Store Orders',
-      icon: <FiList className="w-5 h-5" />,
+      icon: <FiShoppingCart className="w-5 h-5" />,
       route: '/accounts?page=accounts-orders',
       roles: ['accountant', 'super_admin'],
     },
@@ -270,13 +270,6 @@ export default function GroupedSidebar() {
       roles: ['super_admin'],
     },
     {
-      id: 'super-orders',
-      label: 'Orders',
-      icon: <FiShoppingCart className="w-5 h-5" />,
-      route: '/superadmin?page=all-orders',
-      roles: ['super_admin'],
-    },
-    {
       id: 'super-customers',
       label: 'Customers',
       icon: <FiUsers className="w-5 h-5" />,
@@ -284,17 +277,10 @@ export default function GroupedSidebar() {
       roles: ['super_admin'],
     },
     {
-      id: 'super-products',
-      label: 'Products',
-      icon: <FiPackage className="w-5 h-5" />,
-      route: '/superadmin?page=products',
-      roles: ['super_admin'],
-    },
-    {
       id: 'super-inventory',
-      label: 'Inventory',
+      label: 'Inventory Reports',
       icon: <FiPackage className="w-5 h-5" />,
-      route: '/superadmin?page=inventory',
+      route: '/superadmin?page=inventory-reports',
       roles: ['super_admin'],
     },
     {

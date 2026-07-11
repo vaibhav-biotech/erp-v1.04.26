@@ -37,6 +37,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
   const [shippingDetail, setShippingDetail] = useState('');
   const [stores, setStores] = useState<any[]>([]);
   const [selectedStoreId, setSelectedStoreId] = useState('');
+  const [customStoreName, setCustomStoreName] = useState('');
 
   // Customer Data
   const [isExistingCustomer, setIsExistingCustomer] = useState(false);
@@ -72,6 +73,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
       setDispatchingCenter('AKOT, DIST. AKOLA');
       setShippingDetail('');
       setSelectedStoreId('');
+      setCustomStoreName('');
       setCustomerInfo({
         firstName: '', lastName: '', email: '', phone: '',
         address: { street: '', city: '', state: '', zipCode: '', country: 'India' }
@@ -162,7 +164,8 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
 
     try {
       const payload = {
-        storeId: selectedStoreId,
+        storeId: selectedStoreId === 'custom' ? undefined : selectedStoreId,
+        customStoreName: selectedStoreId === 'custom' ? customStoreName : undefined,
         customerId: isExistingCustomer ? selectedCustomerId : undefined,
         customerInfo: !isExistingCustomer ? customerInfo : undefined,
         items: cart.map(item => ({ 
@@ -173,6 +176,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
         customDiscount,
         shippingCharge,
         applyGst,
+        source: 'Manual',
         orderDate: orderDate ? new Date(orderDate).toISOString() : undefined,
         paymentDate: paymentDate ? new Date(paymentDate).toISOString() : undefined,
         dispatchingCenter,
@@ -251,7 +255,20 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                       {stores.map(s => (
                         <option key={s._id} value={s._id}>{s.name} ({s.domain})</option>
                       ))}
+                      <option value="custom">Custom Store...</option>
                     </select>
+                  </div>
+                )}
+                {selectedStoreId === 'custom' && (
+                  <div className="col-span-full">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Custom Store Name</label>
+                    <input
+                      type="text"
+                      value={customStoreName}
+                      onChange={(e) => setCustomStoreName(e.target.value)}
+                      placeholder="Enter custom store name"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+                    />
                   </div>
                 )}
                 <div>

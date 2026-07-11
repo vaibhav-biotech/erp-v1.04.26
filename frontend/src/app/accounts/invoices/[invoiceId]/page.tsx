@@ -74,7 +74,7 @@ export default function AccountsInvoiceViewPage() {
   const paymentDateStr = invoice.paymentDate ? new Date(invoice.paymentDate).toLocaleDateString('en-GB', {
     day: '2-digit', month: 'short', year: 'numeric'
   }).toUpperCase().replace(/ /g, ' - ') : 'PENDING';
-  const storeNameStr = invoice.storeName || 'PLANTS IN GARDEN';
+  const storeNameStr = invoice.store?.name || invoice.storeName || 'PLANTS IN GARDEN';
 
   return (
     <div className="max-w-4xl mx-auto py-8">
@@ -141,14 +141,12 @@ export default function AccountsInvoiceViewPage() {
                   <td className="font-bold py-1">Date :</td>
                   <td>{billDate}</td>
                 </tr>
-                <tr>
-                  <td className="font-bold py-1">GSTIN No :</td>
-                  <td>27AFFPN3601Q1Z5</td>
-                </tr>
-                <tr>
-                  <td className="font-bold py-1">PAN :</td>
-                  <td>AFFPN3601Q</td>
-                </tr>
+                {Number(invoice.tax || 0) > 0 && (
+                  <tr>
+                    <td className="font-bold py-1">GSTIN No :</td>
+                    <td>27AFFPN3601Q1Z5</td>
+                  </tr>
+                )}
                 <tr>
                   <td className="font-bold py-1">Payment Date :</td>
                   <td>{paymentDateStr}</td>
