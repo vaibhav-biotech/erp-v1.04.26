@@ -49,8 +49,10 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
-    address: { street: '', city: '', state: '', zipCode: '', country: 'India' }
+    phone: ''
+  });
+  const [shippingAddress, setShippingAddress] = useState({
+    street: '', city: '', state: '', zipCode: '', country: 'India'
   });
 
   // Product Data
@@ -75,8 +77,10 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
       setSelectedStoreId('');
       setCustomStoreName('');
       setCustomerInfo({
-        firstName: '', lastName: '', email: '', phone: '',
-        address: { street: '', city: '', state: '', zipCode: '', country: 'India' }
+        firstName: '', lastName: '', email: '', phone: ''
+      });
+      setShippingAddress({
+        street: '', city: '', state: '', zipCode: '', country: 'India'
       });
       setSelectedCustomerId('');
       setProductSearch('');
@@ -180,7 +184,8 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
         orderDate: orderDate ? new Date(orderDate).toISOString() : undefined,
         paymentDate: paymentDate ? new Date(paymentDate).toISOString() : undefined,
         dispatchingCenter,
-        shippingDetail
+        shippingDetail,
+        shippingAddress
       };
 
       const res = await fetchWithStore(buildApiUrl('/api/orders/manual'), {
@@ -375,12 +380,35 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                     <label className="block text-xs font-medium text-gray-700 mb-1">Phone *</label>
                     <input type="text" value={customerInfo.phone} onChange={e => setCustomerInfo({...customerInfo, phone: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
                   </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Street Address</label>
-                    <input type="text" value={customerInfo.address.street} onChange={e => setCustomerInfo({...customerInfo, address: {...customerInfo.address, street: e.target.value}})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                  </div>
                 </div>
               )}
+
+              {/* Shipping Address - ALWAYS SHOW */}
+              <div className="mt-6 border-t border-gray-100 pt-6">
+                <h4 className="text-sm font-semibold text-gray-800 mb-4">Shipping Address</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Street Address</label>
+                    <input type="text" value={shippingAddress.street} onChange={e => setShippingAddress({...shippingAddress, street: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="123 Main St" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">City</label>
+                    <input type="text" value={shippingAddress.city} onChange={e => setShippingAddress({...shippingAddress, city: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="City" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">State</label>
+                    <input type="text" value={shippingAddress.state} onChange={e => setShippingAddress({...shippingAddress, state: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="State" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Postal / Zip Code</label>
+                    <input type="text" value={shippingAddress.zipCode} onChange={e => setShippingAddress({...shippingAddress, zipCode: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Zip Code" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Country</label>
+                    <input type="text" value={shippingAddress.country} onChange={e => setShippingAddress({...shippingAddress, country: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Section 2: Products */}

@@ -110,8 +110,8 @@ router.post('/manual', async (req, res) => {
         finalCustomerId = newCustomer._id;
       }
       
-      if (customerInfo.address) {
-        orderAddress = { ...orderAddress, ...customerInfo.address };
+      if (req.body.shippingAddress) {
+        orderAddress = { ...orderAddress, ...req.body.shippingAddress };
       }
     } else if (finalCustomerId) {
       const Customer = require('../models/Customer');
@@ -127,7 +127,11 @@ router.post('/manual', async (req, res) => {
           firstName: existingCustomer.firstName,
           lastName: existingCustomer.lastName,
           phone: existingCustomer.phone,
-          street: '', city: '', state: '', zipCode: '', country: ''
+          street: req.body.shippingAddress?.street || '',
+          city: req.body.shippingAddress?.city || '',
+          state: req.body.shippingAddress?.state || '',
+          zipCode: req.body.shippingAddress?.zipCode || '',
+          country: req.body.shippingAddress?.country || 'India'
         };
       }
     } else if (!finalCustomerId) {
