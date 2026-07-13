@@ -689,26 +689,30 @@ const checkBulkDuplicates = async (products) => {
  */
 const searchProducts = async (query, limit = 20, storeName) => {
   try {
+    const searchRegex = new RegExp(query, 'i');
     const searchFilter = {
-      $text: { $search: query }
+      $or: [
+        { name: { $regex: searchRegex } },
+        { categoryName: { $regex: searchRegex } },
+        { tags: { $regex: searchRegex } }
+      ]
     };
 
     if (storeName) {
       const normalizedStoreName = String(storeName).toLowerCase().trim();
-      searchFilter.$or = [
-        { storeName: normalizedStoreName },
-        { storeName: { $exists: false } },
-        { storeName: null },
-        { storeName: '' },
+      searchFilter.$and = [
+        {
+          $or: [
+            { storeName: normalizedStoreName },
+            { storeName: { $exists: false } },
+            { storeName: null },
+            { storeName: '' },
+          ]
+        }
       ];
     }
 
-    const products = await Product.find(
-      searchFilter,
-      { score: { $meta: 'textScore' } }
-    )
-      .sort({ score: { $meta: 'textScore' } })
-      .limit(limit);
+    const products = await Product.find(searchFilter).limit(limit);
 
     return {
       success: true,
