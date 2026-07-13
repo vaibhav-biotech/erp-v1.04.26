@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 
 interface LandingBanner {
@@ -108,35 +109,42 @@ export default function LandingBannerHero() {
           </div>
         ) : (
           <div className="w-full h-full relative">
-            <div
-              className="flex h-full transition-transform duration-500"
-              style={{ transform: `translateX(-${activeIndex * 100}%)` }}
-            >
-              {banners.map((banner) => {
-                const content = (
-                  <Image
-                    src={banner.imageUrl}
-                    alt={banner.title || 'Hero banner'}
-                    fill
-                    sizes="100vw"
-                    className="w-full h-full object-cover"
-                    priority={activeIndex === 0}
-                  />
-                );
+            <AnimatePresence mode="wait">
+              {banners.length > 0 && (
+                <motion.div
+                  key={activeIndex}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.8, ease: "easeInOut" }}
+                  className="w-full h-full absolute inset-0"
+                >
+                  {(() => {
+                    const banner = banners[activeIndex];
+                    const content = (
+                      <Image
+                        src={banner.imageUrl}
+                        alt={banner.title || 'Hero banner'}
+                        fill
+                        sizes="100vw"
+                        className="w-full h-full object-cover"
+                        priority
+                      />
+                    );
 
-                return (
-                  <div key={banner._id} className="w-full h-full shrink-0 relative">
-                    {banner.linkUrl ? (
-                      <Link href={banner.linkUrl} className="block w-full h-full relative">
-                        {content}
-                      </Link>
-                    ) : (
-                      <div className="w-full h-full relative">{content}</div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                    if (banner.linkUrl) {
+                      return (
+                        <Link href={banner.linkUrl} className="block w-full h-full relative">
+                          {content}
+                        </Link>
+                      );
+                    }
+
+                    return <div className="w-full h-full relative">{content}</div>;
+                  })()}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {banners.length > 1 && (
               <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5">

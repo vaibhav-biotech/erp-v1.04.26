@@ -259,7 +259,12 @@ router.get('/orders/:orderId', async (req, res) => {
     }
 
     const db = mongoose.connection.db;
-    const order = await db.collection('orders').findOne({ _id: orderObjectId });
+    const order = await db.collection('orders').findOne({ 
+      $or: [
+        { _id: orderObjectId },
+        { _id: orderId }
+      ]
+    });
 
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
@@ -288,7 +293,12 @@ router.patch('/orders/:orderId', async (req, res) => {
     }
 
     const db = mongoose.connection.db;
-    const existingOrder = await db.collection('orders').findOne({ _id: orderObjectId });
+    const existingOrder = await db.collection('orders').findOne({ 
+      $or: [
+        { _id: orderObjectId },
+        { _id: orderId }
+      ]
+    });
 
     if (!existingOrder) {
       return res.status(404).json({ success: false, message: 'Order not found' });
@@ -415,9 +425,9 @@ router.patch('/orders/:orderId', async (req, res) => {
       if (pushPayload.trackingUpdates) updateQuery.$push.trackingUpdates = { $each: pushPayload.trackingUpdates };
     }
 
-    await db.collection('orders').updateOne({ _id: orderObjectId }, updateQuery);
+    await db.collection('orders').updateOne({ _id: existingOrder._id }, updateQuery);
 
-    const updatedOrder = await db.collection('orders').findOne({ _id: orderObjectId });
+    const updatedOrder = await db.collection('orders').findOne({ _id: existingOrder._id });
     res.json({ success: true, message: 'Order updated and synced.', data: updatedOrder });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -436,7 +446,12 @@ router.post('/orders/:orderId/invoice', async (req, res) => {
     }
 
     const db = mongoose.connection.db;
-    const order = await db.collection('orders').findOne({ _id: orderObjectId });
+    const order = await db.collection('orders').findOne({ 
+      $or: [
+        { _id: orderObjectId },
+        { _id: orderId }
+      ]
+    });
 
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
@@ -477,7 +492,7 @@ router.post('/orders/:orderId/invoice', async (req, res) => {
     }
 
     await db.collection('orders').updateOne(
-      { _id: orderObjectId },
+      { _id: order._id },
       {
         $set: setFields,
         $push: {

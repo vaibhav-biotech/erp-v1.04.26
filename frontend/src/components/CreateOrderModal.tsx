@@ -131,10 +131,10 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
 
   const searchProducts = async () => {
     try {
-      const res = await fetchWithStore(buildApiUrl(`/api/products?search=${productSearch}`), { token: adminToken || undefined });
+      const res = await fetchWithStore(buildApiUrl(`/api/products/search?q=${productSearch}&limit=50`), { token: adminToken || undefined });
       if (res.ok) {
         const data = await res.json();
-        setSearchResults((data.data || []).slice(0, 5));
+        setSearchResults((data.data || []).slice(0, 50));
       }
     } catch (err) {}
   };
@@ -142,8 +142,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
   const addToCart = (product: Product) => {
     if (cart.find(item => item._id === product._id)) return;
     setCart([...cart, { ...product, quantity: 1, overridePrice: product.finalPrice, variety: '', extraDescription: '' }]);
-    setProductSearch('');
-    setSearchResults([]);
+    // We don't clear the search here so the user can select multiple products from the same search
   };
 
   const removeFromCart = (id: string) => setCart(cart.filter(item => item._id !== id));
@@ -447,7 +446,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
                 />
                 {searchResults.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden">
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl overflow-y-auto max-h-60">
                     {searchResults.map(p => (
                       <button
                         key={p._id}

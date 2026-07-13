@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 
 interface CategoryCircleItem {
@@ -77,14 +78,20 @@ export default function CategoryCircleSection() {
   return (
     <section className="py-8 sm:py-10 lg:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-6 sm:mb-8 lg:mb-10">
+        <motion.div 
+          className="text-center mb-6 sm:mb-8 lg:mb-10"
+          initial={{ opacity: 0, y: -20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.6 }}
+        >
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis">
             Shop by Category
           </h2>
           <p className="mt-2 text-sm sm:text-base lg:text-lg text-gray-600 max-w-2xl mx-auto">
             Find your perfect plants, seeds, planters and garden essentials.
           </p>
-        </div>
+        </motion.div>
 
         <div className="relative overflow-hidden md:hidden">
           <div className={`flex w-max gap-6 sm:gap-8 ${items.length > 1 ? 'category-scroll-track' : ''}`}>
@@ -115,32 +122,48 @@ export default function CategoryCircleSection() {
           </div>
         </div>
 
-        <div className="hidden md:flex md:flex-wrap md:justify-center md:gap-8 lg:gap-10">
+        <motion.div 
+          className="hidden md:flex md:flex-wrap md:justify-center md:gap-8 lg:gap-10"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={{
+            hidden: { opacity: 0 },
+            visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+          }}
+        >
           {items.map((item) => (
-            <Link
+            <motion.div 
               key={item._id}
-              href={`/products/${item.categorySlug || item.categoryName.toLowerCase().replace(/\s+/g, '-')}`}
-              className="w-[150px] lg:w-[170px] flex-shrink-0 flex flex-col items-center text-center group"
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+              }}
             >
-              <div className="relative w-24 h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden border border-gray-200 shadow-sm bg-gray-100 ring-4 ring-white group-hover:shadow-lg group-hover:-translate-y-1 transition-all duration-200">
-                {item.imageUrl ? (
-                  <Image
-                    src={item.imageUrl}
-                    alt={item.categoryName}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-200"
-                    sizes="(max-width: 1024px) 96px, 112px"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No image</div>
-                )}
-              </div>
-              <span className="mt-3 text-sm lg:text-base font-semibold text-gray-800 leading-tight whitespace-nowrap">
-                {item.categoryName}
-              </span>
-            </Link>
+              <Link
+                href={`/products/${item.categorySlug || item.categoryName.toLowerCase().replace(/\s+/g, '-')}`}
+                className="w-[150px] lg:w-[170px] flex-shrink-0 flex flex-col items-center text-center group"
+              >
+                <div className="relative w-24 h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden border border-gray-200 shadow-sm bg-gray-100 ring-4 ring-white group-hover:shadow-lg group-hover:-translate-y-1 transition-all duration-200">
+                  {item.imageUrl ? (
+                    <Image
+                      src={item.imageUrl}
+                      alt={item.categoryName}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-200"
+                      sizes="(max-width: 1024px) 96px, 112px"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No image</div>
+                  )}
+                </div>
+                <span className="mt-3 text-sm lg:text-base font-semibold text-gray-800 leading-tight whitespace-nowrap">
+                  {item.categoryName}
+                </span>
+              </Link>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
 
       <style jsx>{`

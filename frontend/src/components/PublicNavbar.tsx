@@ -8,6 +8,7 @@ import { FiMenu, FiX, FiChevronDown, FiSearch } from 'react-icons/fi';
 import { FaFacebookF, FaInstagram, FaYoutube } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import CartBadge from '@/components/CartBadge';
+import AuthModal from '@/components/AuthModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 import { readSessionCache, writeSessionCache } from '@/lib/sessionCache';
@@ -78,6 +79,7 @@ export default function PublicNavbar() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -375,6 +377,7 @@ export default function PublicNavbar() {
   const hasNotificationBar = Boolean(currentNotification?.isActive && currentNotification?.message);
 
   return (
+    <>
     <div
       className={`sticky top-0 z-40 transition-transform duration-300 ${
         isNavVisible ? 'translate-y-0' : '-translate-y-full'
@@ -500,12 +503,12 @@ export default function PublicNavbar() {
           <div className="hidden lg:flex items-center gap-4">
             <CartBadge />
             {!customerAuthenticated ? (
-              <Link
-                href="/auth/login"
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
                 className="px-4 py-2 border-2 border-black text-black rounded-lg hover:bg-black hover:text-white transition-colors font-medium text-sm"
               >
                 Login
-              </Link>
+              </button>
             ) : (
               <div className="relative">
                 <button
@@ -624,13 +627,15 @@ export default function PublicNavbar() {
             {/* Mobile Auth Links */}
             <div className="py-3 px-4 border-t border-gray-100 space-y-2 bg-white">
               {!customerAuthenticated ? (
-                <Link
-                  href="/auth/login"
-                  className="block px-4 py-2 border-2 border-black text-black rounded-lg hover:bg-black hover:text-white transition-colors font-medium text-center text-sm"
-                  onClick={() => setMobileMenuOpen(false)}
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="w-full px-4 py-2 border-2 border-black text-black rounded-lg hover:bg-black hover:text-white transition-colors font-medium text-center text-sm"
                 >
                   Login
-                </Link>
+                </button>
               ) : (
                 <Link
                   href="/customer"
@@ -648,5 +653,13 @@ export default function PublicNavbar() {
       </div>
       </nav>
     </div>
+      
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+        redirectPath="/customer"
+      />
+    </>
   );
 }
