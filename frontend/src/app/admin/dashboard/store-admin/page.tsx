@@ -207,29 +207,8 @@ export default function StoreAdminDashboard() {
         return <StoreAdminOrdersListPage />;
       case 'customers':
         return <CustomersPage />;
-      case 'landing':
-        return <LandingPageManager />;
-      case 'offers':
-        return (
-          <div className="space-y-6">
-            <OfferBackgroundManager />
-            <OffersManager />
-          </div>
-        );
-      case 'notification-bar':
-        return <NotificationBarPage />;
-      case 'category-section':
-        return <CategorySectionSettingsPage />;
-      case 'featured-collections':
-        return <FeaturedCollectionsSettingsPage />;
-      case 'gift-section':
-        return <GiftSectionSettingsPage />;
-      case 'care-section':
-        return <CareSectionSettingsPage />;
       case 'website-settings':
         return <WebsiteSettingsPage />;
-      case 'gift-wrap':
-        return <GiftWrapSettingsPage />;
       case 'account-tax':
         return <AccountTaxSettingsPage />;
       default:

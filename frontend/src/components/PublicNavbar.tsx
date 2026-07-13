@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { RiShoppingBagLine } from 'react-icons/ri';
-import { FiMenu, FiX, FiChevronDown } from 'react-icons/fi';
+import { FiMenu, FiX, FiChevronDown, FiSearch } from 'react-icons/fi';
+import { FaFacebookF, FaInstagram, FaYoutube } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import CartBadge from '@/components/CartBadge';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,6 +30,11 @@ interface NotificationConfig {
   bgColor: string;
   textColor: string;
   fontWeight: 'regular' | 'bold';
+  socialLinks?: {
+    facebook?: string;
+    instagram?: string;
+    youtube?: string;
+  };
   isActive: boolean;
 }
 
@@ -44,6 +50,7 @@ const DEFAULT_NOTIFICATION: NotificationConfig = {
   bgColor: '#fef08a',
   textColor: '#713f12',
   fontWeight: 'regular',
+  socialLinks: {},
   isActive: true,
 };
 
@@ -67,6 +74,114 @@ export default function PublicNavbar() {
   const [currentNotificationIndex, setCurrentNotificationIndex] = useState(0);
   const [websiteLogo, setWebsiteLogo] = useState<WebsiteLogo | null>(null);
   const [logoLoading, setLogoLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!(event.target as Element).closest('.search-container')) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSuggestionsLoading(true);
+      setShowSuggestions(true);
+      try {
+        const res = await fetch(buildApiUrl('/api/products?status=active&limit=500'), {
+          headers: getApiHeaders(),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const allProducts = data.data || [];
+          const lowercaseQuery = searchQuery.toLowerCase();
+          const filtered = allProducts.filter((p: any) => {
+            return (
+              p.name?.toLowerCase().includes(lowercaseQuery) ||
+              p.categoryName?.toLowerCase().includes(lowercaseQuery) ||
+              p.tags?.some((tag: string) => tag.toLowerCase().includes(lowercaseQuery))
+            );
+          }).slice(0, 5); // top 5
+          setSuggestions(filtered);
+        }
+      } catch (err) {
+        console.error('Failed to fetch suggestions', err);
+      } finally {
+        setIsSuggestionsLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleSearch = (e: React.FormEvent | React.MouseEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      setShowSuggestions(false);
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setMobileMenuOpen(false);
+    }
+  };
+
+  const renderSuggestions = () => {
+    if (!showSuggestions || !searchQuery.trim()) return null;
+    return (
+      <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden">
+        {isSuggestionsLoading ? (
+          <div className="p-4 text-sm text-gray-500 text-center">Loading...</div>
+        ) : suggestions.length > 0 ? (
+          <div className="max-h-80 overflow-y-auto">
+            {suggestions.map((p) => (
+              <div 
+                key={p._id}
+                onClick={() => {
+                  setShowSuggestions(false);
+                  setSearchQuery('');
+                  setMobileMenuOpen(false);
+                  router.push(`/product/${p._id}`);
+                }}
+                className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-0"
+              >
+                {p.images && p.images[0] ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={p.images[0]} alt={p.name} className="w-10 h-10 object-cover rounded-md" />
+                ) : (
+                  <div className="w-10 h-10 bg-gray-100 rounded-md flex items-center justify-center text-gray-400 text-xs">No img</div>
+                )}
+                <div className="flex-1 overflow-hidden">
+                  <p className="text-sm font-medium text-black truncate">{p.name}</p>
+                  <p className="text-xs text-gray-500 truncate">{p.categoryName}</p>
+                </div>
+                <div className="text-sm font-medium text-black whitespace-nowrap">
+                  ₹{p.finalPrice || p.originalPrice}
+                </div>
+              </div>
+            ))}
+            <div 
+              onClick={(e) => handleSearch(e)}
+              className="p-3 text-center text-sm text-green-700 font-medium hover:bg-green-50 cursor-pointer transition-colors bg-green-50/50 border-t border-gray-100"
+            >
+              See all results for &quot;{searchQuery}&quot;
+            </div>
+          </div>
+        ) : (
+          <div className="p-4 text-sm text-gray-500 text-center">No products found</div>
+        )}
+      </div>
+    );
+  };
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -131,6 +246,7 @@ export default function PublicNavbar() {
               bgColor: item?.bgColor || DEFAULT_NOTIFICATION.bgColor,
               textColor: item?.textColor || DEFAULT_NOTIFICATION.textColor,
               fontWeight: item?.fontWeight === 'bold' ? 'bold' : 'regular',
+              socialLinks: item?.socialLinks || {},
               isActive: true,
             } as NotificationConfig));
 
@@ -149,6 +265,7 @@ export default function PublicNavbar() {
               bgColor: config.bgColor || DEFAULT_NOTIFICATION.bgColor,
               textColor: config.textColor || DEFAULT_NOTIFICATION.textColor,
               fontWeight: config.fontWeight === 'bold' ? 'bold' : 'regular',
+              socialLinks: config.socialLinks || {},
               isActive: true,
             },
           ];
@@ -265,7 +382,7 @@ export default function PublicNavbar() {
     >
       {hasNotificationBar && (
         <div
-          className="border-b text-center text-xs sm:text-sm px-3 py-2"
+          className="border-b text-xs sm:text-sm px-3 py-2 relative flex items-center justify-center min-h-[36px]"
           style={{
             backgroundColor: currentNotification.bgColor,
             color: currentNotification.textColor,
@@ -280,10 +397,24 @@ export default function PublicNavbar() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.35, ease: 'easeOut' }}
+              className="text-center px-12 sm:px-32"
             >
               {currentNotification.message}
             </motion.div>
           </AnimatePresence>
+
+          {/* Social Links */}
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
+            <a href={currentNotification.socialLinks?.facebook || '#'} target={currentNotification.socialLinks?.facebook ? "_blank" : "_self"} rel="noopener noreferrer" className="hover:opacity-75 transition-opacity" aria-label="Facebook">
+              <FaFacebookF size={14} />
+            </a>
+            <a href={currentNotification.socialLinks?.instagram || '#'} target={currentNotification.socialLinks?.instagram ? "_blank" : "_self"} rel="noopener noreferrer" className="hover:opacity-75 transition-opacity" aria-label="Instagram">
+              <FaInstagram size={14} />
+            </a>
+            <a href={currentNotification.socialLinks?.youtube || '#'} target={currentNotification.socialLinks?.youtube ? "_blank" : "_self"} rel="noopener noreferrer" className="hover:opacity-75 transition-opacity" aria-label="YouTube">
+              <FaYoutube size={14} />
+            </a>
+          </div>
         </div>
       )}
 
@@ -349,6 +480,22 @@ export default function PublicNavbar() {
             )}
           </div>
 
+          {/* Search Bar - Desktop */}
+          <div className="hidden lg:block mx-4 search-container relative">
+            <form onSubmit={handleSearch} className="relative">
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onFocus={() => setShowSuggestions(true)}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-48 xl:w-64 pl-10 pr-4 py-2 rounded-full border border-gray-300 focus:outline-none focus:border-black text-sm text-black transition-colors"
+              />
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            </form>
+            {renderSuggestions()}
+          </div>
+
           {/* Auth Button & Cart - Desktop */}
           <div className="hidden lg:flex items-center gap-4">
             <CartBadge />
@@ -412,7 +559,7 @@ export default function PublicNavbar() {
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div 
-              className={`fixed ${hasNotificationBar ? 'top-24' : 'top-16'} left-0 right-0 bottom-0 bg-white z-40 lg:hidden overflow-y-auto shadow-xl`}
+              className={`fixed ${hasNotificationBar ? 'top-24' : 'top-16'} left-0 right-0 h-[100dvh] pb-24 bg-white z-40 lg:hidden overflow-y-auto shadow-xl`}
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -457,6 +604,22 @@ export default function PublicNavbar() {
                 </div>
               ))
             )}
+            
+            {/* Mobile Search */}
+            <div className="px-4 py-3 bg-white border-t border-gray-100 search-container relative">
+              <form onSubmit={handleSearch} className="relative">
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onFocus={() => setShowSuggestions(true)}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-black text-sm text-black transition-colors"
+                />
+                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+              </form>
+              {renderSuggestions()}
+            </div>
             
             {/* Mobile Auth Links */}
             <div className="py-3 px-4 border-t border-gray-100 space-y-2 bg-white">

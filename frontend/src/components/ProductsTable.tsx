@@ -597,25 +597,6 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
-                      {admin?.role === 'store_admin' ? (
-                        <>
-                          <button
-                            disabled
-                            className="p-2 text-gray-400 bg-gray-50 rounded-lg cursor-not-allowed"
-                            title="Edit Disabled for Store Admin"
-                          >
-                            <FiEdit2 size={18} />
-                          </button>
-                          <button
-                            disabled
-                            className="p-2 text-gray-400 bg-gray-50 rounded-lg cursor-not-allowed"
-                            title="Delete Disabled for Store Admin"
-                          >
-                            <FiTrash2 size={18} />
-                          </button>
-                        </>
-                      ) : (
-                        <>
                           <Link
                             href={`${basePath}/products/${product._id}`}
                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
@@ -630,8 +611,6 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                           >
                             <FiTrash2 size={18} />
                           </button>
-                        </>
-                      )}
                     </div>
                   </td>
                 </tr>

@@ -53,6 +53,11 @@ const {
   getPublicFooterSettingsConfig,
   getAdminFooterSettingsConfig,
   updateAdminFooterSettingsConfig,
+  getPublicDynamicSections,
+  getAdminDynamicSections,
+  createDynamicSection,
+  updateDynamicSection,
+  deleteDynamicSection,
 } = require('../controllers/landing.controller');
 
 const router = express.Router();
@@ -113,5 +118,14 @@ router.get('/offers/:offerId', getPublicOfferProducts);
 router.post('/offers', verifyAdminToken, createOffer);
 router.put('/offers/:offerId', verifyAdminToken, updateOffer);
 router.delete('/offers/:offerId', verifyAdminToken, deleteOffer);
+
+router.get('/dynamic-sections', getPublicDynamicSections);
+
+// --- Admin Routes ---
+router.use('/admin', verifyAdminToken);
+router.get('/admin/dynamic-sections', getAdminDynamicSections);
+router.post('/admin/dynamic-sections', createDynamicSection);
+router.put('/admin/dynamic-sections/:sectionId', updateDynamicSection);
+router.delete('/admin/dynamic-sections/:sectionId', deleteDynamicSection);
 
 module.exports = router;

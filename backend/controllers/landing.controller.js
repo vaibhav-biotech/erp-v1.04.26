@@ -53,6 +53,11 @@ const {
   getPublicFooterSettings,
   getAdminFooterSettings,
   upsertFooterSettings,
+  listAdminDynamicSections,
+  listPublicDynamicSections,
+  insertDynamicSection,
+  patchDynamicSection,
+  removeDynamicSection,
 } = require('../services/landing.service');
 
 const getStoreName = (req) => req.storeName || 'plantsingarden';
@@ -1057,6 +1062,65 @@ const updateAdminFooterSettingsConfig = async (req, res) => {
   }
 };
 
+
+const getPublicDynamicSections = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const data = await listPublicDynamicSections(storeName);
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error('❌ Error fetching public dynamic sections:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch dynamic sections', error: error.message });
+  }
+};
+
+const getAdminDynamicSections = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const data = await listAdminDynamicSections(storeName);
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error('❌ Error fetching admin dynamic sections:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch dynamic sections', error: error.message });
+  }
+};
+
+const createDynamicSection = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const data = await insertDynamicSection({ storeName, ...req.body });
+    return res.status(201).json({ success: true, message: 'Dynamic section created successfully', data });
+  } catch (error) {
+    console.error('❌ Error creating dynamic section:', error);
+    return res.status(500).json({ success: false, message: 'Failed to create dynamic section', error: error.message });
+  }
+};
+
+const updateDynamicSection = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const { sectionId } = req.params;
+    const data = await patchDynamicSection({ storeName, sectionId, ...req.body });
+    if (!data) return res.status(404).json({ success: false, message: 'Dynamic section not found' });
+    return res.json({ success: true, message: 'Dynamic section updated successfully', data });
+  } catch (error) {
+    console.error('❌ Error updating dynamic section:', error);
+    return res.status(500).json({ success: false, message: 'Failed to update dynamic section', error: error.message });
+  }
+};
+
+const deleteDynamicSection = async (req, res) => {
+  try {
+    const storeName = getStoreName(req);
+    const { sectionId } = req.params;
+    await removeDynamicSection({ storeName, sectionId });
+    return res.json({ success: true, message: 'Dynamic section deleted successfully' });
+  } catch (error) {
+    console.error('❌ Error deleting dynamic section:', error);
+    return res.status(500).json({ success: false, message: 'Failed to delete dynamic section', error: error.message });
+  }
+};
+
 module.exports = {
   getPublicBanners,
   getAdminBanners,
@@ -1110,4 +1174,9 @@ module.exports = {
   getPublicFooterSettingsConfig,
   getAdminFooterSettingsConfig,
   updateAdminFooterSettingsConfig,
+  getPublicDynamicSections,
+  getAdminDynamicSections,
+  createDynamicSection,
+  updateDynamicSection,
+  deleteDynamicSection,
 };

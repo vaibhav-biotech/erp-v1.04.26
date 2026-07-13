@@ -261,11 +261,11 @@ export default function CareSectionSettingsPage() {
   ];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Care Section</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h2 className="text-xl font-bold text-gray-900">Care Section</h2>
+          <p className="mt-1 text-sm text-gray-500">
             "Crafted with Care" grid — max 3 active images shown on landing page
           </p>
         </div>

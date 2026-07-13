@@ -227,6 +227,7 @@ app.get('/api/notification-bar', async (req, res) => {
       bgColor: doc.bgColor || defaultNotificationConfig.bgColor,
       textColor: doc.textColor || defaultNotificationConfig.textColor,
       fontWeight: sanitizeFontWeight(doc.fontWeight),
+      socialLinks: doc.socialLinks || {},
       isActive: true,
     }));
 
@@ -239,6 +240,7 @@ app.get('/api/notification-bar', async (req, res) => {
             bgColor: fallbackDoc.bgColor || defaultNotificationConfig.bgColor,
             textColor: fallbackDoc.textColor || defaultNotificationConfig.textColor,
             fontWeight: sanitizeFontWeight(fallbackDoc.fontWeight),
+            socialLinks: fallbackDoc.socialLinks || {},
             isActive: fallbackDoc.isActive !== false,
           }
         : defaultNotificationConfig,
@@ -265,6 +267,7 @@ app.get('/api/notification-bar/admin', verifyAdminToken, async (req, res) => {
       bgColor: doc.bgColor || defaultNotificationConfig.bgColor,
       textColor: doc.textColor || defaultNotificationConfig.textColor,
       fontWeight: sanitizeFontWeight(doc.fontWeight),
+      socialLinks: doc.socialLinks || {},
       isActive: Boolean(doc.isActive),
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
@@ -280,7 +283,7 @@ app.get('/api/notification-bar/admin', verifyAdminToken, async (req, res) => {
 app.post('/api/notification-bar/admin', verifyAdminToken, async (req, res) => {
   try {
     const storeName = req.storeName || 'plantsingarden';
-    const { message, bgColor, textColor, fontWeight, isActive } = req.body || {};
+    const { message, bgColor, textColor, fontWeight, isActive, socialLinks } = req.body || {};
 
     const safeMessage = String(message || '').trim();
     if (!safeMessage) {
@@ -300,6 +303,7 @@ app.post('/api/notification-bar/admin', verifyAdminToken, async (req, res) => {
       bgColor: safeBgColor,
       textColor: safeTextColor,
       fontWeight: safeFontWeight,
+      socialLinks: socialLinks || {},
       isActive: shouldActivate,
       createdAt: now,
       updatedAt: now,
@@ -362,6 +366,10 @@ app.patch('/api/notification-bar/admin/:id', verifyAdminToken, async (req, res) 
     if (req.body?.isActive !== undefined) {
       const shouldActivate = Boolean(req.body.isActive);
       patch.isActive = shouldActivate;
+    }
+
+    if (req.body?.socialLinks !== undefined) {
+      patch.socialLinks = req.body.socialLinks;
     }
 
     await getNotificationCollection().updateOne(

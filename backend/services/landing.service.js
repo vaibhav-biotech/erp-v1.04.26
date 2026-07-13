@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
+const DynamicSection = require('../models/DynamicSection');
 
 const getCollection = () => mongoose.connection.collection('landing_banners');
 const getTopPicksCollection = () => mongoose.connection.collection('landing_top_picks');
@@ -1421,8 +1422,73 @@ const upsertStaticPage = async ({ storeName, slug, title, content, isActive }) =
   });
 };
 
+
+
+const listAdminDynamicSections = async (storeName) => {
+  return await DynamicSection.find({ $or: getStoreNameMatchConditions(storeName) })
+    .sort({ displayOrder: 1, createdAt: -1 })
+    .populate('productIds', 'name sku category price salePrice images status')
+    .lean();
+};
+
+const listPublicDynamicSections = async (storeName) => {
+  return await DynamicSection.find({ isActive: true, $or: getStoreNameMatchConditions(storeName) })
+    .sort({ displayOrder: 1, createdAt: -1 })
+    .populate('productIds', 'name sku category originalPrice finalPrice discount rating reviews stock tags benefits images status')
+    .lean();
+};
+
+const insertDynamicSection = async ({ storeName, title, productIds, isActive, displayOrder }) => {
+  if (!title || !String(title).trim()) {
+    throw new Error('Title is required');
+  }
+
+  const normalizedProductIds = Array.isArray(productIds) 
+    ? productIds.map(id => String(id)).filter(id => !!toObjectId(id))
+    : [];
+
+  const section = new DynamicSection({
+    storeName: normalizeStoreName(storeName),
+    title: String(title).trim(),
+    productIds: normalizedProductIds,
+    isActive: isActive !== false,
+    displayOrder: displayOrder || 0,
+  });
+
+  await section.save();
+  return section.toObject();
+};
+
+const patchDynamicSection = async ({ storeName, sectionId, title, productIds, isActive, displayOrder }) => {
+  const updateData = {};
+  if (title !== undefined) updateData.title = String(title).trim();
+  if (isActive !== undefined) updateData.isActive = !!isActive;
+  if (displayOrder !== undefined) updateData.displayOrder = Number(displayOrder);
+  
+  if (productIds !== undefined) {
+    updateData.productIds = Array.isArray(productIds) 
+      ? productIds.map(id => String(id)).filter(id => !!toObjectId(id))
+      : [];
+  }
+
+  return await DynamicSection.findOneAndUpdate(
+    { _id: toObjectId(sectionId), $or: getStoreNameMatchConditions(storeName) },
+    { $set: updateData },
+    { new: true }
+  ).lean();
+};
+
+const removeDynamicSection = async ({ storeName, sectionId }) => {
+  return await DynamicSection.deleteOne({
+    _id: toObjectId(sectionId),
+    $or: getStoreNameMatchConditions(storeName),
+  });
+};
+
 module.exports = {
   toObjectId,
+  normalizeStoreName,
+  getStoreNameMatchConditions,
   listPublicBanners,
   listAdminBanners,
   insertBanner,
@@ -1476,4 +1542,9 @@ module.exports = {
   getPublicFooterSettings,
   getAdminFooterSettings,
   upsertFooterSettings,
+  listAdminDynamicSections,
+  listPublicDynamicSections,
+  insertDynamicSection,
+  patchDynamicSection,
+  removeDynamicSection,
 };

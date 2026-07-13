@@ -54,7 +54,7 @@ export default function AccountsInvoicesPage() {
                 {invoices.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage).map((inv: any) => (
                   <tr key={inv._id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">{inv.invoiceNumber}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(inv.createdAt).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(inv.invoiceDate || inv.createdAt).toLocaleDateString()}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{inv.store?.name || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{inv.customerName || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">₹{inv.total?.toFixed(2)}</td>

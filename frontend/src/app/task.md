@@ -1,0 +1,8 @@
+- [ ] Backend: Create `DynamicSection` model
+- [ ] Backend: Add `landing.service.js` methods for dynamic sections
+- [ ] Backend: Add `landing.controller.js` endpoints
+- [ ] Backend: Add routes in `routes/landing.js`
+- [ ] Frontend: Create `DynamicSectionsManager.tsx`
+- [ ] Frontend: Integrate `DynamicSectionsManager` into `WebsiteSettingsPage.tsx`
+- [ ] Frontend: Create `DynamicSections.tsx` (public component)
+- [ ] Frontend: Add `DynamicSections` to landing page `page.tsx` after Offers

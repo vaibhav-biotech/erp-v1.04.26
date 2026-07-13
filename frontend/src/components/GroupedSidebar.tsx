@@ -138,54 +138,6 @@ export default function GroupedSidebar() {
       route: '/admin/dashboard/store-admin?page=website-settings',
       roles: ['store_admin'],
     },
-    {
-      id: 'notification-bar',
-      label: 'Notification Bar',
-      route: '/admin/dashboard/store-admin?page=notification-bar',
-      roles: ['store_admin'],
-    },
-    {
-      id: 'category-section',
-      label: 'Category Section',
-      route: '/admin/dashboard/store-admin?page=category-section',
-      roles: ['store_admin'],
-    },
-    {
-      id: 'featured-collections',
-      label: 'Featured Collections',
-      route: '/admin/dashboard/store-admin?page=featured-collections',
-      roles: ['store_admin'],
-    },
-    {
-      id: 'gift-wrap',
-      label: 'Gift Wrap Options',
-      route: '/admin/dashboard/store-admin?page=gift-wrap',
-      roles: ['store_admin'],
-    },
-    {
-      id: 'gift-section',
-      label: 'Gift Section',
-      route: '/admin/dashboard/store-admin?page=gift-section',
-      roles: ['store_admin'],
-    },
-    {
-      id: 'care-section',
-      label: 'Care Section',
-      route: '/admin/dashboard/store-admin?page=care-section',
-      roles: ['store_admin'],
-    },
-    {
-      id: 'landing',
-      label: 'Landing Page',
-      route: '/admin/dashboard/store-admin?page=landing',
-      roles: ['store_admin'],
-    },
-    {
-      id: 'offers',
-      label: 'Offers',
-      route: '/admin/dashboard/store-admin?page=offers',
-      roles: ['store_admin'],
-    },
   ];
 
   // Top-level navigation items

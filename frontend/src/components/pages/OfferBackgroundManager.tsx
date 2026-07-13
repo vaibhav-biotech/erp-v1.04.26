@@ -157,10 +157,10 @@ export default function OfferBackgroundManager() {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8 space-y-4">
       <div>
-        <h3 className="font-semibold text-gray-900">Offers Section Background</h3>
-        <p className="text-xs text-gray-500 mt-1">Upload background image for public offers section and mark one as active.</p>
+        <h2 className="text-xl font-bold text-gray-900">Offers Section Background</h2>
+        <p className="mt-1 text-sm text-gray-500">Upload background image for public offers section and mark one as active.</p>
       </div>
 
       {error && <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</div>}

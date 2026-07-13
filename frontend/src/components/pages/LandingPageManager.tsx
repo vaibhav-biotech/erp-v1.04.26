@@ -371,10 +371,12 @@ export default function LandingPageManager() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        
-        <p className="text-sm text-gray-600 mt-1">Hero banner manager (recommended banner size: 1920 × 600)</p>
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8 space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Landing Page Manager</h2>
+          <p className="mt-1 text-sm text-gray-500">Manage hero banners and top picks for your landing page.</p>
+        </div>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">{error}</div>}

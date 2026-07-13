@@ -356,20 +356,20 @@ export default function GiftSectionSettingsPage() {
   ];
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 sm:p-8">
-      <div className="flex items-center justify-between gap-4">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
-          
-          <p className="mt-2 text-gray-600">Manage homepage gift banner shown below offers.</p>
+          <h2 className="text-xl font-bold text-gray-900">Gift Section</h2>
+          <p className="mt-1 text-sm text-gray-500">Manage homepage gift banner shown below offers.</p>
         </div>
         <Button variant="primary" onClick={openCreate}>+ Add Banner</Button>
       </div>
 
       {statusMsg && (
-        <div className="mt-4 p-3 rounded-lg bg-blue-50 text-blue-700 text-sm border border-blue-200">{statusMsg}</div>
+        <div className="mb-6 p-3 rounded-lg bg-blue-50 text-blue-700 text-sm border border-blue-200">{statusMsg}</div>
       )}
 
-      <div className="mt-6">
+      <div>
         {isLoading ? (
           <p className="text-gray-600">Loading gift banners...</p>
         ) : (

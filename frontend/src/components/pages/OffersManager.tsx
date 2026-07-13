@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { FiEdit2, FiPlus, FiTrash2, FiUpload, FiX } from 'react-icons/fi';
+import Button from '@/components/Button';
 import { buildApiUrl, getApiHeaders, getStoreForApi } from '@/lib/storeConfig';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -275,14 +276,10 @@ export default function OffersManager() {
       }
 
       const selectedGridSize = GRID_POSITION_MAP[form.gridPosition];
-      const targetDisplayOrder = Number(form.gridPosition) - 1;
+      const targetDisplayOrder = editingId 
+        ? (offers.find(o => o._id === editingId)?.displayOrder ?? offers.length)
+        : offers.length;
 
-      const slotConflict = offers.find(
-        (item) => item.displayOrder === targetDisplayOrder && item._id !== editingId
-      );
-      if (slotConflict) {
-        throw new Error(`Grid ${form.gridPosition} is already used by "${slotConflict.title}". Edit that offer or choose another grid.`);
-      }
 
       if (form.startDate && form.endDate && new Date(form.startDate) > new Date(form.endDate)) {
         throw new Error('Start date cannot be after end date');
@@ -380,20 +377,15 @@ export default function OffersManager() {
   };
 
   return (
-    <section className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
-      <div className="flex items-center justify-between gap-3">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8 space-y-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Create Offer</h2>
-          <p className="text-xs text-gray-500 mt-1">Single-column offer manager with category-wise product selection and banner upload.</p>
+          <h2 className="text-xl font-bold text-gray-900">Manage Offers</h2>
+          <p className="mt-1 text-sm text-gray-500">Create promotional offers with category-wise product selection and banners.</p>
         </div>
-        <button
-          type="button"
-          onClick={openCreateModal}
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-black"
-        >
-          <FiPlus size={14} />
-          Add Offer
-        </button>
+        <Button onClick={openCreateModal} variant="primary" size="sm">
+          + Add Offer
+        </Button>
       </div>
 
       {error && <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</div>}
@@ -723,6 +715,6 @@ export default function OffersManager() {
           </div>
         </div>
       )}
-    </section>
+    </div>
   );
 }

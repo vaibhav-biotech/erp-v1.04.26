@@ -13,6 +13,11 @@ interface NotificationItem {
   bgColor: string;
   textColor: string;
   fontWeight: 'regular' | 'bold';
+  socialLinks?: {
+    facebook?: string;
+    instagram?: string;
+    youtube?: string;
+  };
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -23,6 +28,11 @@ const defaultForm = {
   bgColor: '#fef08a',
   textColor: '#713f12',
   fontWeight: 'regular' as 'regular' | 'bold',
+  socialLinks: {
+    facebook: '',
+    instagram: '',
+    youtube: '',
+  },
   isActive: true,
 };
 
@@ -74,6 +84,11 @@ export default function NotificationBarPage() {
       bgColor: row.bgColor || '#fef08a',
       textColor: row.textColor || '#713f12',
       fontWeight: row.fontWeight || 'regular',
+      socialLinks: {
+        facebook: row.socialLinks?.facebook || '',
+        instagram: row.socialLinks?.instagram || '',
+        youtube: row.socialLinks?.youtube || '',
+      },
       isActive: Boolean(row.isActive),
     });
     setStatusMsg('');
@@ -109,6 +124,7 @@ export default function NotificationBarPage() {
           bgColor: form.bgColor,
           textColor: form.textColor,
           fontWeight: form.fontWeight,
+          socialLinks: form.socialLinks,
           isActive: form.isActive,
         }),
       });
@@ -216,22 +232,22 @@ export default function NotificationBarPage() {
   ];
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 sm:p-8">
-      <div className="flex items-center justify-between gap-4">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
-          
-          <p className="mt-2 text-gray-600">Create announcements and control active/inactive state.</p>
+          <h2 className="text-xl font-bold text-gray-900">Notification Bar Settings</h2>
+          <p className="mt-1 text-sm text-gray-500">Create announcements and manage social links displayed at the top of your store.</p>
         </div>
         <Button variant="primary" onClick={openCreate}>+ Create Notification</Button>
       </div>
 
       {statusMsg && (
-        <div className="mt-4 p-3 rounded-lg bg-blue-50 text-blue-700 text-sm border border-blue-200">
+        <div className="mb-6 p-3 rounded-lg bg-blue-50 text-blue-700 text-sm border border-blue-200">
           {statusMsg}
         </div>
       )}
 
-      <div className="mt-6">
+      <div>
         {isLoading ? (
           <p className="text-gray-600">Loading notifications...</p>
         ) : (
@@ -321,6 +337,42 @@ export default function NotificationBarPage() {
               />
               Set Active
             </label>
+          </div>
+
+          <div className="border-t border-gray-200 pt-4 mt-4">
+            <p className="text-sm font-medium text-gray-700 mb-3">Social Media Links (Optional)</p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Facebook URL</label>
+                <input
+                  type="url"
+                  value={form.socialLinks.facebook}
+                  onChange={(e) => setForm((prev) => ({ ...prev, socialLinks: { ...prev.socialLinks, facebook: e.target.value } }))}
+                  placeholder="https://facebook.com/..."
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Instagram URL</label>
+                <input
+                  type="url"
+                  value={form.socialLinks.instagram}
+                  onChange={(e) => setForm((prev) => ({ ...prev, socialLinks: { ...prev.socialLinks, instagram: e.target.value } }))}
+                  placeholder="https://instagram.com/..."
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">YouTube URL</label>
+                <input
+                  type="url"
+                  value={form.socialLinks.youtube}
+                  onChange={(e) => setForm((prev) => ({ ...prev, socialLinks: { ...prev.socialLinks, youtube: e.target.value } }))}
+                  placeholder="https://youtube.com/..."
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
           </div>
 
           <div>

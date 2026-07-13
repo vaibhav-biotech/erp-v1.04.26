@@ -307,20 +307,20 @@ export default function FeaturedCollectionsSettingsPage() {
   ];
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 sm:p-8">
-      <div className="flex items-center justify-between gap-4">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
-          
-          <p className="mt-2 text-gray-600">Create homepage collection cards powered by product tags.</p>
+          <h2 className="text-xl font-bold text-gray-900">Featured Collections</h2>
+          <p className="mt-1 text-sm text-gray-500">Create homepage collection cards powered by product tags.</p>
         </div>
         <Button variant="primary" onClick={openCreate}>+ Create Collection</Button>
       </div>
 
       {statusMsg && (
-        <div className="mt-4 p-3 rounded-lg bg-blue-50 text-blue-700 text-sm border border-blue-200">{statusMsg}</div>
+        <div className="mb-6 p-3 rounded-lg bg-blue-50 text-blue-700 text-sm border border-blue-200">{statusMsg}</div>
       )}
 
-      <div className="mt-6">
+      <div>
         <FeaturedCollectionsBackgroundManager />
       </div>
 

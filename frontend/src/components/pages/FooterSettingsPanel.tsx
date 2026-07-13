@@ -94,14 +94,16 @@ export default function FooterSettingsPanel() {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 sm:p-8 mt-8">
-      <div className="mb-6">
-        
-        <p className="mt-2 text-gray-600">Edit footer contact details and address shown on all public pages.</p>
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Footer Settings</h2>
+          <p className="mt-1 text-sm text-gray-500">Edit footer contact details and address shown on all public pages.</p>
+        </div>
       </div>
 
       {statusMsg && (
-        <div className="mb-5 p-3 rounded-lg bg-blue-50 text-blue-700 text-sm border border-blue-200">
+        <div className="mb-6 p-3 rounded-lg bg-blue-50 text-blue-700 text-sm border border-blue-200">
           {statusMsg}
         </div>
       )}

@@ -258,15 +258,15 @@ export default function GiftWrapSettingsPage() {
   const maxOrder = sortedOptions.length > 0 ? Math.max(...sortedOptions.map(o => o.displayOrder)) : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
             <FiGift size={28} className="text-amber-600" />
-            
+            <h2 className="text-xl font-bold text-gray-900">Gift Wrap Options</h2>
           </div>
-          <p className="text-gray-600 mt-1">Manage gift wrap options available for customers</p>
+          <p className="mt-1 text-sm text-gray-500">Manage gift wrap options available for customers</p>
         </div>
         <button
           onClick={() => handleOpenModal()}

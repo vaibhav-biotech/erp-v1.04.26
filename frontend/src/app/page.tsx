@@ -26,7 +26,7 @@ const FeaturedCollectionsSection = dynamic(
 const WhyChooseUsSection = dynamic(() => import('@/components/WhyChooseUsSection'), {
   loading: () => <SectionSkeleton />,
 });
-const OffersSection = dynamic(() => import('@/components/OffersSection'), {
+const DynamicSections = dynamic(() => import('@/components/DynamicSections'), {
   loading: () => <SectionSkeleton tall />,
 });
 const GiftSection = dynamic(() => import('@/components/GiftSection'), {
@@ -58,11 +58,9 @@ export default function Home() {
           <WhyChooseUsSection />
         </div>
 
-        <div className="mt-10 sm:mt-12 lg:mt-16">
-          <OffersSection />
-        </div>
+        <DynamicSections />
 
-        <div className="mt-20 sm:mt-24 lg:mt-32">
+        <div className="mt-8 sm:mt-10 lg:mt-12">
           <GiftSection />
         </div>
 
