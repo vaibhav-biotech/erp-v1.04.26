@@ -225,11 +225,13 @@ router.post('/', async (req, res) => {
  */
 router.get('/', async (req, res) => {
   try {
-    const { category, status, stockStatus, limit, skip } = req.query;
+    const { category, categoryName, status, stockStatus, limit, skip, search } = req.query;
 
     const result = await getAllProducts({
       storeName: req.storeName,
       category,
+      categoryName,
+      search,
       status,
       stockStatus,
       limit: limit ? parseInt(limit) : undefined,

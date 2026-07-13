@@ -19,6 +19,7 @@ export const InventoryTable: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [localSearchQuery, setLocalSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [stockStatusFilter, setStockStatusFilter] = useState('');
   
   const [pagination, setPagination] = useState({
@@ -46,7 +47,15 @@ export const InventoryTable: React.FC = () => {
   useEffect(() => {
     fetchProducts();
     fetchStats();
-  }, [pagination.currentPage, pagination.pageSize, stockStatusFilter]);
+  }, [pagination.currentPage, pagination.pageSize, stockStatusFilter, searchQuery]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(localSearchQuery);
+      setPagination(prev => ({ ...prev, currentPage: 1 }));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [localSearchQuery]);
 
   const fetchStats = async () => {
     try {
@@ -79,6 +88,10 @@ export const InventoryTable: React.FC = () => {
       
       if (stockStatusFilter) {
         url += `&stockStatus=${stockStatusFilter}`;
+      }
+
+      if (searchQuery && searchQuery.trim()) {
+        url += `&search=${encodeURIComponent(searchQuery.trim())}`;
       }
 
       const response = await fetchWithStore(url, { token: adminToken });
@@ -183,10 +196,7 @@ export const InventoryTable: React.FC = () => {
     }
   };
 
-  const filteredProducts = [...products].filter(product => {
-    if (!localSearchQuery.trim()) return true;
-    return product.name.toLowerCase().includes(localSearchQuery.toLowerCase());
-  });
+  const filteredProducts = products;
 
   return (
     <div className="space-y-6">

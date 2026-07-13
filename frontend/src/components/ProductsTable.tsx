@@ -179,7 +179,15 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     }
 
     fetchProducts();
-  }, [skipInitialFetch, pagination.currentPage, pagination.pageSize, filterStatus, categoryId, categoryName]);
+  }, [skipInitialFetch, pagination.currentPage, pagination.pageSize, filterStatus, categoryId, categoryName, searchQuery]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(localSearchQuery);
+      setPagination(prev => ({ ...prev, currentPage: 1 }));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [localSearchQuery]);
 
   useEffect(() => {
     fetchTopPicksConfig();
@@ -199,6 +207,19 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
 
       if (categoryId && categoryId !== 'null' && categoryId !== 'undefined') {
         url += `&category=${categoryId}`;
+      }
+      
+      let normalizedCategoryName = (categoryName || '').trim();
+      if (normalizedCategoryName === 'null' || normalizedCategoryName === 'undefined') {
+        normalizedCategoryName = '';
+      }
+
+      if (normalizedCategoryName) {
+        url += `&categoryName=${encodeURIComponent(normalizedCategoryName)}`;
+      }
+
+      if (searchQuery && searchQuery.trim()) {
+        url += `&search=${encodeURIComponent(searchQuery.trim())}`;
       }
 
       const response = await fetchWithStore(url, { token: adminToken });
@@ -222,25 +243,12 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
       }
 
       const rawProducts = Array.isArray(data?.data) ? data.data : [];
-      let normalizedCategoryName = (categoryName || '').trim().toLowerCase();
-      if (normalizedCategoryName === 'null' || normalizedCategoryName === 'undefined') {
-        normalizedCategoryName = '';
-      }
 
-      const filteredProducts = normalizedCategoryName
-        ? rawProducts.filter((product: Product) => {
-            const name = String(product?.categoryName || product?.category || '').trim().toLowerCase();
-            return name === normalizedCategoryName;
-          })
-        : rawProducts;
-
-      setProducts(filteredProducts);
+      setProducts(rawProducts);
       setPagination(prev => ({
         ...prev,
-        total: normalizedCategoryName ? filteredProducts.length : total,
-        totalPages: normalizedCategoryName
-          ? Math.max(1, Math.ceil(filteredProducts.length / pagination.pageSize))
-          : totalPages
+        total,
+        totalPages
       }));
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -366,10 +374,6 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
   };
 
   const sortedProducts = [...products]
-    .filter(product => {
-      if (!localSearchQuery.trim()) return true;
-      return product.name.toLowerCase().includes(localSearchQuery.toLowerCase());
-    })
     .sort((a, b) => {
       let aValue: any = a[sortField];
       let bValue: any = b[sortField];

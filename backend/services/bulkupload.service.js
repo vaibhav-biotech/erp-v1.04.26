@@ -437,6 +437,35 @@ const getAllProducts = async (filters) => {
       query.category = filters.category;
     }
 
+    if (filters?.categoryName) {
+      const regex = new RegExp(`^${filters.categoryName}$`, 'i');
+      const catOr = [{ categoryName: regex }, { category: regex }];
+      
+      if (query.$or) {
+        query.$and = [{ $or: query.$or }, { $or: catOr }];
+        delete query.$or;
+      } else {
+        query.$or = catOr;
+      }
+    }
+
+    if (filters?.search) {
+      const searchRegex = new RegExp(filters.search, 'i');
+      const searchOr = [
+        { name: { $regex: searchRegex } },
+        { categoryName: { $regex: searchRegex } },
+        { tags: { $regex: searchRegex } }
+      ];
+      if (query.$or) {
+        query.$and = [{ $or: query.$or }, { $or: searchOr }];
+        delete query.$or;
+      } else if (query.$and) {
+        query.$and.push({ $or: searchOr });
+      } else {
+        query.$or = searchOr;
+      }
+    }
+
     if (filters?.status) {
       query.status = filters.status;
     }
