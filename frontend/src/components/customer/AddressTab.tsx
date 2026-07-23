@@ -21,6 +21,7 @@ export default function AddressTab() {
     state: '',
     zipCode: '',
     country: 'India',
+    category: 'Home',
     isDefault: false
   });
 
@@ -34,6 +35,7 @@ export default function AddressTab() {
       state: '',
       zipCode: '',
       country: 'India',
+      category: 'Home',
       isDefault: false
     });
     setIsAdding(false);
@@ -55,6 +57,7 @@ export default function AddressTab() {
       state: addr.state || '',
       zipCode: addr.zipCode || '',
       country: addr.country || 'India',
+      category: addr.category || 'Home',
       isDefault: addr.isDefault || false
     });
     setEditingId(addr._id);
@@ -191,6 +194,25 @@ export default function AddressTab() {
               </div>
             </div>
             
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Address Category</label>
+              <div className="flex gap-4">
+                {['Home', 'Office', 'Other'].map(cat => (
+                  <label key={cat} className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      name="category" 
+                      value={cat} 
+                      checked={formData.category === cat} 
+                      onChange={handleChange} 
+                      className="text-black focus:ring-black"
+                    />
+                    <span className="text-sm text-gray-700">{cat}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            
             <div className="flex items-center gap-2 mt-4">
               <input type="checkbox" name="isDefault" id="isDefault" checked={formData.isDefault} onChange={handleChange} className="rounded text-black focus:ring-black" />
               <label htmlFor="isDefault" className="text-sm text-gray-700">Set as default address</label>
@@ -211,10 +233,10 @@ export default function AddressTab() {
           {(!customer?.addresses || customer.addresses.length === 0) ? (
             <div className="col-span-full bg-white border border-gray-200 rounded-2xl p-8 text-center">
               <FiMapPin className="mx-auto text-gray-400 mb-3" size={32} />
-              <h3 className="text-lg font-medium text-gray-900 mb-1">No Addresses Saved</h3>
-              <p className="text-gray-500 text-sm mb-4">Add your first address to make checkout faster.</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">No default address saved</h3>
+              <p className="text-gray-500 text-sm mb-4">Please create a default address to make checkout faster.</p>
               <button onClick={() => setIsAdding(true)} className="px-5 py-2.5 bg-black text-white rounded-lg hover:bg-gray-800 font-medium text-sm inline-block">
-                Add Address
+                Create default address
               </button>
             </div>
           ) : (
@@ -225,6 +247,11 @@ export default function AddressTab() {
                     <FiCheck size={12} /> Default
                   </span>
                 )}
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="bg-gray-100 text-gray-700 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
+                    {addr.category === 'Home' ? '🏠' : addr.category === 'Office' ? '🏢' : '📍'} {addr.category || 'Home'}
+                  </span>
+                </div>
                 <h4 className="font-semibold text-gray-900 text-lg">{addr.firstName} {addr.lastName}</h4>
                 <p className="text-gray-600 text-sm mt-1 mb-3">{addr.phone}</p>
                 <div className="text-sm text-gray-700 space-y-1">

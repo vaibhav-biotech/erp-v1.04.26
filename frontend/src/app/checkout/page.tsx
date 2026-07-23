@@ -8,8 +8,25 @@ import { useAuth } from '@/contexts/AuthContext';
 import PublicNavbar from '@/components/PublicNavbar';
 import PublicFooter from '@/components/PublicFooter';
 import Link from 'next/link';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MapPin, CreditCard, Smartphone, Briefcase, ShieldCheck } from 'lucide-react';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
+
+// Extend window for Razorpay
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
+const loadScript = (src: string) => {
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 
 interface OrderData {
   customerId: string;
@@ -34,7 +51,7 @@ interface TaxSettings {
 export default function CheckoutPage() {
   const router = useRouter();
   const { cartItems, getSubtotal, clearCart } = useCart();
-  const { customer, customerToken, customerAuthenticated } = useAuth();
+  const { customer, customerToken, customerAuthenticated, refreshCustomer } = useAuth();
   const [loading, setLoading] = useState(false);
   const [taxSettings, setTaxSettings] = useState<TaxSettings>({ enabled: false, rate: 18 });
   const [error, setError] = useState('');
@@ -54,15 +71,31 @@ export default function CheckoutPage() {
     paymentMethod: 'COD',
   });
 
+  // Refresh customer data on mount to ensure we have latest addresses
+  useEffect(() => {
+    if (customerAuthenticated) {
+      refreshCustomer();
+    }
+  }, [customerAuthenticated, refreshCustomer]);
+
   // Initialize form with customer data if logged in
   useEffect(() => {
     if (customerAuthenticated && customer) {
+      let defaultAddress = customer.addresses?.find((a: any) => a.isDefault);
+      if (!defaultAddress && customer.addresses && customer.addresses.length > 0) {
+        defaultAddress = customer.addresses[0];
+      }
+
       setFormData(prev => ({
         ...prev,
         email: customer.email || '',
-        firstName: customer.firstName || '',
-        lastName: customer.lastName || '',
-        phone: customer.phone || '',
+        firstName: defaultAddress?.firstName || customer.firstName || '',
+        lastName: defaultAddress?.lastName || customer.lastName || '',
+        phone: defaultAddress?.phone || customer.phone || '',
+        street: defaultAddress?.street || '',
+        city: defaultAddress?.city || '',
+        state: defaultAddress?.state || '',
+        pincode: defaultAddress?.zipCode || '',
       }));
     }
   }, [customerAuthenticated, customer]);
@@ -142,53 +175,100 @@ export default function CheckoutPage() {
         return;
       }
 
-      const orderPayload: OrderData = {
-        customerId: customer?._id || '',
-        items: cartItems.map(item => ({
-          productId: item.productId,
-          name: item.name,
-          quantity: item.quantity,
-          price: item.totalPrice / item.quantity,
-          sizeVariant: item.sizeVariant,
-          potVariant: item.potVariant,
-          image: item.image,
-        })),
-        address: {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          street: formData.street,
-          city: formData.city,
-          state: formData.state,
-          pincode: formData.pincode,
-          phone: formData.phone,
-        },
-        paymentMethod: formData.paymentMethod,
+      const placeActualOrder = async (isRazorpay = false) => {
+        const orderPayload: OrderData = {
+          customerId: customer?._id || '',
+          items: cartItems.map(item => ({
+            productId: item.productId,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.totalPrice / item.quantity,
+            sizeVariant: item.sizeVariant,
+            potVariant: item.potVariant,
+            image: item.image,
+          })),
+          address: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            street: formData.street,
+            city: formData.city,
+            state: formData.state,
+            pincode: formData.pincode,
+            phone: formData.phone,
+          },
+          paymentMethod: formData.paymentMethod,
+        };
+
+        const headers = getApiHeaders(customerToken || '');
+        const response = await fetch(buildApiUrl('/api/orders'), {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(orderPayload),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.message || 'Failed to place order');
+        }
+
+        clearCart();
+        setSuccess(true);
+        setPlacedOrderId(result.data?.orderId || result.data?.orderNumber || result.data?._id || '');
+        
+        redirectTimerRef.current = setTimeout(() => {
+          router.push('/customer?tab=orders');
+        }, 2000);
       };
 
-      const headers = getApiHeaders(customerToken || '');
-      const response = await fetch(buildApiUrl('/api/orders'), {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(orderPayload),
-      });
+      if (formData.paymentMethod === 'Razorpay') {
+        const res = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
+        if (!res) {
+          setError('Razorpay SDK failed to load. Are you online?');
+          setLoading(false);
+          return;
+        }
 
-      const result = await response.json();
+        // Dummy options for stub
+        const options = {
+          key: 'rzp_test_stub_key_change_me', 
+          amount: Math.round(pricing.total * 100), // amount in paise
+          currency: 'INR',
+          name: 'Plants in Garden',
+          description: 'Order Payment',
+          handler: async function (response: any) {
+            // Payment success callback
+            try {
+              await placeActualOrder(true);
+            } catch (err) {
+              setError(err instanceof Error ? err.message : 'Error placing order after payment');
+            } finally {
+              setLoading(false);
+            }
+          },
+          prefill: {
+            name: `${formData.firstName} ${formData.lastName}`,
+            email: formData.email,
+            contact: formData.phone,
+          },
+          theme: {
+            color: '#000000',
+          },
+          modal: {
+            ondismiss: function () {
+              setLoading(false);
+            }
+          }
+        };
 
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to place order');
+        const paymentObject = new window.Razorpay(options);
+        paymentObject.open();
+      } else {
+        await placeActualOrder(false);
+        setLoading(false);
       }
-
-      clearCart();
-      setSuccess(true);
-      setPlacedOrderId(result.data?.orderId || result.data?.orderNumber || result.data?._id || '');
-      
-      // Redirect to customer orders (My Account > Orders) after success
-      redirectTimerRef.current = setTimeout(() => {
-        router.push('/customer?tab=orders');
-      }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error placing order');
-    } finally {
       setLoading(false);
     }
   };
@@ -280,6 +360,69 @@ export default function CheckoutPage() {
                     className="bg-white rounded-lg p-6"
                   >
                     <h2 className="font-montserrat font-bold text-lg mb-4 text-black">Delivery Address</h2>
+                    
+                    {/* Saved Addresses */}
+                    {customer?.addresses && customer.addresses.length > 0 ? (
+                      <div className="mb-6 space-y-3">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Select a Saved Address</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {customer.addresses.map((addr: any) => {
+                            const isSelected = formData.street === addr.street && formData.pincode === addr.zipCode;
+                            return (
+                              <div 
+                                key={addr._id}
+                                onClick={() => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    firstName: addr.firstName || prev.firstName,
+                                    lastName: addr.lastName || prev.lastName,
+                                    phone: addr.phone || prev.phone,
+                                    street: addr.street || '',
+                                    city: addr.city || '',
+                                    state: addr.state || '',
+                                    pincode: addr.zipCode || '',
+                                  }));
+                                }}
+                                className={`p-4 border rounded-xl cursor-pointer transition-all ${isSelected ? 'border-black bg-gray-50 ring-1 ring-black' : 'border-gray-200 hover:border-gray-300'}`}
+                              >
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-montserrat font-bold text-sm text-black">{addr.firstName} {addr.lastName}</span>
+                                    <span className="bg-gray-100 text-gray-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                      {addr.category === 'Home' ? '🏠 ' : addr.category === 'Office' ? '🏢 ' : '📍 '}{addr.category || 'HOME'}
+                                    </span>
+                                  </div>
+                                  {addr.isDefault && <span className="text-[10px] bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Default</span>}
+                                </div>
+                                <p className="font-montserrat text-xs text-gray-600 line-clamp-1">{addr.street}</p>
+                                <p className="font-montserrat text-xs text-gray-600">{addr.city}, {addr.state} {addr.zipCode}</p>
+                                <p className="font-montserrat text-xs text-gray-500 mt-1">{addr.phone}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="relative py-4">
+                          <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-200"></div>
+                          </div>
+                          <div className="relative flex justify-center">
+                            <span className="bg-white px-2 text-xs text-gray-500 font-montserrat">Or enter manually</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
+                        <MapPin className="text-amber-500 shrink-0 mt-0.5" size={20} />
+                        <div>
+                          <p className="text-sm font-semibold text-amber-800">No default address saved</p>
+                          <p className="text-sm text-amber-700 mt-1">Please create a default address in your account, or enter one manually below.</p>
+                          <Link href="/customer?tab=addresses" className="inline-block mt-2 text-sm font-medium text-black underline">
+                            Go to My Addresses
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <input
                         type="text"
@@ -362,19 +505,84 @@ export default function CheckoutPage() {
                     className="bg-white rounded-lg p-6"
                   >
                     <h2 className="font-montserrat font-bold text-lg mb-4 text-black">Payment</h2>
-                    <label className="flex items-center p-4 border border-black rounded-lg cursor-pointer">
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value="COD"
-                        checked={formData.paymentMethod === 'COD'}
-                        onChange={handleInputChange}
-                        className="w-4 h-4"
-                      />
-                      <span className="ml-3 font-montserrat text-sm text-black font-bold">
-                        Cash on Delivery (COD)
-                      </span>
-                    </label>
+                    
+                    <div className="space-y-3">
+                      {/* Saved Payment Methods */}
+                      {customer?.paymentMethods && customer.paymentMethods.length > 0 && (
+                        <>
+                          {customer.paymentMethods.map((pm: any) => {
+                            const paymentValue = `${pm.type.toUpperCase()}: ${pm.details}`;
+                            
+                            let icon = <CreditCard size={18} />;
+                            if (pm.type === 'upi') icon = <Smartphone size={18} />;
+                            if (pm.type === 'bank') icon = <Briefcase size={18} />;
+
+                            return (
+                              <label key={pm._id} className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${formData.paymentMethod === paymentValue ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                                <input
+                                  type="radio"
+                                  name="paymentMethod"
+                                  value={paymentValue}
+                                  checked={formData.paymentMethod === paymentValue}
+                                  onChange={handleInputChange}
+                                  className="w-4 h-4 text-black focus:ring-black"
+                                />
+                                <div className="ml-4 flex items-center gap-3">
+                                  <div className="text-gray-500">{icon}</div>
+                                  <div>
+                                    <p className="font-montserrat text-sm text-black font-bold">
+                                      {pm.type === 'upi' ? 'UPI' : pm.type === 'card' ? 'Saved Card' : 'Bank Account'}
+                                    </p>
+                                    <p className="font-montserrat text-xs text-gray-500 mt-0.5">{pm.details}</p>
+                                  </div>
+                                </div>
+                                {pm.isDefault && (
+                                  <span className="ml-auto bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-semibold">Default</span>
+                                )}
+                              </label>
+                            );
+                          })}
+                        </>
+                      )}
+
+                      <label className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${formData.paymentMethod === 'Razorpay' ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="Razorpay"
+                          checked={formData.paymentMethod === 'Razorpay'}
+                          onChange={handleInputChange}
+                          className="w-4 h-4 text-black focus:ring-black"
+                        />
+                        <div className="ml-4 flex items-center gap-3">
+                          <div className="text-gray-500"><ShieldCheck size={18} /></div>
+                          <div>
+                            <span className="font-montserrat text-sm text-black font-bold block">
+                              Pay via Razorpay
+                            </span>
+                            <span className="font-montserrat text-xs text-gray-500 mt-0.5 block">
+                              Credit/Debit Cards, UPI, NetBanking, Wallets
+                            </span>
+                          </div>
+                        </div>
+                      </label>
+
+                      <label className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${formData.paymentMethod === 'COD' ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                        <input
+                          type="radio"
+                          name="paymentMethod"
+                          value="COD"
+                          checked={formData.paymentMethod === 'COD'}
+                          onChange={handleInputChange}
+                          className="w-4 h-4 text-black focus:ring-black"
+                        />
+                        <div className="ml-4 flex items-center gap-3">
+                          <span className="font-montserrat text-sm text-black font-bold block">
+                            Cash on Delivery (COD)
+                          </span>
+                        </div>
+                      </label>
+                    </div>
                   </motion.div>
 
                   {/* Error Message */}

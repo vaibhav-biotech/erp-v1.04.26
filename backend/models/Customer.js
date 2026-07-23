@@ -52,6 +52,7 @@ const CustomerSchema = new mongoose.Schema(
         state: { type: String, trim: true, default: '' },
         zipCode: { type: String, trim: true, default: '' },
         country: { type: String, trim: true, default: 'India' },
+        category: { type: String, enum: ['Home', 'Office', 'Other'], default: 'Home' },
       }
     ],
     paymentMethods: [
