@@ -5,6 +5,9 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
+import ProfileTab from '@/components/customer/ProfileTab';
+import AddressTab from '@/components/customer/AddressTab';
+import SettingsTab from '@/components/customer/SettingsTab';
 
 interface CustomerOrder {
   _id: string;
@@ -112,73 +115,7 @@ export default function CustomerDashboard() {
   const renderContent = () => {
     switch (activeTab) {
       case 'profile':
-        return (
-          <div className="space-y-6">
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl sm:text-3xl font-playfair text-gray-900">
-                    {`${customer?.firstName || ''} ${customer?.lastName || ''}`.trim() || 'My Profile'}
-                  </h2>
-                  <p className="text-gray-600 text-sm mt-1">{customer?.email || '-'}</p>
-                  <p className="text-gray-500 text-sm">{customer?.phone || '-'}</p>
-                </div>
-                <button className="px-5 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm w-full sm:w-auto">
-                  Edit Profile
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                <p className="text-xs uppercase tracking-wide text-gray-500">Orders</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{totalOrders}</p>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                <p className="text-xs uppercase tracking-wide text-gray-500">Pending</p>
-                <p className="text-2xl font-bold text-amber-700 mt-1">{pendingOrders}</p>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                <p className="text-xs uppercase tracking-wide text-gray-500">Delivered</p>
-                <p className="text-2xl font-bold text-green-700 mt-1">{deliveredOrders}</p>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                <p className="text-xs uppercase tracking-wide text-gray-500">Wishlist</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">0</p>
-              </div>
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 block mb-1">First Name</label>
-                  <p className="text-base text-gray-900">{customer?.firstName || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 block mb-1">Last Name</label>
-                  <p className="text-base text-gray-900">{customer?.lastName || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 block mb-1">Email</label>
-                  <p className="text-base text-gray-900 break-all">{customer?.email || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 block mb-1">Phone</label>
-                  <p className="text-base text-gray-900">{customer?.phone || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 block mb-1">Account ID</label>
-                  <p className="text-sm text-gray-900 font-mono break-all">{customer?._id || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500 block mb-1">Store</label>
-                  <p className="text-base text-gray-900">{customer?.store || '-'}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+        return <ProfileTab />;
       case 'orders':
         return (
           <div className="space-y-4">
@@ -233,12 +170,7 @@ export default function CustomerDashboard() {
           </div>
         );
       case 'address':
-        return (
-          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-            <h2 className="text-2xl font-playfair text-gray-900 mb-4">My Address</h2>
-            <p className="text-gray-700">Welcome to your address page, {customer?.firstName}. Manage your delivery addresses here.</p>
-          </div>
-        );
+        return <AddressTab />;
       case 'wishlist':
         return (
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -247,12 +179,7 @@ export default function CustomerDashboard() {
           </div>
         );
       case 'settings':
-        return (
-          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-            <h2 className="text-2xl font-playfair text-gray-900 mb-4">Settings</h2>
-            <p className="text-gray-700">Welcome to your settings page, {customer?.firstName}. Manage your account preferences here.</p>
-          </div>
-        );
+        return <SettingsTab />;
       default:
         return null;
     }

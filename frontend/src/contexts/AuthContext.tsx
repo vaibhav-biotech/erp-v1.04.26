@@ -20,6 +20,8 @@ export interface Customer {
   lastName: string;
   phone: string;
   store: string;
+  addresses?: any[];
+  paymentMethods?: any[];
 }
 
 interface AuthContextType {
@@ -46,6 +48,7 @@ interface AuthContextType {
     phone: string;
   }) => Promise<void>;
   logoutCustomer: () => void;
+  refreshCustomer: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -255,6 +258,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('customer');
   }, []);
 
+  // Refresh customer
+  const refreshCustomer = useCallback(async () => {
+    if (!customer?._id || !customerToken) return;
+    try {
+      const response = await fetch(buildApiUrl(`/api/customers/${customer._id}`), {
+        headers: getApiHeaders(customerToken),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          setCustomer(data.data);
+          localStorage.setItem('customer', JSON.stringify(data.data));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to refresh customer:', error);
+    }
+  }, [customer?._id, customerToken]);
+
   // Generic logout
   const logout = useCallback(() => {
     logoutAdmin();
@@ -279,6 +301,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginCustomer,
         registerCustomer,
         logoutCustomer,
+        refreshCustomer,
       }}
     >
       {children}

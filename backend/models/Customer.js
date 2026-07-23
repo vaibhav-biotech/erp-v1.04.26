@@ -41,6 +41,27 @@ const CustomerSchema = new mongoose.Schema(
       zipCode: { type: String, trim: true, default: '' },
       country: { type: String, trim: true, default: 'India' },
     },
+    addresses: [
+      {
+        isDefault: { type: Boolean, default: false },
+        firstName: { type: String, trim: true },
+        lastName: { type: String, trim: true },
+        phone: { type: String, trim: true },
+        street: { type: String, trim: true, default: '' },
+        city: { type: String, trim: true, default: '' },
+        state: { type: String, trim: true, default: '' },
+        zipCode: { type: String, trim: true, default: '' },
+        country: { type: String, trim: true, default: 'India' },
+      }
+    ],
+    paymentMethods: [
+      {
+        type: { type: String, enum: ['upi', 'card', 'bank'], required: true },
+        isDefault: { type: Boolean, default: false },
+        details: { type: String, required: true }, // UPI ID, masked card, or account number
+        nameOnAccount: { type: String, trim: true }
+      }
+    ],
     createdAt: {
       type: Date,
       default: Date.now,
