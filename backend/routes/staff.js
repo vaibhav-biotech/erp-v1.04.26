@@ -8,6 +8,7 @@ const StaffContactRecord = require('../models/StaffContactRecord');
 const StaffCallLogRecord = require('../models/StaffCallLogRecord');
 const { ensureStaffDemoUsersOnce } = require('../services/staffSeed');
 const { ensureStaffDataOnce } = require('../services/staffDataSeed');
+const emailService = require('../services/email.service');
 
 const router = express.Router();
 
@@ -191,6 +192,9 @@ router.post('/users', verifyStaffToken, requireStaffAdmin, async (req, res) => {
       active: true,
       storeName,
     });
+
+    // Send welcome email with credentials
+    emailService.sendStaffWelcomeEmail(member, password).catch(err => console.error("Staff welcome email failed:", err));
 
     return res.status(201).json({
       success: true,

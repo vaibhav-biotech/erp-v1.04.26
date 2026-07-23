@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
 const Store = require('../models/Store');
+const emailService = require('../services/email.service');
 
 const ORDER_STATUS_OPTIONS = ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled', 'returned'];
 const PAYMENT_STATUS_OPTIONS = ['pending', 'paid', 'failed', 'refunded', 'cod_pending'];
@@ -390,6 +391,9 @@ router.post('/', async (req, res) => {
 
     console.log('✅ Order created:', orderData.orderNumber);
 
+    // Send order confirmation email
+    emailService.sendOrderConfirmation(orderData).catch(err => console.error("Order confirmation email failed:", err));
+
     res.status(201).json({
       success: true,
       message: 'Order placed successfully',
@@ -690,6 +694,12 @@ router.patch('/:orderId', async (req, res) => {
       });
     }
 
+    // Send email if order status changed
+    if (normalizedOrderStatus && normalizedOrderStatus !== existingOrder.orderStatus) {
+      const updatedOrder = await db.collection('orders').findOne({ _id: orderObjectId });
+      emailService.sendOrderStatusUpdate(updatedOrder).catch(err => console.error("Order status email failed:", err));
+    }
+
     res.json({
       success: true,
       message: 'Order updated',
@@ -774,6 +784,9 @@ router.post('/:orderId/invoice', async (req, res) => {
         },
       }
     );
+
+    const updatedOrder = await db.collection('orders').findOne({ _id: orderObjectId });
+    emailService.sendInvoiceEmail(updatedOrder).catch(err => console.error("Invoice email failed:", err));
 
     return res.status(200).json({
       success: true,

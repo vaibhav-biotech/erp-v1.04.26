@@ -8,6 +8,7 @@ const StaffCallLogRecord = require('../models/StaffCallLogRecord');
 const crypto = require('crypto');
 const Customer = require('../models/Customer');
 const mongoose = require('mongoose');
+const emailService = require('../services/email.service');
 
 // Middleware to ensure user is super_admin
 const requireSuperAdmin = (req, res, next) => {
@@ -279,6 +280,14 @@ router.post('/admins', async (req, res) => {
 
     await newAdmin.save();
     
+    // Send admin welcome email
+    emailService.sendStaffWelcomeEmail({
+      firstName: newAdmin.firstName,
+      lastName: newAdmin.lastName,
+      email: newAdmin.email,
+      store: newAdmin.storeName
+    }, password).catch(err => console.error("Admin welcome email failed:", err));
+
     const adminObj = newAdmin.toObject();
     delete adminObj.password;
     
@@ -335,6 +344,14 @@ router.post('/staff', async (req, res) => {
 
     await newStaff.save();
     
+    // Send staff welcome email
+    emailService.sendStaffWelcomeEmail({
+      firstName: newStaff.name.split(' ')[0],
+      lastName: newStaff.name.split(' ').slice(1).join(' '),
+      email: newStaff.email,
+      store: newStaff.storeName
+    }, password).catch(err => console.error("Staff welcome email failed:", err));
+
     const staffObj = newStaff.toObject();
     delete staffObj.password;
     

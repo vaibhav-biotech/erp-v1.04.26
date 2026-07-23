@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { getApiHeaders, buildApiUrl } from '@/lib/storeConfig';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -15,9 +16,10 @@ interface AuthModalProps {
 export default function AuthModal({ isOpen, onClose, redirectPath = '/customer' }: AuthModalProps) {
   const router = useRouter();
   const { loginCustomer, registerCustomer } = useAuth();
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot-password'>('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   // Login form
   const [loginForm, setLoginForm] = useState({
@@ -37,6 +39,11 @@ export default function AuthModal({ isOpen, onClose, redirectPath = '/customer' 
     showPassword: false,
   });
 
+  // Forgot password form
+  const [forgotPasswordForm, setForgotPasswordForm] = useState({
+    email: '',
+  });
+
   const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setLoginForm(prev => ({ ...prev, [name]: value }));
@@ -47,6 +54,13 @@ export default function AuthModal({ isOpen, onClose, redirectPath = '/customer' 
     const { name, value } = e.target;
     setSignupForm(prev => ({ ...prev, [name]: value }));
     setError('');
+  };
+
+  const handleForgotPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setForgotPasswordForm(prev => ({ ...prev, [name]: value }));
+    setError('');
+    setSuccessMsg('');
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -118,6 +132,38 @@ export default function AuthModal({ isOpen, onClose, redirectPath = '/customer' 
     }
   };
 
+  const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccessMsg('');
+    setLoading(true);
+
+    try {
+      if (!forgotPasswordForm.email) {
+        setError('Email is required');
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(buildApiUrl('/api/auth/forgot-password'), {
+        method: 'POST',
+        headers: getApiHeaders(),
+        body: JSON.stringify({ email: forgotPasswordForm.email }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || 'Failed to send reset email');
+      }
+
+      setSuccessMsg('Reset link has been sent to your email.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -154,9 +200,9 @@ export default function AuthModal({ isOpen, onClose, redirectPath = '/customer' 
               {/* Mode Toggle */}
               <div className="flex gap-4 mb-8 bg-[#E8DFC9]/40 p-1.5 rounded-xl">
                 <button
-                  onClick={() => { setMode('login'); setError(''); }}
+                  onClick={() => { setMode('login'); setError(''); setSuccessMsg(''); }}
                   className={`flex-1 py-2.5 rounded-lg font-playfair italic font-bold text-lg transition-all duration-300 ${
-                    mode === 'login'
+                    mode === 'login' || mode === 'forgot-password'
                       ? 'bg-[#8B6508] text-white shadow-md'
                       : 'text-[#8B6508] hover:text-[#5C4033]'
                   }`}
@@ -164,7 +210,7 @@ export default function AuthModal({ isOpen, onClose, redirectPath = '/customer' 
                   Sign In
                 </button>
                 <button
-                  onClick={() => { setMode('signup'); setError(''); }}
+                  onClick={() => { setMode('signup'); setError(''); setSuccessMsg(''); }}
                   className={`flex-1 py-2.5 rounded-lg font-playfair italic font-bold text-lg transition-all duration-300 ${
                     mode === 'signup'
                       ? 'bg-[#8B6508] text-white shadow-md'
@@ -209,6 +255,15 @@ export default function AuthModal({ isOpen, onClose, redirectPath = '/customer' 
                         {loginForm.showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
                     </div>
+                    <div className="flex justify-end mt-2">
+                      <button 
+                        type="button" 
+                        onClick={() => { setMode('forgot-password'); setError(''); }}
+                        className="text-[#8B6508] hover:text-[#5C4033] text-sm font-playfair italic transition-colors"
+                      >
+                        Forgot Password?
+                      </button>
+                    </div>
                   </div>
 
                   {error && (
@@ -224,6 +279,58 @@ export default function AuthModal({ isOpen, onClose, redirectPath = '/customer' 
                   >
                     {loading ? 'Signing In...' : 'Sign In'}
                   </button>
+                </motion.form>
+              )}
+
+              {/* Forgot Password Form */}
+              {mode === 'forgot-password' && (
+                <motion.form onSubmit={handleForgotPasswordSubmit} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+                  <div className="text-center mb-4">
+                    <p className="text-[#6B4E0F] text-sm font-montserrat">
+                      Enter your email address and we'll send you a link to reset your password.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block font-playfair italic font-bold text-sm text-[#6B4E0F] mb-1.5">Email</label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={forgotPasswordForm.email}
+                      onChange={handleForgotPasswordChange}
+                      placeholder="your@email.com"
+                      className="w-full px-4 py-2.5 bg-[#FFFDF9] border border-[#D4C3A3] rounded-xl font-montserrat focus:outline-none focus:border-[#8B6508] focus:ring-1 focus:ring-[#8B6508] transition-all duration-300 placeholder:text-[#C5B393] text-[#5C4033]"
+                    />
+                  </div>
+
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 p-3 rounded-xl">
+                      <p className="font-montserrat text-sm text-red-700">{error}</p>
+                    </div>
+                  )}
+                  
+                  {successMsg && (
+                    <div className="bg-green-50 border border-green-200 p-3 rounded-xl">
+                      <p className="font-montserrat text-sm text-green-700">{successMsg}</p>
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-[#8B6508] text-white py-3.5 rounded-xl font-playfair italic font-bold hover:bg-[#6E5006] transition-all duration-300 disabled:opacity-50 mt-4 text-lg shadow-md"
+                  >
+                    {loading ? 'Sending...' : 'Send Reset Link'}
+                  </button>
+                  
+                  <div className="text-center mt-4">
+                    <button 
+                      type="button"
+                      onClick={() => { setMode('login'); setError(''); setSuccessMsg(''); }}
+                      className="text-[#8B6508] hover:text-[#5C4033] text-sm font-playfair italic transition-colors"
+                    >
+                      Back to Sign In
+                    </button>
+                  </div>
                 </motion.form>
               )}
 
