@@ -286,6 +286,16 @@ router.post('/', async (req, res) => {
     const taxSettings = await getStoreTaxSettings(storeName);
     const effectiveTaxRate = taxSettings.enabled ? taxSettings.rate : 0;
 
+    // Fetch customer info
+    const Customer = require('../models/Customer');
+    const customer = await Customer.findById(customerId);
+    const customerInfo = customer ? {
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      email: customer.email,
+      phone: customer.phone,
+    } : undefined;
+
     // Calculate totals
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const tax = Math.round(subtotal * (effectiveTaxRate / 100) * 100) / 100;
@@ -299,6 +309,7 @@ router.post('/', async (req, res) => {
     const orderData = {
       _id: new mongoose.Types.ObjectId(),
       customerId: new mongoose.Types.ObjectId(customerId),
+      customerInfo,
       items: items.map(item => ({
         _id: new mongoose.Types.ObjectId(),
         productId: item.productId,
