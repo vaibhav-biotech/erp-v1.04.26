@@ -18,9 +18,9 @@ async function generateInvoiceNumber(storeName) {
     }
   }
 
-  // If no storeId found, use a fallback
+  // If no storeId found, use a fallback fixed ObjectId to maintain sequence
   if (!storeId) {
-    storeId = new mongoose.Types.ObjectId(); 
+    storeId = new mongoose.Types.ObjectId('000000000000000000000000'); 
   }
 
   const now = new Date();
