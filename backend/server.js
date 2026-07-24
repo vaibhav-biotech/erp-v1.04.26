@@ -15,6 +15,7 @@ const inventoryRouter = require('./routes/inventory');
 const suppliersRouter = require('./routes/suppliers');
 const purchaseOrdersRouter = require('./routes/purchaseOrders');
 const accountsRouter = require('./routes/accounts');
+const chatRouter = require('./routes/chat'); // NEW: Chat routes
 const storeRouter = require('./middleware/storeRouter'); // NEW: Store detection middleware
 const verifyAdminToken = require('./middleware/verifyAdminToken');
 
@@ -567,6 +568,9 @@ app.use('/api/suppliers', suppliersRouter);
 app.use('/api/purchase-orders', purchaseOrdersRouter);
 app.use('/api/accounts', accountsRouter);
 
+// Chat Router
+app.use('/api/chat', chatRouter);
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -583,7 +587,7 @@ app.use((req, res) => {
 
 // Server startup
 const PORT = process.env.PORT || 5050;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════╗
 ║  ERP Server Running                    ║
@@ -594,10 +598,16 @@ app.listen(PORT, () => {
   `);
 });
 
+// Socket.IO Setup
+const { Server } = require('socket.io');
+const io = new Server(server, { cors: corsOptions });
+const setupChatSocket = require('./socket/chatSocket');
+setupChatSocket(io);
+
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM signal received: closing HTTP server');
-  app.close(() => {
+  server.close(() => {
     console.log('HTTP server closed');
     mongoose.connection.close(false, () => {
       console.log('MongoDB connection closed');

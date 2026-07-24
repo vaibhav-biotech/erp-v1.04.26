@@ -74,7 +74,7 @@ router.post('/login', async (req, res) => {
       isStaffAdmin = !!admin;
     }
 
-    if (!admin || (isStaffAdmin ? !admin.active : !admin.isActive)) {
+    if (!admin || (isStaffAdmin ? admin.active === false : admin.isActive === false)) {
       return res.status(401).json({ success: false, error: 'Invalid email or password' });
     }
 
