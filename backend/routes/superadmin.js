@@ -298,6 +298,51 @@ router.post('/admins', async (req, res) => {
   }
 });
 
+// Update an admin
+router.put('/admins/:id', async (req, res) => {
+  try {
+    const Admin = require('../models/Admin');
+    const { firstName, lastName, email, storeName, role, password } = req.body;
+    
+    const admin = await Admin.findById(req.params.id);
+    if (!admin) {
+      return res.status(404).json({ success: false, error: 'Admin not found' });
+    }
+
+    if (firstName) admin.firstName = firstName;
+    if (lastName) admin.lastName = lastName;
+    if (email) admin.email = email;
+    if (storeName) admin.storeName = storeName.toLowerCase().trim().replace(/\s+/g, '');
+    if (role) admin.role = role;
+    if (password) admin.password = password;
+
+    await admin.save();
+    
+    const adminObj = admin.toObject();
+    delete adminObj.password;
+    
+    return res.status(200).json({ success: true, data: adminObj });
+  } catch (error) {
+    console.error('[Superadmin Update Admin Error]', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Delete an admin
+router.delete('/admins/:id', async (req, res) => {
+  try {
+    const Admin = require('../models/Admin');
+    const admin = await Admin.findByIdAndDelete(req.params.id);
+    if (!admin) {
+      return res.status(404).json({ success: false, error: 'Admin not found' });
+    }
+    return res.status(200).json({ success: true, data: {} });
+  } catch (error) {
+    console.error('[Superadmin Delete Admin Error]', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // ==========================================
 // 4. STAFF CRUD
 // ==========================================
@@ -571,6 +616,53 @@ router.get('/orders/:id', async (req, res) => {
       message: 'Error fetching order details',
       error: error instanceof Error ? error.message : 'Unknown error',
     });
+  }
+});
+
+// ==========================================
+// 6. FORCE PASSWORD RESET
+// ==========================================
+router.put('/reset-password', async (req, res) => {
+  try {
+    const { email, newPassword, userType } = req.body;
+    
+    if (!email || !newPassword) {
+      return res.status(400).json({ success: false, error: 'Email and newPassword are required' });
+    }
+
+    let user;
+    if (userType === 'staff') {
+      const StaffMember = require('../models/StaffMember');
+      user = await StaffMember.findOne({ email });
+      if (!user) user = await StaffMember.findOne({ username: email }); // fallback for username
+    } else if (userType === 'customer') {
+      const Customer = require('../models/Customer');
+      user = await Customer.findOne({ email });
+      if (user) {
+         const bcrypt = require('bcryptjs');
+         const salt = await bcrypt.genSalt(10);
+         user.password = await bcrypt.hash(newPassword, salt);
+      }
+    } else {
+      // Default to admin
+      const Admin = require('../models/Admin');
+      user = await Admin.findOne({ email });
+    }
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    if (userType !== 'customer') {
+      user.password = newPassword; // Admin and StaffMember models have a pre('save') hook to hash
+    }
+    
+    await user.save();
+
+    return res.status(200).json({ success: true, message: 'Password reset successfully' });
+  } catch (error) {
+    console.error('[Superadmin Password Reset Error]', error);
+    return res.status(500).json({ success: false, error: error.message });
   }
 });
 

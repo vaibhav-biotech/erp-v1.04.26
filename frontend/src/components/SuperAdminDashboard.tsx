@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiUsers, FiBarChart2, FiShoppingCart, FiTrendingUp } from 'react-icons/fi';
+import { FiUsers, FiBarChart2, FiShoppingCart, FiTrendingUp, FiKey, FiX } from 'react-icons/fi';
 import { useAuth } from '@/contexts/AuthContext';
 import { buildApiUrl } from '@/lib/storeConfig';
 
@@ -21,7 +21,7 @@ export default function SuperAdminDashboard() {
     totalRevenue: 0
   });
   const [isLoading, setIsLoading] = useState(true);
-
+  
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -88,7 +88,6 @@ export default function SuperAdminDashboard() {
     { title: 'View All Customers', icon: <FiUsers className="w-5 h-5" />, color: 'text-blue-600', link: '?page=all-customers' },
     { title: 'View All Orders', icon: <FiShoppingCart className="w-5 h-5" />, color: 'text-indigo-600', link: '?page=all-orders' },
     { title: 'Manage Stores', icon: <FiShoppingCart className="w-5 h-5" />, color: 'text-green-600', link: '?page=manage-stores' },
-    { title: 'Manage Admins', icon: <FiUsers className="w-5 h-5" />, color: 'text-purple-600', link: '?page=manage-admins' },
     { title: 'View All Staff', icon: <FiUsers className="w-5 h-5" />, color: 'text-blue-600', link: '?page=manage-staff' },
   ];
 
@@ -100,7 +99,6 @@ export default function SuperAdminDashboard() {
     >
       {/* Welcome Header */}
       
-
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {stats.map((stat, index) => (
@@ -122,18 +120,17 @@ export default function SuperAdminDashboard() {
         transition={{ delay: 0.4 }}
         className="bg-white rounded-lg shadow p-6"
       >
-        
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {quickActions.map((action, index) => (
             <a
               key={index}
               href={action.link}
-              className="p-4 border border-gray-200 rounded-lg hover:shadow-md hover:border-green-300 transition-all group"
+              className="p-4 border border-gray-200 rounded-lg hover:shadow-md hover:border-green-300 transition-all group flex flex-col items-start"
             >
               <div className={`${action.color} mb-3 group-hover:scale-110 transition-transform`}>
                 {action.icon}
               </div>
-              <p className="font-montserrat text-sm font-medium text-gray-900 group-hover:text-green-600 transition-colors">
+              <p className="font-montserrat text-sm font-medium text-gray-900 group-hover:text-green-600 transition-colors text-left">
                 {action.title}
               </p>
             </a>
@@ -148,7 +145,6 @@ export default function SuperAdminDashboard() {
         transition={{ delay: 0.5 }}
         className="bg-white rounded-lg shadow p-6"
       >
-        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="border-l-4 border-blue-500 pl-4 py-2">
             <h3 className="font-semibold text-gray-900 mb-2">🏪 Stores</h3>
@@ -163,7 +159,6 @@ export default function SuperAdminDashboard() {
             <p className="text-gray-600 text-sm">View system-wide analytics and reports</p>
           </div>
         </div>
-      </motion.div>
-    </motion.div>
+      </motion.div>    </motion.div>
   );
 }

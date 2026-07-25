@@ -32,6 +32,7 @@ export default function ManageAdminsPage() {
     storeName: '',
     role: 'store_admin'
   });
+  const [editingAdminId, setEditingAdminId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAdmins();
@@ -58,39 +59,78 @@ export default function ManageAdminsPage() {
     setError('');
     setSubmitting(true);
     try {
-      const res = await fetch(buildApiUrl('/api/superadmin/admins'), {
-        method: 'POST',
+      const url = editingAdminId 
+        ? buildApiUrl(`/api/superadmin/admins/${editingAdminId}`)
+        : buildApiUrl('/api/superadmin/admins');
+        
+      const method = editingAdminId ? 'PUT' : 'POST';
+      
+      const body: any = { ...formData };
+      if (editingAdminId && !body.password) {
+        delete body.password; // Don't send empty password when editing
+      }
+
+      const res = await fetch(url, {
+        method,
         headers: { 
           'Content-Type': 'application/json',
           Authorization: `Bearer ${adminToken}` 
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(body)
       });
       const json = await res.json();
       if (json.success) {
-        setAdmins([json.data, ...admins]);
+        if (editingAdminId) {
+          setAdmins(admins.map(a => a._id === editingAdminId ? json.data : a));
+        } else {
+          setAdmins([json.data, ...admins]);
+        }
         setShowAddForm(false);
+        setEditingAdminId(null);
         setFormData({ firstName: '', lastName: '', email: '', password: '', storeName: '', role: 'store_admin' });
       } else {
-        setError(json.error || 'Failed to create admin');
+        setError(json.error || 'Failed to save admin');
       }
     } catch (err) {
-      setError('An error occurred while creating the admin');
+      setError('An error occurred while saving the admin');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDelete = (admin: Admin) => {
+  const handleDelete = async (admin: Admin) => {
     if (window.confirm(`Delete admin ${admin.firstName} ${admin.lastName}?`)) {
-      // Will implement delete logic
-      console.log('Delete admin:', admin._id);
+      try {
+        const res = await fetch(buildApiUrl(`/api/superadmin/admins/${admin._id}`), {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${adminToken}` }
+        });
+        const json = await res.json();
+        if (json.success) {
+          setAdmins(admins.filter(a => a._id !== admin._id));
+        } else {
+          alert(json.error || 'Failed to delete admin');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('An error occurred while deleting the admin');
+      }
     }
   };
 
   const handleEdit = (admin: Admin) => {
-    // Will implement edit logic
-    console.log('Edit admin:', admin._id);
+    setFormData({
+      firstName: admin.firstName,
+      lastName: admin.lastName,
+      email: admin.email,
+      password: '', // Leave blank for no change
+      storeName: admin.storeName || '',
+      role: admin.role
+    });
+    // Add an editing state
+    setEditingAdminId(admin._id);
+    setShowAddForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const columns: Column[] = [
@@ -146,7 +186,11 @@ export default function ManageAdminsPage() {
           </div>
         </div>
         <button
-          onClick={() => setShowAddForm(true)}
+          onClick={() => {
+            setShowAddForm(true);
+            setEditingAdminId(null);
+            setFormData({ firstName: '', lastName: '', email: '', password: '', storeName: '', role: 'store_admin' });
+          }}
           className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-montserrat text-sm"
         >
           <FiPlus className="w-5 h-5" />
@@ -154,13 +198,14 @@ export default function ManageAdminsPage() {
         </button>
       </div>
 
-      {/* Add Admin Form */}
+      {/* Add/Edit Admin Form */}
       {showAddForm && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-white rounded-lg shadow p-6 border border-gray-200"
         >
+          <h2 className="text-xl font-semibold mb-4">{editingAdminId ? 'Edit Admin' : 'Add New Admin'}</h2>
           {error && <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm">{error}</div>}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -201,7 +246,7 @@ export default function ManageAdminsPage() {
             </div>
             <div>
               <label className="block font-montserrat text-sm font-medium text-gray-700 mb-2">
-                Password
+                Password {editingAdminId && <span className="text-gray-400 font-normal">(Leave blank to keep unchanged)</span>}
               </label>
               <input
                 type="password"
@@ -239,7 +284,11 @@ export default function ManageAdminsPage() {
           </div>
           <div className="flex gap-3 mt-4">
             <button
-              onClick={() => setShowAddForm(false)}
+              onClick={() => {
+                setShowAddForm(false);
+                setEditingAdminId(null);
+                setFormData({ firstName: '', lastName: '', email: '', password: '', storeName: '', role: 'store_admin' });
+              }}
               className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-montserrat text-sm"
             >
               Cancel
@@ -249,7 +298,7 @@ export default function ManageAdminsPage() {
               disabled={submitting}
               className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-montserrat text-sm disabled:opacity-50"
             >
-              {submitting ? 'Creating...' : 'Create Admin'}
+              {submitting ? 'Saving...' : (editingAdminId ? 'Update Admin' : 'Create Admin')}
             </button>
           </div>
         </motion.div>
