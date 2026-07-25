@@ -124,10 +124,10 @@ export default function AdminLoginPage() {
             {/* Test Credentials Info */}
             <div className="space-y-4">
               <div className="rounded-xl bg-blue-50 p-4 border border-blue-100">
-                <p className="text-sm font-medium text-blue-900 mb-2">Test Credentials ({storeNameTitle}):</p>
+                <p className="text-sm font-medium text-blue-900 mb-2">Admin Credentials ({storeNameTitle}):</p>
                 <div className="text-sm text-blue-800 space-y-1">
-                  <p><strong>Email:</strong> admin@plantsingarden.com</p>
-                  <p><strong>Password:</strong> Plants@123</p>
+                  <p><strong>Email:</strong> newadmin@plantsingarden.com</p>
+                  <p><strong>Password:</strong> PlantsAdmin@2026!</p>
                 </div>
               </div>
             </div>
