@@ -1,6 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
+import NotificationBell from './NotificationBell';
 
 export default function Topbar() {
   const searchParams = useSearchParams();
@@ -32,6 +33,7 @@ export default function Topbar() {
       </div>
       
       <div className="flex items-center gap-4">
+        <NotificationBell />
         <div className="text-xs sm:text-sm font-medium text-gray-700 bg-gray-100 px-3 py-1.5 rounded-full whitespace-nowrap">
           🌿 Plants In Garden
         </div>

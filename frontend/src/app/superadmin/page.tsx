@@ -11,6 +11,7 @@ import ManageStoresPage from '@/components/pages/ManageStoresPage';
 import ManageAllStaffPage from '@/components/pages/ManageAllStaffPage';
 import InventoryReportsPage from '@/components/pages/InventoryReportsPage';
 import SuperAdminSettingsPage from '@/components/pages/SuperAdminSettingsPage';
+import PaymentSettingsPage from '@/components/pages/PaymentSettingsPage';
 
 
 export default function SuperAdminPage() {
@@ -55,6 +56,8 @@ export default function SuperAdminPage() {
         return <div className="p-8 text-center text-gray-500">Reports Module (Coming Soon)</div>;
       case 'settings':
         return <SuperAdminSettingsPage />;
+      case 'payment-settings':
+        return <PaymentSettingsPage />;
       default:
         return <SuperAdminDashboard />;
     }

@@ -17,6 +17,7 @@ interface CustomerOrder {
   orderStatus?: string;
   status?: string;
   paymentStatus?: string;
+  paymentMethod?: string;
   createdAt: string;
   items?: Array<{ quantity: number }>;
 }
@@ -144,9 +145,16 @@ export default function CustomerDashboard() {
                     <div key={order._id} className="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 shadow-sm flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                       <div>
                         <p className="text-xs uppercase tracking-wide text-gray-500">Order ID</p>
-                        <p className="text-gray-900 font-semibold mt-1">{order.orderNumber || order.orderId || order._id}</p>
+                        <p className="text-gray-900 font-semibold mt-1">
+                          {order.orderNumber || order.orderId || order._id}
+                          {order.paymentMethod === 'online' ? (
+                            <span className="ml-2 inline-block px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-800">PRE-PAID</span>
+                          ) : (
+                            <span className="ml-2 inline-block px-2 py-0.5 rounded text-xs font-bold bg-gray-100 text-gray-800">COD</span>
+                          )}
+                        </p>
                         <p className="text-sm text-gray-600 mt-1">
-                          {new Date(order.createdAt).toLocaleDateString('en-IN')} • {itemsCount} items • Payment {formatLabel(order.paymentStatus || 'pending')}
+                          {new Date(order.createdAt).toLocaleDateString('en-IN')} • {itemsCount} items • Payment: {formatLabel(order.paymentStatus || 'Unpaid')}
                         </p>
                       </div>
 

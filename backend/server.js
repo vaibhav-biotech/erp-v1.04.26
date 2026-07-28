@@ -16,6 +16,9 @@ const suppliersRouter = require('./routes/suppliers');
 const purchaseOrdersRouter = require('./routes/purchaseOrders');
 const accountsRouter = require('./routes/accounts');
 const chatRouter = require('./routes/chat'); // NEW: Chat routes
+const settingsRouter = require('./routes/settings');
+const paymentsRouter = require('./routes/payments');
+const notificationsRouter = require('./routes/notifications');
 const storeRouter = require('./middleware/storeRouter'); // NEW: Store detection middleware
 const verifyAdminToken = require('./middleware/verifyAdminToken');
 
@@ -570,6 +573,11 @@ app.use('/api/accounts', accountsRouter);
 
 // Chat Router
 app.use('/api/chat', chatRouter);
+
+// New Payment & Settings Routers
+app.use('/api/settings', settingsRouter);
+app.use('/api/payments', paymentsRouter);
+app.use('/api/notifications', notificationsRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

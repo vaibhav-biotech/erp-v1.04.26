@@ -212,13 +212,20 @@ export default function CheckoutPage() {
           throw new Error(result.message || 'Failed to place order');
         }
 
-        clearCart();
-        setSuccess(true);
-        setPlacedOrderId(result.data?.orderId || result.data?.orderNumber || result.data?._id || '');
+        const dbOrderId = result.data?.orderId || result.data?.orderNumber || result.data?._id || '';
+
+        // Only redirect if COD. For Razorpay, we need to return the ID.
+        if (!isRazorpay) {
+          clearCart();
+          setSuccess(true);
+          setPlacedOrderId(dbOrderId);
+          
+          redirectTimerRef.current = setTimeout(() => {
+            router.push('/customer?tab=orders');
+          }, 2000);
+        }
         
-        redirectTimerRef.current = setTimeout(() => {
-          router.push('/customer?tab=orders');
-        }, 2000);
+        return dbOrderId;
       };
 
       if (formData.paymentMethod === 'Razorpay') {
@@ -229,19 +236,65 @@ export default function CheckoutPage() {
           return;
         }
 
-        // Dummy options for stub
+        // 1. Get Razorpay Order ID and Key from our Backend
+        const createOrderRes = await fetch(buildApiUrl('/api/payments/create-order'), {
+          method: 'POST',
+          headers: getApiHeaders(customerToken || ''),
+          body: JSON.stringify({ amount: pricing.total, currency: 'INR' })
+        });
+        
+        const createOrderData = await createOrderRes.json();
+        
+        if (!createOrderData.success) {
+          setError(createOrderData.error || 'Failed to initialize payment gateway');
+          setLoading(false);
+          return;
+        }
+
+        // 2. Create the Order in our DB (unpaid)
+        const dbOrderId = await placeActualOrder(true);
+        if (!dbOrderId) {
+          setLoading(false);
+          return; // Error handled inside placeActualOrder
+        }
+
+        const { id: razorpayOrderId, amount: razorpayAmount, keyId } = createOrderData.data;
+
         const options = {
-          key: 'rzp_test_stub_key_change_me', 
-          amount: Math.round(pricing.total * 100), // amount in paise
+          key: keyId, 
+          amount: razorpayAmount,
           currency: 'INR',
-          name: 'Plants in Garden',
+          name: 'Plant In Garden',
           description: 'Order Payment',
+          order_id: razorpayOrderId,
           handler: async function (response: any) {
-            // Payment success callback
+            // 3. Verify Payment Signature
             try {
-              await placeActualOrder(true);
+              const verifyRes = await fetch(buildApiUrl('/api/payments/verify'), {
+                method: 'POST',
+                headers: getApiHeaders(customerToken || ''),
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  dbOrderId: dbOrderId
+                })
+              });
+              
+              const verifyData = await verifyRes.json();
+              if (verifyData.success) {
+                clearCart();
+                setSuccess(true);
+                setPlacedOrderId(dbOrderId);
+                
+                redirectTimerRef.current = setTimeout(() => {
+                  router.push('/customer?tab=orders');
+                }, 2000);
+              } else {
+                setError(verifyData.error || 'Payment verification failed');
+              }
             } catch (err) {
-              setError(err instanceof Error ? err.message : 'Error placing order after payment');
+              setError(err instanceof Error ? err.message : 'Error verifying payment');
             } finally {
               setLoading(false);
             }
@@ -257,6 +310,10 @@ export default function CheckoutPage() {
           modal: {
             ondismiss: function () {
               setLoading(false);
+              setError('Payment was cancelled. Your order was created as Unpaid.');
+              redirectTimerRef.current = setTimeout(() => {
+                router.push('/customer?tab=orders');
+              }, 4000);
             }
           }
         };

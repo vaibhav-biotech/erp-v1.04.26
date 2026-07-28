@@ -179,6 +179,13 @@ export default function GroupedSidebar() {
       roles: ['accountant', 'super_admin'],
     },
     {
+      id: 'accounts-payments',
+      label: 'Payments History',
+      icon: <FiList className="w-5 h-5" />,
+      route: '/accounts?page=accounts-payments',
+      roles: ['accountant', 'super_admin'],
+    },
+    {
       id: 'accounts-invoices',
       label: 'Invoices',
       icon: <FiList className="w-5 h-5" />,
@@ -275,6 +282,13 @@ export default function GroupedSidebar() {
       label: 'Settings',
       icon: <FiSettings className="w-5 h-5" />,
       route: '/superadmin?page=settings',
+      roles: ['super_admin'],
+    },
+    {
+      id: 'super-payment-settings',
+      label: 'Payment Settings',
+      icon: <FiSettings className="w-5 h-5" />,
+      route: '/superadmin?page=payment-settings',
       roles: ['super_admin'],
     },
   ];

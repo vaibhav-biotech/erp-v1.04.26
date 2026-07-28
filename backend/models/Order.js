@@ -52,6 +52,20 @@ const OrderSchema = new mongoose.Schema(
       enum: ['Unpaid', 'Paid', 'Refunded'],
       default: 'Unpaid'
     },
+    paymentMethod: {
+      type: String,
+      enum: ['online', 'cod'],
+      default: 'cod'
+    },
+    razorpayOrderId: {
+      type: String
+    },
+    razorpayPaymentId: {
+      type: String
+    },
+    razorpaySignature: {
+      type: String
+    },
     source: {
       type: String, // e.g., 'Shopify', 'WooCommerce', 'Manual'
       default: 'Website'

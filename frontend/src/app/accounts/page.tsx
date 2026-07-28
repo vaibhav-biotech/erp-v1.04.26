@@ -10,6 +10,7 @@ import AccountsInvoicesPage from '@/components/pages/AccountsInvoicesPage';
 import AccountsCreateInvoicePage from '@/components/pages/AccountsCreateInvoicePage';
 import PurchaseOrdersPage from '@/components/pages/PurchaseOrdersPage';
 import SuppliersPage from '@/components/pages/SuppliersPage';
+import AccountsPaymentsPage from '@/components/pages/AccountsPaymentsPage';
 
 export default function AccountsAdminPage() {
   const router = useRouter();
@@ -45,6 +46,8 @@ export default function AccountsAdminPage() {
         return <PurchaseOrdersPage />;
       case 'suppliers':
         return <SuppliersPage />;
+      case 'accounts-payments':
+        return <AccountsPaymentsPage />;
       default:
         return <AccountsDashboardPage />;
     }

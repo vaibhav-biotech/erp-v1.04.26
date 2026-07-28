@@ -18,6 +18,7 @@ interface Order {
   total: number;
   orderStatus?: string;
   paymentStatus?: string;
+  paymentMethod?: string;
   createdAt: string;
 }
 
@@ -285,7 +286,14 @@ export default function StoreAdminOrdersListPage() {
 
                   return (
                     <tr key={order._id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="px-5 py-4 text-sm font-semibold text-gray-900">{orderCode}</td>
+                      <td className="px-5 py-4 text-sm font-semibold text-gray-900">
+                        {orderCode}
+                        {order.paymentMethod === 'online' ? (
+                          <div className="mt-1"><span className="inline-block px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-800">PRE-PAID</span></div>
+                        ) : (
+                          <div className="mt-1"><span className="inline-block px-2 py-0.5 rounded text-xs font-bold bg-gray-100 text-gray-800">COD</span></div>
+                        )}
+                      </td>
                       <td className="px-5 py-4 text-sm text-gray-700">
                         {order.customerInfo 
                           ? `${order.customerInfo.firstName} ${order.customerInfo.lastName}` 
