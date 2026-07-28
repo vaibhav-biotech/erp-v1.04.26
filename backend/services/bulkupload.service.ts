@@ -288,12 +288,15 @@ export const deleteProduct = async (productId: string) => {
  */
 export const searchProducts = async (query: string, limit: number = 20) => {
   try {
-    const products = await Product.find(
-      { $text: { $search: query } },
-      { score: { $meta: 'textScore' } }
-    )
-      .sort({ score: { $meta: 'textScore' } })
-      .limit(limit);
+    const regex = new RegExp(query, 'i'); // 'i' for case-insensitive
+    const products = await Product.find({
+      $or: [
+        { name: { $regex: regex } },
+        { categoryName: { $regex: regex } },
+        { subcategory: { $regex: regex } },
+        { tags: { $regex: regex } }
+      ]
+    }).limit(limit);
 
     return {
       success: true,

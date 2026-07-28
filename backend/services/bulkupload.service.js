@@ -723,6 +723,7 @@ const searchProducts = async (query, limit = 20, storeName) => {
       $or: [
         { name: { $regex: searchRegex } },
         { categoryName: { $regex: searchRegex } },
+        { subcategory: { $regex: searchRegex } },
         { tags: { $regex: searchRegex } }
       ]
     };
