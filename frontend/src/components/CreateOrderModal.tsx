@@ -56,6 +56,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
   });
 
   // Product Data
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [productSearch, setProductSearch] = useState('');
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -87,6 +88,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
       setCustomerSearch('');
       setError('');
       fetchStores();
+      fetchAllProducts();
     }
   }, [isOpen]);
 
@@ -109,10 +111,32 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
     else setCustomers([]);
   }, [customerSearch, selectedCustomerId]);
 
+  const fetchAllProducts = async () => {
+    try {
+      const res = await fetchWithStore(buildApiUrl(`/api/products?limit=500`), { token: adminToken || undefined });
+      if (res.ok) {
+        const data = await res.json();
+        const products = data.data || [];
+        setAllProducts(products);
+        setSearchResults(products.slice(0, 50)); // Show some by default
+      }
+    } catch (err) {}
+  };
+
   useEffect(() => {
-    if (productSearch.length > 2) searchProducts();
-    else setSearchResults([]);
-  }, [productSearch]);
+    if (!productSearch.trim()) {
+      setSearchResults(allProducts.slice(0, 50));
+      return;
+    }
+    const lowerQuery = productSearch.toLowerCase();
+    const filtered = allProducts.filter((p: any) => 
+      p.name?.toLowerCase().includes(lowerQuery) ||
+      p.categoryName?.toLowerCase().includes(lowerQuery) ||
+      p.subcategory?.toLowerCase().includes(lowerQuery) ||
+      p.tags?.some((t: string) => t.toLowerCase().includes(lowerQuery))
+    );
+    setSearchResults(filtered.slice(0, 50));
+  }, [productSearch, allProducts]);
 
   const searchCustomers = async () => {
     try {
@@ -129,15 +153,7 @@ export default function CreateOrderModal({ isOpen, onClose, onOrderCreated }: Cr
     } catch (err) {}
   };
 
-  const searchProducts = async () => {
-    try {
-      const res = await fetchWithStore(buildApiUrl(`/api/products/search?q=${productSearch}&limit=50`), { token: adminToken || undefined });
-      if (res.ok) {
-        const data = await res.json();
-        setSearchResults((data.data || []).slice(0, 50));
-      }
-    } catch (err) {}
-  };
+  // searchProducts removed in favor of client-side filtering over allProducts
 
   const addToCart = (product: Product) => {
     if (cart.find(item => item._id === product._id)) return;
