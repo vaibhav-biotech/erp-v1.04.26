@@ -671,6 +671,22 @@ export default function CheckoutPage() {
                       'Place Order'
                     )}
                   </button>
+
+                  <div className="pt-6 mt-6 border-t border-gray-200">
+                    <div className="flex flex-col items-center justify-center space-y-4">
+                      <div className="flex items-center gap-2 text-green-700 bg-green-50 px-4 py-2 rounded-full">
+                        <ShieldCheck size={20} />
+                        <span className="font-montserrat text-sm font-semibold">100% Secure & Encrypted Payments</span>
+                      </div>
+                      <div className="flex gap-3 items-center flex-wrap justify-center text-gray-500">
+                        <span className="px-3 py-1 bg-white border border-gray-200 rounded text-xs font-bold tracking-wider">RAZORPAY</span>
+                        <span className="px-3 py-1 bg-white border border-gray-200 rounded text-xs font-bold tracking-wider text-blue-900">VISA</span>
+                        <span className="px-3 py-1 bg-white border border-gray-200 rounded text-xs font-bold tracking-wider text-orange-600">MASTERCARD</span>
+                        <span className="px-3 py-1 bg-white border border-gray-200 rounded text-xs font-bold tracking-wider text-gray-800">UPI</span>
+                        <span className="px-3 py-1 bg-white border border-gray-200 rounded text-xs font-bold tracking-wider">RUPAY</span>
+                      </div>
+                    </div>
+                  </div>
                 </>
               )}
             </div>
@@ -704,10 +720,11 @@ export default function CheckoutPage() {
                           <span className="shrink-0">₹{item.totalPrice.toLocaleString('en-IN')}</span>
                         </div>
                         <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
-                        <p className="text-xs text-gray-500 truncate">
-                          {item.sizeVariant.name} / {item.potVariant.name}
-                          {item.giftWrap?.isGift && ` / Gift: ₹${item.giftWrap.price}`}
-                        </p>
+                        <div className="text-xs text-gray-500 mt-1 space-y-0.5">
+                          <p>Size: {item.sizeVariant.name} {item.sizeVariant.price > 0 && `(₹${item.sizeVariant.price})`}</p>
+                          <p>Pot: {item.potVariant.name} {item.potVariant.price > 0 && `(₹${item.potVariant.price})`}</p>
+                          {item.giftWrap?.isGift && <p className="text-green-600 font-medium">Gift Wrap: Added (+₹{item.giftWrap.price})</p>}
+                        </div>
                       </div>
                     </div>
                   ))}
