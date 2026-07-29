@@ -621,6 +621,6 @@ export default function StoreAdminProductDetailsPage() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
