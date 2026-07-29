@@ -331,6 +331,8 @@ export default function StoreAdminProductDetailsPage() {
         potVariants: form.potVariants
           .filter((v) => v.name.trim() && String(v.price).trim())
           .map((v, idx) => ({ id: idx + 1, name: v.name.trim(), price: toNumber(v.price), tag: v.tag?.trim() || undefined })),
+        additionalInfo: form.additionalInfo.filter(info => info.key.trim() && info.value.trim()),
+        showAdditionalInfo: form.showAdditionalInfo,
       };
 
       if (!payloadWithValues.name || !payloadWithValues.category || !payloadWithValues.subcategory || payloadWithValues.images.length === 0) {
