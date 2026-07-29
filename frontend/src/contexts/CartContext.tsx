@@ -25,13 +25,17 @@ export interface CartItem {
   };
 }
 
+export const getCartItemId = (item: CartItem) => {
+  return `${item.productId}-${item.sizeVariant.id}-${item.potVariant.id}-${Boolean(item.giftWrap?.isGift)}`;
+};
+
 interface CartContextType {
   cartItems: CartItem[];
   cartOpen: boolean;
   cartCount: number;
   addToCart: (item: CartItem, silent?: boolean) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  removeFromCart: (cartItemId: string) => void;
+  updateQuantity: (cartItemId: string, quantity: number) => void;
   clearCart: () => void;
   toggleCartModal: () => void;
   getSubtotal: () => number;
@@ -75,10 +79,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       const incomingUnitPrice = item.quantity > 0 ? item.totalPrice / item.quantity : item.totalPrice;
 
       const existingItem = prevItems.find(
-        (i) =>
-          i.productId === item.productId &&
-          i.sizeVariant.id === item.sizeVariant.id &&
-          i.potVariant.id === item.potVariant.id
+        (i) => getCartItemId(i) === getCartItemId(item)
       );
 
       if (existingItem) {
@@ -108,22 +109,22 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     if (!silent) setCartOpen(true);
   }, []);
 
-  const removeFromCart = useCallback((productId: string) => {
+  const removeFromCart = useCallback((cartItemId: string) => {
     setCartItems((prevItems) =>
-      prevItems.filter((item) => item.productId !== productId)
+      prevItems.filter((item) => getCartItemId(item) !== cartItemId)
     );
   }, []);
 
   const updateQuantity = useCallback(
-    (productId: string, quantity: number) => {
+    (cartItemId: string, quantity: number) => {
       if (quantity <= 0) {
-        removeFromCart(productId);
+        removeFromCart(cartItemId);
         return;
       }
 
       setCartItems((prevItems) =>
         prevItems.map((item) =>
-          item.productId === productId
+          getCartItemId(item) === cartItemId
             ? {
                 ...item,
                 quantity,

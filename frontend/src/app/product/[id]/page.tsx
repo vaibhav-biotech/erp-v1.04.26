@@ -201,6 +201,8 @@ export default function ProductDetailPage({ params }: Props) {
               benefits: product.benefits,
               care: product.care,
               images: product.images,
+              additionalInfo: product.additionalInfo,
+              showAdditionalInfo: product.showAdditionalInfo,
             }}
             sizeVariants={product.sizeVariants}
             potVariants={product.potVariants}

@@ -116,6 +116,17 @@ const productSchema = new Schema(
       type: [variantSchema],
       default: []
     },
+    additionalInfo: {
+      type: [{
+        key: { type: String, required: true },
+        value: { type: String, required: true }
+      }],
+      default: []
+    },
+    showAdditionalInfo: {
+      type: Boolean,
+      default: false
+    },
     status: {
       type: String,
       enum: ['active', 'inactive', 'draft'],

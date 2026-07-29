@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Minus, Trash2 } from 'lucide-react';
-import { useCart, CartItem } from '@/contexts/CartContext';
+import { useCart, CartItem, getCartItemId } from '@/contexts/CartContext';
 
 interface CartItemCardProps {
   item: CartItem;
@@ -51,7 +51,7 @@ export default function CartItemCard({ item }: CartItemCardProps) {
         {/* Quantity Controls */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+            onClick={() => updateQuantity(getCartItemId(item), item.quantity - 1)}
             className="p-1 hover:bg-gray-100 rounded transition-colors"
           >
             <Minus size={16} className="text-gray-900" />
@@ -62,20 +62,20 @@ export default function CartItemCard({ item }: CartItemCardProps) {
             value={item.quantity}
             onChange={(e) => {
               const val = parseInt(e.target.value) || 1;
-              updateQuantity(item.productId, val);
+              updateQuantity(getCartItemId(item), val);
             }}
             className="w-10 px-2 py-1 border border-gray-300 rounded text-center font-montserrat text-sm text-gray-900 focus:outline-none focus:border-green-600"
           />
 
           <button
-            onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+            onClick={() => updateQuantity(getCartItemId(item), item.quantity + 1)}
             className="p-1 hover:bg-gray-100 rounded transition-colors"
           >
             <Plus size={16} className="text-gray-900" />
           </button>
 
           <button
-            onClick={() => removeFromCart(item.productId)}
+            onClick={() => removeFromCart(getCartItemId(item))}
             className="ml-auto p-1 hover:bg-red-50 rounded transition-colors"
           >
             <Trash2 size={16} className="text-red-600" />

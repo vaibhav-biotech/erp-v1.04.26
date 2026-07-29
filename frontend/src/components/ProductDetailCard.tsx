@@ -44,6 +44,8 @@ interface ProductDetailCardProps {
     benefits?: string[];
     care?: string[];
     images?: string[];
+    additionalInfo?: { key: string; value: string }[];
+    showAdditionalInfo?: boolean;
   };
   breadcrumbs?: BreadcrumbItem[];
   sizeVariants?: Variant[];
@@ -131,6 +133,20 @@ export default function ProductDetailCard({
           {/* Left - Image Gallery (55% - 6 cols out of 11) */}
           <div className="w-full lg:col-span-6 lg:sticky lg:top-0 lg:h-fit">
             <ProductGallery images={product.images} />
+
+            {product.showAdditionalInfo && product.additionalInfo && product.additionalInfo.length > 0 && (
+              <div className="mt-8 bg-gray-50 rounded-xl p-6 border border-gray-100">
+                <h3 className="text-lg font-playfair font-medium text-gray-900 mb-4">Product Specifications</h3>
+                <div className="space-y-3">
+                  {product.additionalInfo.map((info, idx) => (
+                    <div key={idx} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-0">
+                      <span className="text-gray-600 font-montserrat text-sm">{info.key}</span>
+                      <span className="text-gray-900 font-montserrat text-sm font-medium text-right">{info.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right - Product Details (45% - 5 cols out of 11) */}

@@ -37,6 +37,8 @@ interface ProductFormState {
   images: string[];
   sizeVariants: VariantForm[];
   potVariants: VariantForm[];
+  additionalInfo: { key: string; value: string }[];
+  showAdditionalInfo: boolean;
 }
 
 const toNumber = (value: string, fallback = 0) => {
@@ -82,6 +84,8 @@ export default function StoreAdminProductDetailsPage() {
     images: [],
     sizeVariants: [],
     potVariants: [],
+    additionalInfo: [],
+    showAdditionalInfo: false,
   });
 
   const newImagePreviews = useMemo(() => {
@@ -159,6 +163,8 @@ export default function StoreAdminProductDetailsPage() {
               tag: v.tag || '',
             }))
           : [],
+        additionalInfo: Array.isArray(product.additionalInfo) ? product.additionalInfo : [],
+        showAdditionalInfo: Boolean(product.showAdditionalInfo),
       });
       setNewImageFiles([]);
     } catch (err) {
@@ -213,6 +219,28 @@ export default function StoreAdminProductDetailsPage() {
     setForm((prev) => ({
       ...prev,
       [type]: prev[type].filter((_, idx) => idx !== index).map((item, idx) => ({ ...item, id: idx + 1 })),
+    }));
+  };
+
+  const addAdditionalInfoRow = () => {
+    setForm((prev) => ({
+      ...prev,
+      additionalInfo: [...prev.additionalInfo, { key: '', value: '' }],
+    }));
+  };
+
+  const updateAdditionalInfo = (index: number, field: 'key' | 'value', value: string) => {
+    setForm((prev) => {
+      const next = [...prev.additionalInfo];
+      next[index] = { ...next[index], [field]: value };
+      return { ...prev, additionalInfo: next };
+    });
+  };
+
+  const removeAdditionalInfoRow = (index: number) => {
+    setForm((prev) => ({
+      ...prev,
+      additionalInfo: prev.additionalInfo.filter((_, idx) => idx !== index),
     }));
   };
 
@@ -557,8 +585,42 @@ export default function StoreAdminProductDetailsPage() {
               </div>
             ))}
           </div>
+
+          {/* Additional Info Section */}
+          <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Additional Details</h2>
+                <p className="text-sm text-gray-500">Add extra details like dimensions, care info, etc.</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={form.showAdditionalInfo} 
+                    onChange={(e) => setForm(prev => ({ ...prev, showAdditionalInfo: e.target.checked }))} 
+                    className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500" 
+                  />
+                  <span className="text-sm text-gray-700">Show on Product Page</span>
+                </label>
+                <button type="button" onClick={addAdditionalInfoRow} className="inline-flex items-center gap-1 px-2.5 py-1 border border-gray-300 rounded text-xs text-gray-700 hover:bg-gray-50">
+                  <FiPlus size={14} /> Add
+                </button>
+              </div>
+            </div>
+
+            {form.additionalInfo.map((info, idx) => (
+              <div key={`info-${idx}`} className="grid grid-cols-12 gap-2 items-center">
+                <input value={info.key} onChange={(e) => updateAdditionalInfo(idx, 'key', e.target.value)} placeholder="Label (e.g. Box Size)" className="col-span-5 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900" />
+                <input value={info.value} onChange={(e) => updateAdditionalInfo(idx, 'value', e.target.value)} placeholder="Value (e.g. 10x10 inches)" className="col-span-6 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900" />
+                <button type="button" onClick={() => removeAdditionalInfoRow(idx)} className="col-span-1 p-2 border border-red-300 rounded text-red-600 hover:bg-red-50 flex justify-center">
+                  <FiTrash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

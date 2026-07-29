@@ -333,8 +333,9 @@ export default function CheckoutPage() {
   const pricing = useMemo(() => {
     const subtotal = getSubtotal();
     const shipping = subtotal >= 60 ? 0 : 50;
-    const appliedRate = taxSettings.enabled ? Math.max(0, taxSettings.rate) : 0;
-    const tax = Math.round(subtotal * (appliedRate / 100) * 100) / 100;
+    // GST is inclusive in price, so we don't add it on top of cart total
+    const appliedRate = 0; 
+    const tax = 0;
     const total = subtotal + shipping + tax;
     return { subtotal, shipping, tax, total, appliedRate };
   }, [getSubtotal, cartItems, taxSettings]);
@@ -701,7 +702,10 @@ export default function CheckoutPage() {
                           <span className="shrink-0">₹{item.totalPrice.toLocaleString('en-IN')}</span>
                         </div>
                         <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
-                        <p className="text-xs text-gray-500 truncate">{item.sizeVariant.name} / {item.potVariant.name}</p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {item.sizeVariant.name} / {item.potVariant.name}
+                          {item.giftWrap?.isGift && ` / Gift: ₹${item.giftWrap.price}`}
+                        </p>
                       </div>
                     </div>
                   ))}

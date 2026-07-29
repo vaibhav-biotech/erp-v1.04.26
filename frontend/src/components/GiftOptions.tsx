@@ -50,8 +50,12 @@ export function GiftOptions({ onGiftSelected }: GiftOptionsProps) {
     const newState = e.target.checked;
     setIsGift(newState);
     
-    // If unchecked, clear selection and notify parent
-    if (!newState) {
+    if (newState && giftOptions.length > 0) {
+      // Auto-select the first option when checked
+      setSelectedGift(giftOptions[0]._id);
+      onGiftSelected?.(giftOptions[0]);
+    } else if (!newState) {
+      // If unchecked, clear selection and notify parent
       setSelectedGift(null);
       onGiftSelected?.(null);
     }

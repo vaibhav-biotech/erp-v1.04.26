@@ -7,10 +7,11 @@ export function ProductInfo({
   plantPrice = 0,
   potPrice = 0,
 }) {
-  const totalPrice = plantPrice + potPrice || price;
-  const displayPrice = totalPrice;
+  const displayPrice = price;
   const displayOriginal = originalPrice;
-  const discount = displayOriginal ? Math.round(((displayOriginal - displayPrice) / displayOriginal) * 100) : 0;
+  const discount = displayOriginal && displayOriginal > displayPrice 
+    ? Math.round(((displayOriginal - displayPrice) / displayOriginal) * 100) 
+    : 0;
 
   return (
     <div>
