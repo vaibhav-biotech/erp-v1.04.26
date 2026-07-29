@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FiEye } from 'react-icons/fi';
+import { FiEye, FiDownload } from 'react-icons/fi';
 
 export default function AccountsInvoicesPage() {
   const [invoices, setInvoices] = useState([]);
@@ -26,10 +26,42 @@ export default function AccountsInvoicesPage() {
     setLoading(false);
   };
 
+  const exportToCSV = () => {
+    if (invoices.length === 0) return alert('No data to export');
+    const headers = ['Invoice Number', 'Date', 'Store', 'Customer Name', 'Total Amount', 'Status'];
+    const csvRows = [headers.join(',')];
+
+    for (const inv of invoices) {
+      const row = [
+        inv.invoiceNumber || '',
+        new Date(inv.invoiceDate || inv.createdAt).toLocaleDateString(),
+        inv.store?.name || 'N/A',
+        inv.customerName || 'N/A',
+        inv.total || 0,
+        inv.status || 'pending'
+      ].map(v => `"${String(v).replace(/"/g, '""')}"`);
+      csvRows.push(row.join(','));
+    }
+
+    const csvData = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+    const csvUrl = URL.createObjectURL(csvData);
+    const link = document.createElement('a');
+    link.href = csvUrl;
+    link.download = `Invoices_Export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Invoices</h1>
+        <button
+          onClick={exportToCSV}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition shadow-sm"
+        >
+          <FiDownload />
+          Export CSV
+        </button>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FiEye, FiPlus } from 'react-icons/fi';
+import { FiEye, FiPlus, FiDownload } from 'react-icons/fi';
 import CreateOrderModal from '@/components/CreateOrderModal';
 
 export default function AccountsOrdersPage() {
@@ -92,11 +92,47 @@ export default function AccountsOrdersPage() {
   const totalPages = Math.ceil(filteredOrders.length / rowsPerPage);
   const paginatedOrders = filteredOrders.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
+  const exportToCSV = () => {
+    if (filteredOrders.length === 0) return alert('No data to export');
+    const headers = ['Order Number', 'Date', 'Store', 'Customer Name', 'Customer Email', 'Customer Phone', 'Total Amount', 'Order Status', 'Payment Status', 'Payment Method'];
+    const csvRows = [headers.join(',')];
+
+    for (const order of filteredOrders) {
+      const row = [
+        order.orderNumber || '',
+        new Date(order.createdAt).toLocaleDateString(),
+        order.storeName || order.store?.name || 'N/A',
+        order.customer?.name || order.shippingDetail?.name || 'N/A',
+        order.customer?.email || order.shippingDetail?.email || 'N/A',
+        order.customer?.phone || order.shippingDetail?.phone || 'N/A',
+        order.totalAmount || 0,
+        order.orderStatus || 'pending',
+        order.paymentStatus || 'pending',
+        order.paymentMethod || 'N/A'
+      ].map(v => `"${String(v).replace(/"/g, '""')}"`);
+      csvRows.push(row.join(','));
+    }
+
+    const csvData = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+    const csvUrl = URL.createObjectURL(csvData);
+    const link = document.createElement('a');
+    link.href = csvUrl;
+    link.download = `Orders_Export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
   return (
     <div>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div className="flex items-center gap-4">
           <h1 className="text-3xl font-bold text-gray-900">Store Orders</h1>
+          <button
+            onClick={exportToCSV}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition shadow-sm"
+          >
+            <FiDownload />
+            Export CSV
+          </button>
           <button
             onClick={() => setIsCreateModalOpen(true)}
             className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition shadow-sm"
