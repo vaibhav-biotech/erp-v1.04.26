@@ -678,12 +678,12 @@ export default function CheckoutPage() {
                         <ShieldCheck size={20} />
                         <span className="font-montserrat text-sm font-semibold">100% Secure & Encrypted Payments</span>
                       </div>
-                      <div className="flex gap-3 items-center flex-wrap justify-center text-gray-500">
-                        <span className="px-3 py-1 bg-white border border-gray-200 rounded text-xs font-bold tracking-wider">RAZORPAY</span>
-                        <span className="px-3 py-1 bg-white border border-gray-200 rounded text-xs font-bold tracking-wider text-blue-900">VISA</span>
-                        <span className="px-3 py-1 bg-white border border-gray-200 rounded text-xs font-bold tracking-wider text-orange-600">MASTERCARD</span>
-                        <span className="px-3 py-1 bg-white border border-gray-200 rounded text-xs font-bold tracking-wider text-gray-800">UPI</span>
-                        <span className="px-3 py-1 bg-white border border-gray-200 rounded text-xs font-bold tracking-wider">RUPAY</span>
+                      <div className="flex gap-4 items-center flex-wrap justify-center text-gray-500">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg" alt="Razorpay" className="h-5 object-contain" />
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-4 object-contain" />
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-6 object-contain" />
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" alt="UPI" className="h-5 object-contain" />
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/cb/Rupay-Logo.png" alt="RuPay" className="h-5 object-contain" />
                       </div>
                     </div>
                   </div>
