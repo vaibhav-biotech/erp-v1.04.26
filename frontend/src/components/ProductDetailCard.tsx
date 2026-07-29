@@ -135,7 +135,7 @@ export default function ProductDetailCard({
             <ProductGallery images={product.images} />
 
             {product.showAdditionalInfo && product.additionalInfo && product.additionalInfo.length > 0 && (
-              <div className="mt-8 bg-gray-50 rounded-xl p-6 border border-gray-100">
+              <div className="mt-8">
                 <h3 className="text-lg font-playfair font-medium text-gray-900 mb-4">Product Specifications</h3>
                 <div className="space-y-3">
                   {product.additionalInfo.map((info, idx) => (
