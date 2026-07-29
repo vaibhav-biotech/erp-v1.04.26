@@ -28,6 +28,8 @@ interface Product {
   stock: number;
   sizeVariants?: Array<{ id: number; name: string; price: number; originalPrice?: number; tag?: string }>;
   potVariants?: Array<{ id: number; name: string; price: number; tag?: string }>;
+  additionalInfo?: { key: string; value: string }[];
+  showAdditionalInfo?: boolean;
 }
 
 interface Props {
