@@ -23,6 +23,7 @@ interface Staff {
   storeName: string;
   active: boolean;
   createdAt: string;
+  portalAccess?: string[];
 }
 
 export default function ManageAllStaffPage() {
@@ -56,7 +57,8 @@ export default function ManageAllStaffPage() {
     password: '',
     role: 'sales',
     storeName: '',
-    status: 'active'
+    status: 'active',
+    portalAccess: [] as string[]
   });
 
   useEffect(() => {
@@ -90,7 +92,8 @@ export default function ManageAllStaffPage() {
         password: '', // Blank for security; only update if user types something
         role: staff.jobRoles && staff.jobRoles[0] ? staff.jobRoles[0] : 'sales',
         storeName: staff.storeName,
-        status: staff.active ? 'active' : 'inactive'
+        status: staff.active ? 'active' : 'inactive',
+        portalAccess: staff.portalAccess || []
       });
     } else {
       setEditingStaff(null);
@@ -100,7 +103,8 @@ export default function ManageAllStaffPage() {
         password: '',
         role: 'sales',
         storeName: '',
-        status: 'active'
+        status: 'active',
+        portalAccess: []
       });
     }
     setIsModalOpen(true);
@@ -415,6 +419,36 @@ export default function ManageAllStaffPage() {
                     </select>
                   </div>
                 )}
+
+                {/* Access Control section */}
+                <div className="pt-2 border-t border-gray-100">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Portal Access Control</label>
+                  <p className="text-xs text-gray-500 mb-3">Check the portals this staff member is allowed to log into using their generic staff credentials.</p>
+                  
+                  <div className="space-y-2">
+                    {[
+                      { id: 'accounts', label: 'Accounts Portal' },
+                      { id: 'inventory', label: 'Inventory Portal' },
+                      { id: 'store_admin', label: 'Store Admin Portal' },
+                    ].map(portal => (
+                      <label key={portal.id} className="flex items-center space-x-3 p-2 border border-gray-100 rounded-lg hover:bg-gray-50 cursor-pointer transition">
+                        <input
+                          type="checkbox"
+                          checked={formData.portalAccess.includes(portal.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setFormData({ ...formData, portalAccess: [...formData.portalAccess, portal.id] });
+                            } else {
+                              setFormData({ ...formData, portalAccess: formData.portalAccess.filter(p => p !== portal.id) });
+                            }
+                          }}
+                          className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                        />
+                        <span className="text-sm font-medium text-gray-700">{portal.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div className="mt-8 flex gap-3">

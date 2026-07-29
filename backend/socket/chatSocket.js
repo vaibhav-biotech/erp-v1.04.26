@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Message = require('../models/Message');
 const Conversation = require('../models/Conversation');
 
@@ -30,7 +31,12 @@ module.exports = (io) => {
         // Ensure conversation exists if it wasn't provided (new chat)
         if (!targetConversationId && receiverId) {
           let conv = await Conversation.findOne({
-            'participants.userId': { $all: [senderId, receiverId] }
+            'participants.userId': { 
+              $all: [
+                new mongoose.Types.ObjectId(senderId), 
+                new mongoose.Types.ObjectId(receiverId)
+              ] 
+            }
           });
           
           if (!conv) {

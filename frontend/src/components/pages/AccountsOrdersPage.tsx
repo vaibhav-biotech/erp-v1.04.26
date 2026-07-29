@@ -5,7 +5,7 @@ import { FiEye, FiPlus, FiDownload } from 'react-icons/fi';
 import CreateOrderModal from '@/components/CreateOrderModal';
 
 export default function AccountsOrdersPage() {
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

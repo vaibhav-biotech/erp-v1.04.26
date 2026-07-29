@@ -34,7 +34,7 @@ export default function AccountsLoginPage() {
     setLoading(true);
 
     try {
-      await loginAdmin(email, password);
+      await loginAdmin(email, password, 'accounts');
     } catch (err: any) {
       setError(err.message || 'Login failed. Please try again.');
       setPassword('');

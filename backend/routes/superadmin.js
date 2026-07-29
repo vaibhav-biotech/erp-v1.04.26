@@ -364,7 +364,7 @@ router.get('/staff', async (req, res) => {
 router.post('/staff', async (req, res) => {
   try {
     const StaffMember = require('../models/StaffMember');
-    const { name, username, password, role, storeName } = req.body;
+    const { name, username, password, role, storeName, portalAccess } = req.body;
     
     if (!name || !username || !password || !role) {
       return res.status(400).json({ success: false, error: 'All fields are required except Store Assignment' });
@@ -384,6 +384,7 @@ router.post('/staff', async (req, res) => {
       role: 'staff', // Schema restricts to staff or staff_admin
       jobRoles: [role], // Use jobRoles for frontend's role
       storeName: storeName ? storeName.toLowerCase().trim().replace(/\s+/g, '') : '',
+      portalAccess: Array.isArray(portalAccess) ? portalAccess : [],
       active: true
     });
 
@@ -411,7 +412,7 @@ router.post('/staff', async (req, res) => {
 router.put('/staff/:id', async (req, res) => {
   try {
     const StaffMember = require('../models/StaffMember');
-    const { name, username, role, storeName, status, password } = req.body;
+    const { name, username, role, storeName, status, password, portalAccess } = req.body;
     
     const staff = await StaffMember.findById(req.params.id);
     if (!staff) {
@@ -420,12 +421,30 @@ router.put('/staff/:id', async (req, res) => {
 
     if (name) staff.name = name;
     if (username) staff.username = username;
-    if (role) staff.jobRoles = [role];
-    if (storeName) staff.storeName = storeName.toLowerCase().trim().replace(/\s+/g, '');
+    let roleChanged = false;
+    if (role && (!staff.jobRoles || staff.jobRoles[0] !== role)) {
+      staff.jobRoles = [role];
+      roleChanged = true;
+    }
+    
+    if (storeName !== undefined) staff.storeName = storeName ? storeName.toLowerCase().trim().replace(/\s+/g, '') : '';
     if (status) staff.active = (status === 'active');
     if (password) staff.password = password;
+    
+    if (portalAccess && Array.isArray(portalAccess)) {
+      // Check if arrays are different length or have different elements
+      const currentPortals = staff.portalAccess || [];
+      if (currentPortals.length !== portalAccess.length || !portalAccess.every(p => currentPortals.includes(p))) {
+        staff.portalAccess = portalAccess;
+        roleChanged = true;
+      }
+    }
 
     await staff.save();
+    
+    if (roleChanged) {
+      emailService.sendStaffRoleChangeEmail(staff).catch(err => console.error("Staff role change email failed:", err));
+    }
     
     const staffObj = staff.toObject();
     delete staffObj.password;

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { FiEye, FiDownload } from 'react-icons/fi';
 
 export default function AccountsInvoicesPage() {
-  const [invoices, setInvoices] = useState([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(25);

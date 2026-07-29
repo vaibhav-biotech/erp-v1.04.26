@@ -30,7 +30,7 @@ interface AuthContextType {
   adminToken: string | null;
   adminLoading: boolean;
   adminAuthenticated: boolean;
-  loginAdmin: (email: string, password: string) => Promise<void>;
+  loginAdmin: (email: string, password: string, portal?: string) => Promise<void>;
   logoutAdmin: () => void;
   logout: () => void;
 
@@ -111,14 +111,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Admin login
-  const loginAdmin = useCallback(async (email: string, password: string) => {
+  const loginAdmin = useCallback(async (email: string, password: string, portal?: string) => {
     try {
       setAdminLoading(true);
 
       const response = await fetch(buildApiUrl('/api/admin/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, portal }),
       });
 
       if (!response.ok) {

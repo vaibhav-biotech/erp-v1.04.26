@@ -81,7 +81,7 @@ export const GlobalChatWidget = () => {
             <div className="flex-1 overflow-y-auto p-2">
               <div>
                 <p className="text-xs text-gray-400 mb-2 px-2 uppercase font-bold">
-                  {searchQuery ? 'Search Results' : 'All Staff'}
+                  {searchQuery ? 'Search Results' : 'Existing Staff Members'}
                 </p>
                 {isLoading ? (
                   <p className="text-center text-sm text-gray-500 mt-4">Loading...</p>
@@ -102,6 +102,7 @@ export const GlobalChatWidget = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm text-gray-900 truncate">{user.name}</p>
+                        <p className="text-xs text-gray-500 capitalize mt-0.5">{(user as any).role ? (user as any).role.replace(/_/g, ' ') : 'Staff'}</p>
                       </div>
                     </div>
                   ))

@@ -57,7 +57,7 @@ const verifyAdminToken = (req, res, next) => {
 
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, portal } = req.body;
     if (!email || !password) {
       return res.status(400).json({ success: false, error: 'Email and password required' });
     }
@@ -68,14 +68,22 @@ router.post('/login', async (req, res) => {
     if (!admin) {
       const StaffMember = require('../models/StaffMember');
       admin = await StaffMember.findOne({
-        $or: [{ email }, { username: email }],
-        role: 'store_admin'
+        $or: [{ email }, { username: email }]
       }).select('+password');
       isStaffAdmin = !!admin;
     }
 
     if (!admin || (isStaffAdmin ? admin.active === false : admin.isActive === false)) {
       return res.status(401).json({ success: false, error: 'Invalid email or password' });
+    }
+
+    // If it's a staff member and they are trying to access a specific portal, check access
+    if (isStaffAdmin && portal) {
+       // if portal is 'superadmin' they need to be staff_admin perhaps, or maybe they just shouldn't access superadmin
+       // We'll trust the portalAccess array.
+       if (!admin.portalAccess || !admin.portalAccess.includes(portal)) {
+         return res.status(403).json({ success: false, error: 'Access denied. You do not have permission to access this portal.' });
+       }
     }
 
     const isPasswordCorrect = await admin.comparePassword(password);

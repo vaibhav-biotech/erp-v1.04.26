@@ -50,7 +50,7 @@ export default function AdminLoginPage() {
     if (!validateForm()) return;
 
     try {
-      await loginAdmin(formData.email, formData.password);
+      await loginAdmin(formData.email, formData.password, 'store_admin');
       setSuccess(true);
       setTimeout(() => {
         router.push('/dashboard');

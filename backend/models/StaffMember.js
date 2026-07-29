@@ -53,6 +53,10 @@ const staffMemberSchema = new mongoose.Schema(
       enum: STAFF_JOB_ROLES,
       default: ['operations'],
     },
+    portalAccess: {
+      type: [String],
+      default: [], // Array of strings like 'accounts', 'inventory', 'store_admin'
+    },
     avatarInitials: {
       type: String,
       default: '??',

@@ -36,7 +36,7 @@ export default function InventoryLoginPage() {
     try {
       // Get updated admin from AuthContext if possible, but router.push might happen before state updates.
       // Next time useEffect runs, it will correct the route if they are accountant. 
-      await loginAdmin(email, password);
+      await loginAdmin(email, password, 'inventory');
       // Let the useEffect handle the correct router push based on role
     } catch (err: any) {
       setError(err.message || 'Login failed. Please try again.');
