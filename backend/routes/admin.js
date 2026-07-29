@@ -174,6 +174,28 @@ router.get('/profile', verifyAdminToken, async (req, res) => {
   }
 });
 
+const normalizeStoreName = (value) => {
+  const normalized = String(value || '').toLowerCase().trim();
+  if (!normalized) return 'plantsingarden';
+  if (normalized === 'plants in garden' || normalized === 'plants-in-garden' || normalized === 'plantingarden') {
+    return 'plantsingarden';
+  }
+  return normalized.replace(/\s+/g, '');
+};
+
+const getStoreAliases = (value) => {
+  const base = String(value || '').toLowerCase().trim();
+  const compact = base.replace(/\s+/g, '');
+  const aliases = new Set([base, compact, normalizeStoreName(base)]);
+  if (aliases.has('plantsingarden') || aliases.has('plants in garden') || aliases.has('plants-in-garden') || aliases.has('plantingarden')) {
+    aliases.add('plantsingarden');
+    aliases.add('plants in garden');
+    aliases.add('plants-in-garden');
+    aliases.add('plantingarden');
+  }
+  return Array.from(aliases).filter(Boolean);
+};
+
 // Admin: Get Dashboard Stats for Current Store
 router.get('/dashboard-stats', verifyAdminToken, async (req, res) => {
   try {
@@ -186,17 +208,19 @@ router.get('/dashboard-stats', verifyAdminToken, async (req, res) => {
     const Product = require('../models/Product');
     const mongoose = require('mongoose');
 
-    const totalCustomers = await Customer.countDocuments({ storeName });
-    const totalProducts = await Product.countDocuments({ storeName });
+    const storeAliases = getStoreAliases(storeName);
+
+    const totalCustomers = await Customer.countDocuments({ storeName: { $in: storeAliases } });
+    const totalProducts = await Product.countDocuments({ storeName: { $in: storeAliases } });
     
     // Inventory Calculations
-    const allProducts = await Product.find({ storeName });
+    const allProducts = await Product.find({ storeName: { $in: storeAliases } });
     const lowStock = allProducts.filter(p => p.stock < 10).length;
     const totalInventoryValue = allProducts.reduce((sum, p) => sum + ((p.costPrice || 0) * (p.stock || 0)), 0);
     const totalCategories = await mongoose.connection.db.collection('categories').countDocuments({});
     
     const db = mongoose.connection.db;
-    const orders = await db.collection('orders').find({ storeName, paymentStatus: 'paid' }).toArray();
+    const orders = await db.collection('orders').find({ storeName: { $in: storeAliases }, paymentStatus: 'paid' }).toArray();
     const totalOrders = orders.length;
     const totalRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || order.total || 0), 0);
 
