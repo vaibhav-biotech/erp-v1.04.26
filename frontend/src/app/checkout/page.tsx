@@ -7,6 +7,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import PublicNavbar from '@/components/PublicNavbar';
 import PublicFooter from '@/components/PublicFooter';
+import AuthModal from '@/components/AuthModal';
 import Link from 'next/link';
 import { Loader2, MapPin, CreditCard, Smartphone, Briefcase, ShieldCheck } from 'lucide-react';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
@@ -57,6 +58,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState('');
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [formData, setFormData] = useState({
@@ -390,9 +392,9 @@ export default function CheckoutPage() {
                     <div className="flex justify-between items-center mb-4">
                       <h2 className="font-montserrat font-bold text-lg text-black">Contact</h2>
                       {!customerAuthenticated && (
-                        <Link href="/auth/login?redirect=/checkout" className="text-blue-600 font-montserrat text-sm hover:underline">
+                        <button type="button" onClick={() => setIsAuthModalOpen(true)} className="text-blue-600 font-montserrat text-sm hover:underline focus:outline-none">
                           Sign in
-                        </Link>
+                        </button>
                       )}
                     </div>
                     <input
@@ -742,6 +744,12 @@ export default function CheckoutPage() {
         </div>
       </div>
       <PublicFooter />
+      
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+        redirectPath="" 
+      />
     </>
   );
 }

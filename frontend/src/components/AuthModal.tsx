@@ -77,7 +77,9 @@ export default function AuthModal({ isOpen, onClose, redirectPath = '/customer' 
 
       await loginCustomer(loginForm.email, loginForm.password);
       onClose();
-      router.push(redirectPath);
+      if (redirectPath) {
+        router.push(redirectPath);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
@@ -124,7 +126,9 @@ export default function AuthModal({ isOpen, onClose, redirectPath = '/customer' 
       });
 
       onClose();
-      router.push(redirectPath);
+      if (redirectPath) {
+        router.push(redirectPath);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed');
     } finally {
