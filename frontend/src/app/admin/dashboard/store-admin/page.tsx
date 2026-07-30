@@ -22,6 +22,7 @@ import GiftWrapSettingsPage from '@/components/pages/GiftWrapSettingsPage';
 import AccountTaxSettingsPage from '@/components/pages/AccountTaxSettingsPage';
 import OffersManager from '@/components/pages/OffersManager';
 import OfferBackgroundManager from '@/components/pages/OfferBackgroundManager';
+import AbandonedCartsPage from '@/components/pages/AbandonedCartsPage';
 
 const BulkUploadModal = dynamic(() => import('@/components/BulkUploadModal'), { ssr: false });
 
@@ -207,6 +208,8 @@ export default function StoreAdminDashboard() {
         return <StoreAdminOrdersListPage />;
       case 'customers':
         return <CustomersPage />;
+      case 'abandoned-carts':
+        return <AbandonedCartsPage />;
       case 'website-settings':
         return <WebsiteSettingsPage />;
       case 'account-tax':

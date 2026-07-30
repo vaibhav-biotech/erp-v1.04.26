@@ -220,6 +220,13 @@ export default function GroupedSidebar() {
       route: '/admin/dashboard/store-admin?page=customers',
       roles: ['store_admin'],
     },
+    {
+      id: 'abandoned-carts',
+      label: 'Abandoned Carts',
+      icon: <FiShoppingCart className="w-5 h-5" />,
+      route: '/admin/dashboard/store-admin?page=abandoned-carts',
+      roles: ['store_admin'],
+    },
     // ---- SUPER ADMIN ITEMS ----
     {
       id: 'super-stores',

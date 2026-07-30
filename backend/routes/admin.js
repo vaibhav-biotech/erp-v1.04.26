@@ -502,4 +502,53 @@ router.delete('/gift-wrap-options/:optionId', verifyAdminToken, async (req, res)
   }
 });
 
+
+// Admin: Get Abandoned Carts for Current Store
+router.get('/abandoned-carts', verifyAdminToken, async (req, res) => {
+  try {
+    const storeName = req.storeName;
+    if (!storeName) {
+      return res.status(400).json({ success: false, error: 'Store name required' });
+    }
+
+    const Cart = require('../models/Cart');
+    const Customer = require('../models/Customer');
+    const storeAliases = getStoreAliases(storeName);
+
+    // Find carts that belong to this store and are not empty
+    const carts = await Cart.find({ 
+      storeName: { $in: storeAliases },
+      items: { $not: { $size: 0 } }
+    }).sort({ lastUpdatedAt: -1 });
+
+    // Populate customer details manually
+    const populatedCarts = [];
+    for (const cart of carts) {
+      const customer = await Customer.findById(cart.customerId);
+      if (customer) {
+        populatedCarts.push({
+          _id: cart._id,
+          customer: {
+            name: `${customer.firstName} ${customer.lastName}`,
+            email: customer.email,
+            phone: customer.phone
+          },
+          items: cart.items,
+          totalValue: cart.items.reduce((sum, item) => sum + item.totalPrice, 0),
+          lastUpdatedAt: cart.lastUpdatedAt,
+          recoveryEmailSent: cart.recoveryEmailSent
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: populatedCarts
+    });
+  } catch (error) {
+    console.error('[Admin Abandoned Carts]', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;
