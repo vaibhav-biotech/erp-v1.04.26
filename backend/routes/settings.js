@@ -6,7 +6,7 @@ const Settings = require('../models/Settings');
 
 // Middleware to check for superadmin
 const requireSuperadmin = (req, res, next) => {
-  if (req.user.role !== 'superadmin') {
+  if (req.user.role !== 'super_admin') {
     return res.status(403).json({ success: false, error: 'Forbidden. Superadmin access required.' });
   }
   next();
@@ -52,7 +52,7 @@ router.get('/gateways', verifyAdminToken, async (req, res) => {
   try {
     const gateways = await PaymentGateway.find().populate('assignedStores', 'name storeName domain');
     // If not superadmin, maybe omit keySecret for safety?
-    if (req.user.role !== 'superadmin') {
+    if (req.user.role !== 'super_admin') {
       gateways.forEach(gw => gw.keySecret = '***');
     }
     res.json({ success: true, data: gateways });

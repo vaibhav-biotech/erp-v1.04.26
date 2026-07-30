@@ -381,8 +381,8 @@ router.post('/staff', async (req, res) => {
       username,
       email: `${username}@${(storeName || 'company').toLowerCase().trim().replace(/\s+/g, '')}.com`, // Mock email since frontend doesn't send it
       password,
-      role: 'staff', // Schema restricts to staff or staff_admin
-      jobRoles: [role], // Use jobRoles for frontend's role
+      role: (Array.isArray(portalAccess) && portalAccess.includes('store_admin')) ? 'store_admin' : 'staff',
+      jobRoles: [role],
       storeName: storeName ? storeName.toLowerCase().trim().replace(/\s+/g, '') : '',
       portalAccess: Array.isArray(portalAccess) ? portalAccess : [],
       active: true
@@ -437,6 +437,12 @@ router.put('/staff/:id', async (req, res) => {
       if (currentPortals.length !== portalAccess.length || !portalAccess.every(p => currentPortals.includes(p))) {
         staff.portalAccess = portalAccess;
         roleChanged = true;
+      }
+      
+      const newRole = portalAccess.includes('store_admin') ? 'store_admin' : 'staff';
+      if (staff.role !== newRole) {
+          staff.role = newRole;
+          roleChanged = true;
       }
     }
 

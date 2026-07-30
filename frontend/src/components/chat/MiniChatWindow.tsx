@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useChat, ChatMessage, ChatContact } from '@/contexts/ChatContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { X, Send, Paperclip, Check, CheckCheck } from 'lucide-react';
+import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 
 export const MessageBubble = ({ message, isMe }: { message: ChatMessage, isMe: boolean }) => {
   return (
@@ -49,18 +50,23 @@ export const MiniChatWindow = ({ contact, onClose }: { contact: ChatContact, onC
     if (!socket || !admin) return;
 
     const handleMessage = (msg: ChatMessage) => {
-      if (conversationId && msg.conversationId === conversationId) {
-        setMessages(prev => [...prev, msg]);
-        if (msg.senderId === contact._id && admin._id) {
-           markAsRead(msg.conversationId, [msg._id]);
+      setMessages(prev => {
+        if (prev.some(m => m._id === msg._id)) return prev;
+        
+        if (conversationId && msg.conversationId === conversationId) {
+          if (msg.senderId === contact._id && admin._id) {
+             markAsRead(msg.conversationId, [msg._id]);
+          }
+          return [...prev, msg];
+        } else if (msg.senderId === contact._id) {
+          setConversationId(msg.conversationId);
+          if (admin._id) {
+             markAsRead(msg.conversationId, [msg._id]);
+          }
+          return [...prev, msg];
         }
-      } else if (msg.senderId === contact._id) {
-        setConversationId(msg.conversationId);
-        setMessages(prev => [...prev, msg]);
-        if (admin._id) {
-           markAsRead(msg.conversationId, [msg._id]);
-        }
-      }
+        return prev;
+      });
     };
 
     socket.on('receive_message', handleMessage);
@@ -83,12 +89,9 @@ export const MiniChatWindow = ({ contact, onClose }: { contact: ChatContact, onC
           receiverName: contact.name
         };
 
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050'}/api/chat/conversations`, {
+        const res = await fetch(buildApiUrl('api/chat/conversations'), {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${adminToken}`
-          },
+          headers: getApiHeaders(adminToken || undefined),
           body: JSON.stringify(payload)
         });
 
@@ -131,11 +134,12 @@ export const MiniChatWindow = ({ contact, onClose }: { contact: ChatContact, onC
         formData.append('file', selectedFile);
         formData.append('folder', 'chat-attachments');
         
-        const uploadRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050'}/api/upload`, {
+        const uploadHeaders = getApiHeaders(adminToken || undefined);
+        delete uploadHeaders['Content-Type']; // Let browser set multipart with boundary
+        
+        const uploadRes = await fetch(buildApiUrl('api/upload'), {
           method: 'POST',
-          headers: {
-             'Authorization': `Bearer ${adminToken}`
-          },
+          headers: uploadHeaders,
           body: formData
         });
         
@@ -149,9 +153,13 @@ export const MiniChatWindow = ({ contact, onClose }: { contact: ChatContact, onC
         }
       }
 
-      const msg = await sendMessage(contact, input || (selectedFile ? 'Shared an attachment' : ''), attachments);
+      const msg = await sendMessage(contact, input || (selectedFile ? 'Shared an attachment' : ''), attachments, conversationId || undefined);
       setConversationId(msg.conversationId);
-      setMessages(prev => [...prev, msg]);
+      
+      setMessages(prev => {
+        if (prev.some(m => m._id === msg._id)) return prev;
+        return [...prev, msg];
+      });
       setInput('');
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
+import { getApiBaseUrl, buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 
 export interface ChatMessage {
   _id: string;
@@ -40,7 +41,7 @@ interface ChatContextType {
   unreadTotal: number;
   openChat: (contact: ChatContact) => void;
   closeChat: (userId: string) => void;
-  sendMessage: (contact: ChatContact, content: string, attachments?: any[]) => Promise<ChatMessage>;
+  sendMessage: (contact: ChatContact, content: string, attachments?: any[], conversationId?: string) => Promise<ChatMessage>;
   markAsRead: (conversationId: string, messageIds: string[]) => void;
   fetchHistory: (conversationId: string) => Promise<ChatMessage[]>;
   searchContacts: (query: string) => Promise<ChatContact[]>;
@@ -66,7 +67,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    const socketInstance = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050', {
+    const socketInstance = io(getApiBaseUrl(), {
       transports: ['websocket'],
     });
 
@@ -122,16 +123,17 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     setActiveChats(prev => prev.filter(c => c._id !== userId));
   }, []);
 
-  const sendMessage = useCallback((contact: ChatContact, content: string, attachments?: any[]): Promise<ChatMessage> => {
+  const sendMessage = useCallback((contact: ChatContact, content: string, attachments?: any[], conversationId?: string): Promise<ChatMessage> => {
     return new Promise((resolve, reject) => {
       if (!socket || !admin?._id) return reject('Socket not connected');
       
       const payload = {
+        conversationId,
         senderId: admin._id,
-        senderModel: admin.role === 'staff' || admin.role === 'staff_admin' ? 'StaffMember' : 'Admin',
+        senderModel: (admin.role === 'super_admin' || admin.role === 'inventory_admin' || admin.role === 'accountant') ? 'Admin' : 'StaffMember',
         senderName: (admin as any).name || (admin.firstName ? `${admin.firstName} ${admin.lastName || ''}`.trim() : 'Unknown User'),
         receiverId: contact._id,
-        receiverModel: contact.userModel,
+        receiverModel: contact.userModel || 'StaffMember',
         receiverName: contact.name,
         content,
         attachments
@@ -155,10 +157,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchHistory = async (conversationId: string): Promise<ChatMessage[]> => {
      try {
-       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050'}/api/chat/${conversationId}/messages`, {
-         headers: {
-           'Authorization': `Bearer ${adminToken}`
-         }
+       const res = await fetch(buildApiUrl(`api/chat/${conversationId}/messages`), {
+         headers: getApiHeaders(adminToken || undefined)
        });
        const data = await res.json();
        return data.success ? data.data : [];
@@ -169,10 +169,8 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
   const searchContacts = async (query: string): Promise<ChatContact[]> => {
      try {
-       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050'}/api/chat/contacts?q=${query}`, {
-         headers: {
-           'Authorization': `Bearer ${adminToken}`
-         }
+       const res = await fetch(buildApiUrl(`api/chat/contacts?q=${query}`), {
+         headers: getApiHeaders(adminToken || undefined)
        });
        const data = await res.json();
        return data.success ? data.data.filter((c: any) => c._id !== admin?._id) : [];

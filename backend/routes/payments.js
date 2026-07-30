@@ -33,7 +33,17 @@ router.post('/create-order', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Store not found' });
     }
 
-    const gateway = store.paymentGateway;
+    let gateway = store.paymentGateway;
+
+    // Fallback to global gateway if store doesn't have one
+    if (!gateway) {
+      gateway = await PaymentGateway.findOne({ isActive: true, provider: 'razorpay' });
+    }
+
+    if (!gateway) {
+      return res.status(400).json({ success: false, error: 'No active payment gateway found for this store' });
+    }
+
     const razorpay = getRazorpayInstance(gateway);
 
     const options = {
@@ -71,7 +81,11 @@ router.post('/verify', async (req, res) => {
     const storeName = req.storeName;
 
     const store = await Store.findOne({ storeName }).populate('paymentGateway');
-    const gateway = store.paymentGateway;
+    let gateway = store.paymentGateway;
+    if (!gateway) {
+      gateway = await PaymentGateway.findOne({ isActive: true, provider: 'razorpay' });
+    }
+    
     if (!gateway) throw new Error('Gateway not found');
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;

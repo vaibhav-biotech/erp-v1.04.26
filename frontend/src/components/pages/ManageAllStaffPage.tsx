@@ -403,12 +403,14 @@ export default function ManageAllStaffPage() {
                     required
                     value={formData.role}
                     onChange={e => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white"
                   >
                     <option value="sales">Sales</option>
                     <option value="packaging">Packaging</option>
-                    <option value="customer_service">Customer Service</option>
-                    <option value="social_media">Social Media</option>
+                    <option value="customer_support">Customer Support</option>
+                    <option value="social_media_manager">Social Media Manager</option>
+                    <option value="whatsapp_manager">WhatsApp Manager</option>
+                    <option value="operations">Operations</option>
                   </select>
                 </div>
                 <div>
