@@ -31,6 +31,7 @@ export default function ManageAllStaffPage() {
   const router = useRouter();
   const [staffList, setStaffList] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
+  const [availableStores, setAvailableStores] = useState<any[]>([]);
 
   // Tabs State
   const [activeTab, setActiveTab] = useState<'employees' | 'tasks' | 'attendance'>('employees');
@@ -63,7 +64,23 @@ export default function ManageAllStaffPage() {
 
   useEffect(() => {
     fetchStaff();
+    fetchStores();
   }, [adminToken]);
+
+  const fetchStores = async () => {
+    try {
+      if (!adminToken) return;
+      const res = await fetch(buildApiUrl('/api/superadmin/stores'), {
+        headers: { Authorization: `Bearer ${adminToken}` }
+      });
+      const json = await res.json();
+      if (json.success) {
+        setAvailableStores(json.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch stores', err);
+    }
+  };
 
   const fetchStaff = async () => {
     try {
@@ -395,15 +412,20 @@ export default function ManageAllStaffPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Store Assignment (Identifier)</label>
-                  <input
-                    type="text"
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Store Assignment</label>
+                  <select
                     value={formData.storeName}
                     onChange={e => setFormData({ ...formData, storeName: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                    placeholder="e.g. plantsingarden (Leave blank for unassigned)"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">The storeName identifier the staff belongs to.</p>
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white"
+                  >
+                    <option value="">-- Unassigned (Global) --</option>
+                    {availableStores.map(store => (
+                      <option key={store._id} value={store.storeName}>
+                        {store.name} ({store.storeName})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">The specific store this staff member is assigned to.</p>
                 </div>
                 
                 {editingStaff && (
