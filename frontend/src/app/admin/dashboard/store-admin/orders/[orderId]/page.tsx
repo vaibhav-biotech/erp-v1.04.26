@@ -15,6 +15,7 @@ import {
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 import { useAuth } from '@/contexts/AuthContext';
 import GenerateInvoiceModal from '@/components/GenerateInvoiceModal';
+import ShippingDetailsModal from '@/components/ShippingDetailsModal';
 
 interface OrderItem {
   productId?: string;
@@ -106,6 +107,7 @@ export default function StoreAdminOrderDetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [isShippingModalOpen, setIsShippingModalOpen] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
@@ -204,6 +206,14 @@ export default function StoreAdminOrderDetailsPage() {
     }
   };
 
+  const handleOrderStatusChange = (newStatus: string) => {
+    if (newStatus === 'shipped') {
+      setIsShippingModalOpen(true);
+    } else {
+      setOrderStatus(newStatus);
+    }
+  };
+
   const printInvoice = () => {
     window.print();
   };
@@ -275,6 +285,7 @@ export default function StoreAdminOrderDetailsPage() {
             Print
           </button>
           <button
+            id="save-updates-btn"
             onClick={saveOrderUpdates}
             disabled={isSaving}
             className="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-black"
@@ -297,7 +308,7 @@ export default function StoreAdminOrderDetailsPage() {
                 <label className="block text-xs font-semibold text-gray-700 mb-1 uppercase">Order Status</label>
                 <select
                   value={orderStatus}
-                  onChange={(e) => setOrderStatus(e.target.value)}
+                  onChange={(e) => handleOrderStatusChange(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                 >
                   {ORDER_STATUS_OPTIONS.map((status) => (
@@ -516,6 +527,21 @@ export default function StoreAdminOrderDetailsPage() {
         }}
         order={order}
         isAccountantMode={false}
+      />
+
+      <ShippingDetailsModal
+        isOpen={isShippingModalOpen}
+        onClose={() => setIsShippingModalOpen(false)}
+        onSubmit={(data) => {
+          setCarrier(data.courierName);
+          setTrackingNumber(data.trackingNumber);
+          setOrderStatus('shipped');
+          setIsShippingModalOpen(false);
+          // Auto save immediately for convenience
+          setTimeout(() => {
+            document.getElementById('save-updates-btn')?.click();
+          }, 100);
+        }}
       />
     </div>
   );

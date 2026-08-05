@@ -11,6 +11,8 @@ import AccountsCreateInvoicePage from '@/components/pages/AccountsCreateInvoiceP
 import PurchaseOrdersPage from '@/components/pages/PurchaseOrdersPage';
 import SuppliersPage from '@/components/pages/SuppliersPage';
 import AccountsPaymentsPage from '@/components/pages/AccountsPaymentsPage';
+import AccountsShippingPage from '@/components/pages/AccountsShippingPage';
+import AccountsStorePage from '@/components/pages/AccountsStorePage';
 
 export default function AccountsAdminPage() {
   const router = useRouter();
@@ -48,6 +50,10 @@ export default function AccountsAdminPage() {
         return <SuppliersPage />;
       case 'accounts-payments':
         return <AccountsPaymentsPage />;
+      case 'shipping-management':
+        return <AccountsShippingPage />;
+      case 'store-management':
+        return <AccountsStorePage />;
       default:
         return <AccountsDashboardPage />;
     }

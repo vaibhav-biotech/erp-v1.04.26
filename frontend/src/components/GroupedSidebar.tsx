@@ -193,6 +193,20 @@ export default function GroupedSidebar() {
       roles: ['accountant', 'super_admin'],
     },
     {
+      id: 'accounts-shipping',
+      label: 'Shipping Management',
+      icon: <FiTruck className="w-5 h-5" />,
+      route: '/accounts?page=shipping-management',
+      roles: ['accountant', 'super_admin'],
+    },
+    {
+      id: 'accounts-store',
+      label: 'Store Management',
+      icon: <FiSettings className="w-5 h-5" />,
+      route: '/accounts?page=store-management',
+      roles: ['accountant', 'super_admin'],
+    },
+    {
       id: 'activity-log',
       label: 'Activity Logs',
       icon: <FiActivity className="w-5 h-5" />,

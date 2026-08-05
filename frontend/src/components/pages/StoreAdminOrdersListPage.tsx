@@ -6,6 +6,7 @@ import { FiEye, FiRefreshCw, FiPlus } from 'react-icons/fi';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 import { useAuth } from '@/contexts/AuthContext';
 import CreateOrderModal from '@/components/CreateOrderModal';
+import ShippingDetailsModal from '@/components/ShippingDetailsModal';
 
 interface Order {
   _id: string;
@@ -81,6 +82,9 @@ export default function StoreAdminOrdersListPage() {
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
+  const [isShippingModalOpen, setIsShippingModalOpen] = useState(false);
+  const [shippingTargetOrderId, setShippingTargetOrderId] = useState<string | null>(null);
+
   const ORDER_STATUS_OPTIONS = ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled', 'returned'];
   const PAYMENT_STATUS_OPTIONS = ['pending', 'paid', 'failed', 'refunded', 'cod_pending'];
 
@@ -129,14 +133,20 @@ export default function StoreAdminOrdersListPage() {
     fetchOrders();
   }, [adminToken]);
 
-  const handleUpdateStatus = async (orderId: string, field: 'orderStatus' | 'paymentStatus', value: string) => {
+  const handleUpdateStatus = async (orderId: string, field: 'orderStatus' | 'paymentStatus', value: string, additionalData?: any) => {
     if (!adminToken) return;
+
+    if (field === 'orderStatus' && value === 'shipped' && !additionalData) {
+      setShippingTargetOrderId(orderId);
+      setIsShippingModalOpen(true);
+      return;
+    }
     try {
       setUpdatingId(orderId);
       const response = await fetch(buildApiUrl(`/api/orders/${orderId}`), {
         method: 'PATCH',
         headers: getApiHeaders(adminToken),
-        body: JSON.stringify({ [field]: value })
+        body: JSON.stringify({ [field]: value, ...additionalData })
       });
       if(response.ok) {
         setOrders(orders.map((o) => o._id === orderId ? { ...o, [field]: value } : o));
@@ -352,6 +362,17 @@ export default function StoreAdminOrdersListPage() {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onOrderCreated={fetchOrders}
+      />
+
+      <ShippingDetailsModal
+        isOpen={isShippingModalOpen}
+        onClose={() => setIsShippingModalOpen(false)}
+        onSubmit={(data) => {
+          if (shippingTargetOrderId) {
+            handleUpdateStatus(shippingTargetOrderId, 'orderStatus', 'shipped', data);
+          }
+          setIsShippingModalOpen(false);
+        }}
       />
     </div>
   );

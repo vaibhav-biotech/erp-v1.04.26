@@ -1,30 +1,24 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { FiEye, FiPlus, FiDownload } from 'react-icons/fi';
-import CreateOrderModal from '@/components/CreateOrderModal';
+import { FiEye, FiDownload, FiTruck } from 'react-icons/fi';
 import ShippingDetailsModal from '@/components/ShippingDetailsModal';
 
-export default function AccountsOrdersPage() {
+export default function AccountsShippingPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const [isShippingModalOpen, setIsShippingModalOpen] = useState(false);
   const [shippingTargetOrderId, setShippingTargetOrderId] = useState<string | null>(null);
 
   const [filterStore, setFilterStore] = useState('all');
-  const [filterStartDate, setFilterStartDate] = useState('');
-  const [filterEndDate, setFilterEndDate] = useState('');
-  const [filterOrderStatus, setFilterOrderStatus] = useState('all');
-  const [filterPaymentStatus, setFilterPaymentStatus] = useState('all');
+  const [filterOrderStatus, setFilterOrderStatus] = useState('processing');
 
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(25);
 
   const ORDER_STATUS_OPTIONS = ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled', 'returned'];
-  const PAYMENT_STATUS_OPTIONS = ['pending', 'paid', 'failed', 'refunded', 'cod_pending'];
 
   const storeNames = Array.from(new Set(orders.map((o: any) => o.storeName || o.store?.name || 'Unknown Store')));
 
@@ -34,7 +28,7 @@ export default function AccountsOrdersPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterStore, filterStartDate, filterEndDate, filterOrderStatus, filterPaymentStatus]);
+  }, [filterStore, filterOrderStatus]);
 
   const fetchOrders = async () => {
     try {
@@ -49,7 +43,7 @@ export default function AccountsOrdersPage() {
     setLoading(false);
   };
 
-  const handleUpdateStatus = async (orderId: string, field: 'orderStatus' | 'paymentStatus', value: string, additionalData?: any) => {
+  const handleUpdateStatus = async (orderId: string, field: string, value: string, additionalData?: any) => {
     if (field === 'orderStatus' && value === 'shipped' && !additionalData) {
       setShippingTargetOrderId(orderId);
       setIsShippingModalOpen(true);
@@ -78,24 +72,6 @@ export default function AccountsOrdersPage() {
     const sName = o.storeName || o.store?.name || 'Unknown Store';
     if (filterStore !== 'all' && sName !== filterStore) return false;
     if (filterOrderStatus !== 'all' && (o.orderStatus || 'pending') !== filterOrderStatus) return false;
-    if (filterPaymentStatus !== 'all' && (o.paymentStatus || 'pending') !== filterPaymentStatus) return false;
-    
-    if (filterStartDate || filterEndDate) {
-      const orderDate = new Date(o.createdAt);
-      // Reset time to start of day for comparison
-      orderDate.setHours(0, 0, 0, 0);
-
-      if (filterStartDate) {
-        const start = new Date(filterStartDate);
-        start.setHours(0, 0, 0, 0);
-        if (orderDate < start) return false;
-      }
-      if (filterEndDate) {
-        const end = new Date(filterEndDate);
-        end.setHours(23, 59, 59, 999);
-        if (orderDate > end) return false;
-      }
-    }
     return true;
   });
 
@@ -104,21 +80,22 @@ export default function AccountsOrdersPage() {
 
   const exportToCSV = () => {
     if (filteredOrders.length === 0) return alert('No data to export');
-    const headers = ['Order Number', 'Date', 'Store', 'Customer Name', 'Customer Email', 'Customer Phone', 'Total Amount', 'Order Status', 'Payment Status', 'Payment Method'];
+    const headers = ['Order Number', 'Date', 'Store', 'Customer Name', 'Shipping Address', 'Order Status', 'Courier', 'Tracking No'];
     const csvRows = [headers.join(',')];
 
     for (const order of filteredOrders) {
+      const address = order.shippingAddress || order.address || {};
+      const addressStr = `${address.address || address.street || ''} ${address.city || ''} ${address.state || ''} ${address.postalCode || address.zipCode || ''}`;
+      
       const row = [
         order.orderNumber || '',
         new Date(order.createdAt).toLocaleDateString(),
         order.storeName || order.store?.name || 'N/A',
         order.customer?.name || order.shippingDetail?.name || 'N/A',
-        order.customer?.email || order.shippingDetail?.email || 'N/A',
-        order.customer?.phone || order.shippingDetail?.phone || 'N/A',
-        order.totalAmount || 0,
+        addressStr,
         order.orderStatus || 'pending',
-        order.paymentStatus || 'pending',
-        order.paymentMethod || 'N/A'
+        order.tracking?.courierName || 'N/A',
+        order.tracking?.trackingNumber || 'N/A'
       ].map(v => `"${String(v).replace(/"/g, '""')}"`);
       csvRows.push(row.join(','));
     }
@@ -127,7 +104,7 @@ export default function AccountsOrdersPage() {
     const csvUrl = URL.createObjectURL(csvData);
     const link = document.createElement('a');
     link.href = csvUrl;
-    link.download = `Orders_Export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `Shipping_Export_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
   };
 
@@ -135,20 +112,15 @@ export default function AccountsOrdersPage() {
     <div>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-bold text-gray-900">Store Orders</h1>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+            <FiTruck /> Shipping Management
+          </h1>
           <button
             onClick={exportToCSV}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition shadow-sm"
           >
             <FiDownload />
             Export CSV
-          </button>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition shadow-sm"
-          >
-            <FiPlus />
-            Create Order
           </button>
         </div>
         
@@ -160,23 +132,6 @@ export default function AccountsOrdersPage() {
             <option value="all">All Stores</option>
             {storeNames.map((name: any) => <option key={name} value={name}>{name}</option>)}
           </select>
-          <div className="flex items-center gap-2">
-            <input 
-              type="date"
-              value={filterStartDate}
-              onChange={(e) => setFilterStartDate(e.target.value)}
-              className="text-sm border-gray-300 rounded-lg text-gray-700 bg-white shadow-sm focus:ring-0 focus:border-gray-400 w-32"
-              title="Start Date"
-            />
-            <span className="text-gray-400 text-sm">to</span>
-            <input 
-              type="date"
-              value={filterEndDate}
-              onChange={(e) => setFilterEndDate(e.target.value)}
-              className="text-sm border-gray-300 rounded-lg text-gray-700 bg-white shadow-sm focus:ring-0 focus:border-gray-400 w-32"
-              title="End Date"
-            />
-          </div>
           <select 
             value={filterOrderStatus} onChange={(e) => setFilterOrderStatus(e.target.value)}
             className="text-sm border-gray-300 rounded-lg text-gray-700 bg-white shadow-sm focus:ring-0 focus:border-gray-400"
@@ -184,19 +139,12 @@ export default function AccountsOrdersPage() {
             <option value="all">All Order Statuses</option>
             {ORDER_STATUS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1).replace(/_/g, ' ')}</option>)}
           </select>
-          <select 
-            value={filterPaymentStatus} onChange={(e) => setFilterPaymentStatus(e.target.value)}
-            className="text-sm border-gray-300 rounded-lg text-gray-700 bg-white shadow-sm focus:ring-0 focus:border-gray-400"
-          >
-            <option value="all">All Payment Statuses</option>
-            {PAYMENT_STATUS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1).replace(/_/g, ' ')}</option>)}
-          </select>
         </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
           {loading ? (
-            <div className="p-8 text-center text-gray-500">Loading orders...</div>
+            <div className="p-8 text-center text-gray-500">Loading shipping orders...</div>
           ) : orders.length === 0 ? (
             <div className="p-8 text-center text-gray-500">No orders found.</div>
           ) : (
@@ -207,10 +155,7 @@ export default function AccountsOrdersPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Store</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                 </tr>
               </thead>
@@ -223,7 +168,6 @@ export default function AccountsOrdersPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {ord.customerInfo ? `${ord.customerInfo.firstName} ${ord.customerInfo.lastName}` : (ord.address ? `${ord.address.firstName} ${ord.address.lastName}` : 'N/A')}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">₹{(ord.totalAmount || ord.total || 0).toFixed(2)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <select 
                         value={ord.orderStatus || 'pending'}
@@ -242,34 +186,13 @@ export default function AccountsOrdersPage() {
                         ))}
                       </select>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <select 
-                        value={ord.paymentStatus || 'pending'}
-                        disabled={updatingId === ord._id}
-                        onChange={(e) => handleUpdateStatus(ord._id, 'paymentStatus', e.target.value)}
-                        className={`text-xs font-semibold rounded-full px-2 py-1 border-0 cursor-pointer ${
-                          ord.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                        }`}
-                      >
-                        {PAYMENT_STATUS_OPTIONS.map(opt => (
-                          <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1).replace(/_/g, ' ')}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        ord.source === 'Manual' ? 'bg-gray-100 text-gray-800' : 'bg-purple-100 text-purple-800'
-                      }`}>
-                        {ord.source || 'Website'}
-                      </span>
-                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <Link 
                         href={`/accounts/orders/${ord._id}`}
                         className="inline-flex items-center gap-1 px-3 py-1.5 rounded border border-gray-300 text-xs text-gray-700 hover:bg-gray-100"
                       >
                         <FiEye size={13} />
-                        View
+                        View/Ship
                       </Link>
                     </td>
                   </tr>
@@ -314,22 +237,16 @@ export default function AccountsOrdersPage() {
           )}
         </div>
 
-      <CreateOrderModal 
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onOrderCreated={fetchOrders}
-      />
-
-      <ShippingDetailsModal
-        isOpen={isShippingModalOpen}
-        onClose={() => setIsShippingModalOpen(false)}
-        onSubmit={(data) => {
-          if (shippingTargetOrderId) {
-            handleUpdateStatus(shippingTargetOrderId, 'orderStatus', 'shipped', data);
-          }
-          setIsShippingModalOpen(false);
-        }}
-      />
+        <ShippingDetailsModal
+          isOpen={isShippingModalOpen}
+          onClose={() => setIsShippingModalOpen(false)}
+          onSubmit={(data) => {
+            if (shippingTargetOrderId) {
+              handleUpdateStatus(shippingTargetOrderId, 'orderStatus', 'shipped', data);
+            }
+            setIsShippingModalOpen(false);
+          }}
+        />
     </div>
   );
 }

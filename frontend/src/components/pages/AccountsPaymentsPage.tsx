@@ -11,6 +11,7 @@ export default function AccountsPaymentsPage() {
   const [loading, setLoading] = useState(true);
   
   const [filterStore, setFilterStore] = useState('all');
+  const [filterMethod, setFilterMethod] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -33,15 +34,21 @@ export default function AccountsPaymentsPage() {
     setLoading(false);
   };
 
-  // Filter for Online Payments Only
-  const onlinePayments = orders.filter(o => o.paymentMethod === 'online' || o.razorpayOrderId);
+  // All payments (Online and Offline)
+  const validPayments = orders.filter(o => o.paymentMethod || o.razorpayOrderId);
   
-  const storeNames = Array.from(new Set(onlinePayments.map(o => o.storeName || o.store?.name || 'Unknown Store')));
+  const storeNames = Array.from(new Set(validPayments.map(o => o.storeName || o.store?.name || 'Unknown Store')));
 
-  const filteredPayments = onlinePayments.filter(o => {
+  const filteredPayments = validPayments.filter(o => {
     const sName = o.storeName || o.store?.name || 'Unknown Store';
     if (filterStore !== 'all' && sName !== filterStore) return false;
     
+    if (filterMethod !== 'all') {
+      const isOnline = o.paymentMethod === 'online' || o.razorpayOrderId;
+      if (filterMethod === 'online' && !isOnline) return false;
+      if (filterMethod === 'offline' && isOnline) return false;
+    }
+
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       const matchId = o._id.toLowerCase().includes(term);
@@ -58,8 +65,8 @@ export default function AccountsPaymentsPage() {
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Online Payments History</h1>
-          <p className="text-sm text-gray-500">Track and verify all Razorpay and other online gateway transactions.</p>
+          <h1 className="text-2xl font-bold text-gray-900">Payment History</h1>
+          <p className="text-sm text-gray-500">Track and verify all online and offline transactions.</p>
         </div>
       </div>
 
@@ -74,6 +81,16 @@ export default function AccountsPaymentsPage() {
             {storeNames.map((name: any) => (
               <option key={name} value={name}>{name}</option>
             ))}
+          </select>
+
+          <select
+            className="border border-gray-300 rounded-lg p-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 min-w-[150px]"
+            value={filterMethod}
+            onChange={(e) => setFilterMethod(e.target.value)}
+          >
+            <option value="all">All Methods</option>
+            <option value="online">Online Only</option>
+            <option value="offline">Offline Only</option>
           </select>
           
           <div className="relative flex-1 md:w-64">
@@ -110,7 +127,7 @@ export default function AccountsPaymentsPage() {
               {filteredPayments.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                    No online payments found.
+                    No payments found.
                   </td>
                 </tr>
               ) : (
@@ -118,12 +135,18 @@ export default function AccountsPaymentsPage() {
                   <tr key={payment._id} className="hover:bg-gray-50 transition">
                     <td className="px-6 py-4">
                       <div className="font-mono text-xs text-gray-900 mb-1">Ord: {payment._id}</div>
-                      {payment.razorpayPaymentId ? (
-                        <div className="font-mono text-xs text-blue-600 bg-blue-50 inline-block px-2 py-0.5 rounded">
-                          Pay: {payment.razorpayPaymentId}
-                        </div>
+                      {payment.paymentMethod === 'online' || payment.razorpayOrderId ? (
+                        payment.razorpayPaymentId ? (
+                          <div className="font-mono text-xs text-blue-600 bg-blue-50 inline-block px-2 py-0.5 rounded">
+                            Pay: {payment.razorpayPaymentId}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-orange-500">Pending Gateway Init</div>
+                        )
                       ) : (
-                        <div className="text-xs text-orange-500">Pending Gateway Init</div>
+                        <div className="font-mono text-xs text-gray-600 bg-gray-100 inline-block px-2 py-0.5 rounded">
+                          Method: {payment.paymentMethod || 'Offline'}
+                        </div>
                       )}
                     </td>
                     <td className="px-6 py-4">

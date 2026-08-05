@@ -216,11 +216,33 @@ class EmailService {
         `;
     }
 
+    let itemsHtml = order.items.map(item => `
+      <tr>
+        <td>${item.quantity}x ${item.name}</td>
+        <td style="text-align: right;">₹${item.price}</td>
+      </tr>
+    `).join('');
+
     const innerContent = `
       <h2>Order Status Update</h2>
       <p>Hello ${toName},</p>
       <p>The status of your order <strong>${order.orderNumber}</strong> has been updated to: <strong>${statusLabel}</strong></p>
       ${extraInfo}
+      <table class="order-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th style="text-align: right;">Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+          <tr class="total-row">
+            <td style="text-align: right; padding-right: 20px;">Total</td>
+            <td style="text-align: right;">₹${order.total}</td>
+          </tr>
+        </tbody>
+      </table>
       <p>Best regards,<br/>The ${branding.name} Team</p>
     `;
     const htmlBody = this._getBaseTemplate(branding, innerContent);
@@ -236,6 +258,13 @@ class EmailService {
     const subject = `Invoice for your order: ${order.orderNumber}`;
     const invoiceNum = order.invoice?.invoiceNumber || 'N/A';
     
+    let itemsHtml = order.items.map(item => `
+      <tr>
+        <td>${item.quantity}x ${item.name}</td>
+        <td style="text-align: right;">₹${item.price}</td>
+      </tr>
+    `).join('');
+
     const innerContent = `
       <h2>Your Invoice is Ready</h2>
       <p>Hello ${toName},</p>
@@ -246,6 +275,22 @@ class EmailService {
         <strong>Total Amount:</strong> ₹${order.total}
       </div>
       
+      <table class="order-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th style="text-align: right;">Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+          <tr class="total-row">
+            <td style="text-align: right; padding-right: 20px;">Total</td>
+            <td style="text-align: right;">₹${order.total}</td>
+          </tr>
+        </tbody>
+      </table>
+
       <p>You can download it from your account dashboard.</p>
       <center>
         <a href="https://${branding.domain}/customer/orders/${order._id || order.id}" class="btn" style="color: #ffffff;">View Order</a>
@@ -299,6 +344,49 @@ class EmailService {
     `;
     const htmlBody = this._getBaseTemplate(branding, innerContent);
     return this.sendEmail({ to: staff.email, toName: staff.name, subject, htmlBody, branding });
+  }
+
+  async sendAbandonedCartEmail(cart, customer) {
+    const branding = await this._getStoreBranding(cart.storeName);
+    const toEmail = customer.email;
+    const toName = customer.firstName ? `${customer.firstName} ${customer.lastName}` : 'Valued Customer';
+    
+    const subject = "Wait! You left items in your cart 🌿";
+    
+    const cartTotal = cart.items.reduce((sum, item) => sum + item.totalPrice, 0);
+    const checkoutUrl = `https://${branding.domain}/checkout`;
+
+    let itemsHtml = cart.items.map(item => `
+      <div style="display: flex; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+        <img src="${item.image}" alt="${item.name}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; margin-right: 15px;" />
+        <div>
+          <h4 style="margin: 0 0 5px 0; color: #333;">${item.name}</h4>
+          <p style="margin: 0; color: #666; font-size: 14px;">Variant: ${item.sizeVariant?.name || ''} - ${item.potVariant?.name || ''}</p>
+          <p style="margin: 5px 0 0 0; color: ${branding.primaryColor}; font-weight: bold;">₹${item.totalPrice} (Qty: ${item.quantity})</p>
+        </div>
+      </div>
+    `).join('');
+
+    const innerContent = `
+      <div style="text-align: center; margin-bottom: 20px;">
+        <h2 style="color: ${branding.primaryColor}; margin: 0;">You left something behind! 🛒</h2>
+      </div>
+      <p style="color: #444; font-size: 16px;">Hi ${customer.firstName},</p>
+      <p style="color: #444; font-size: 16px;">We noticed you left some items in your shopping cart. They are waiting for you!</p>
+      
+      <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        ${itemsHtml}
+        <div style="text-align: right; margin-top: 15px;">
+          <h3 style="margin: 0; color: #333;">Total: ₹${cartTotal}</h3>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 30px;">
+        <a href="${checkoutUrl}" class="btn" style="color: #ffffff;">Complete Your Purchase</a>
+      </div>
+    `;
+    const htmlBody = this._getBaseTemplate(branding, innerContent);
+    return this.sendEmail({ to: toEmail, toName, subject, htmlBody, branding });
   }
 }
 

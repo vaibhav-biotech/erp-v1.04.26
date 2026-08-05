@@ -59,6 +59,7 @@ export default function CheckoutPage() {
   const [success, setSuccess] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState('');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [saveAsDefaultAddress, setSaveAsDefaultAddress] = useState(false);
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [formData, setFormData] = useState({
@@ -178,6 +179,29 @@ export default function CheckoutPage() {
       }
 
       const placeActualOrder = async (isRazorpay = false) => {
+        // Save address if requested
+        if (customerAuthenticated && customer && saveAsDefaultAddress) {
+          try {
+            await fetch(buildApiUrl(`/api/customers/${customer._id}/addresses`), {
+              method: 'POST',
+              headers: getApiHeaders(customerToken || ''),
+              body: JSON.stringify({
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                street: formData.street,
+                city: formData.city,
+                state: formData.state,
+                zipCode: formData.pincode,
+                phone: formData.phone,
+                country: 'India',
+                isDefault: true
+              })
+            });
+          } catch(err) {
+            console.error('Failed to save default address', err);
+          }
+        }
+
         const orderPayload: OrderData = {
           customerId: customer?._id || '',
           items: cartItems.map(item => ({
@@ -555,6 +579,20 @@ export default function CheckoutPage() {
                         className="px-4 py-3 border border-gray-300 rounded-lg font-montserrat text-sm focus:outline-none focus:border-black"
                       />
                     </div>
+                    {customerAuthenticated && (
+                      <div className="mt-4 flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="saveAsDefault"
+                          checked={saveAsDefaultAddress}
+                          onChange={(e) => setSaveAsDefaultAddress(e.target.checked)}
+                          className="w-4 h-4 text-black focus:ring-black border-gray-300 rounded cursor-pointer"
+                        />
+                        <label htmlFor="saveAsDefault" className="font-montserrat text-sm text-gray-700 cursor-pointer">
+                          Save as my default address for future orders
+                        </label>
+                      </div>
+                    )}
                   </motion.div>
 
                   {/* Payment Section */}
