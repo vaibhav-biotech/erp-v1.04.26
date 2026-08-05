@@ -14,10 +14,11 @@ export default function CartModal() {
     cartOpen,
     toggleCartModal,
     getSubtotal,
+    shippingConfig,
   } = useCart();
 
   const subtotal = getSubtotal();
-  const freeShippingThreshold = 60;
+  const freeShippingThreshold = shippingConfig.freeShippingThreshold;
   const remainingForFreeShipping = Math.max(
     0,
     freeShippingThreshold - subtotal

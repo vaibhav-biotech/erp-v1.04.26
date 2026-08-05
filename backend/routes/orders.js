@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const router = express.Router();
 const Store = require('../models/Store');
+const ShippingSettings = require('../models/ShippingSettings');
 const emailService = require('../services/email.service');
 
 const ORDER_STATUS_OPTIONS = ['pending', 'confirmed', 'processing', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled', 'returned'];
@@ -167,7 +168,26 @@ router.post('/manual', async (req, res) => {
     const subtotal = items.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0);
     const afterDiscount = Math.max(0, subtotal - Number(customDiscount));
     const tax = Math.round(afterDiscount * (effectiveTaxRate / 100) * 100) / 100;
-    const shipping = shippingCharge !== null ? Number(shippingCharge) : (afterDiscount >= 60 ? 0 : 50);
+    let shipping = shippingCharge !== null ? Number(shippingCharge) : 50;
+    if (shippingCharge === null) {
+      try {
+        const settings = await ShippingSettings.findOne({ type: 'global' });
+        if (settings) {
+          shipping = settings.defaultCost;
+          let threshold = settings.freeShippingThreshold;
+          const storeCostObj = settings.storeCosts.find(c => normalizeStoreName(c.storeName) === storeName);
+          if (storeCostObj) {
+            shipping = storeCostObj.cost;
+            if (storeCostObj.freeShippingThreshold !== undefined) {
+              threshold = storeCostObj.freeShippingThreshold;
+            }
+          }
+          if (threshold !== undefined && afterDiscount >= threshold) {
+            shipping = 0;
+          }
+        }
+      } catch (err) { console.error('Error fetching shipping cost:', err); }
+    }
     const total = afterDiscount + tax + shipping;
 
     const now = orderDate ? new Date(orderDate) : new Date();
@@ -299,7 +319,26 @@ router.post('/', async (req, res) => {
     // Calculate totals
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const tax = Math.round(subtotal * (effectiveTaxRate / 100) * 100) / 100;
-    const shipping = subtotal >= 60 ? 0 : 50;
+    
+    let shipping = 50; // default
+    try {
+      const settings = await ShippingSettings.findOne({ type: 'global' });
+      if (settings) {
+        shipping = settings.defaultCost;
+        let threshold = settings.freeShippingThreshold;
+        const storeCostObj = settings.storeCosts.find(c => normalizeStoreName(c.storeName) === storeName);
+        if (storeCostObj) {
+          shipping = storeCostObj.cost;
+          if (storeCostObj.freeShippingThreshold !== undefined) {
+            threshold = storeCostObj.freeShippingThreshold;
+          }
+        }
+        if (threshold !== undefined && subtotal >= threshold) {
+          shipping = 0;
+        }
+      }
+    } catch (err) { console.error('Error fetching shipping cost:', err); }
+    
     const total = subtotal + tax + shipping;
 
     // Create order object
@@ -645,9 +684,22 @@ router.patch('/:orderId', async (req, res) => {
       };
     }
 
+    let finalTrackingUrl = trackingUrl;
+    if (courierName && trackingNumber && trackingUrl === undefined) {
+      try {
+        const ShippingPartner = require('../models/ShippingPartner');
+        const partner = await ShippingPartner.findOne({ name: courierName });
+        if (partner && partner.trackingUrlPrefix) {
+          finalTrackingUrl = `${partner.trackingUrlPrefix}${trackingNumber}`;
+        }
+      } catch (err) {
+        console.error('Error fetching courier for tracking URL:', err);
+      }
+    }
+
     if (trackingNumber !== undefined) setPayload['tracking.trackingNumber'] = trackingNumber || null;
     if (courierName !== undefined) setPayload['tracking.courierName'] = courierName || null;
-    if (trackingUrl !== undefined) setPayload['tracking.trackingUrl'] = trackingUrl || null;
+    if (finalTrackingUrl !== undefined) setPayload['tracking.trackingUrl'] = finalTrackingUrl || null;
     if (estimatedDelivery !== undefined) {
       setPayload['tracking.estimatedDelivery'] = estimatedDelivery ? new Date(estimatedDelivery) : null;
     }

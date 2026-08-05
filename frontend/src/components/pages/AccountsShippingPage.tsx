@@ -155,6 +155,7 @@ export default function AccountsShippingPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Store</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tracking</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                 </tr>
@@ -167,6 +168,19 @@ export default function AccountsShippingPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{ord.storeName || ord.store?.name || 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {ord.customerInfo ? `${ord.customerInfo.firstName} ${ord.customerInfo.lastName}` : (ord.address ? `${ord.address.firstName} ${ord.address.lastName}` : 'N/A')}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {ord.tracking?.courierName ? (
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-gray-700">{ord.tracking.courierName}</span>
+                          <span className="text-xs">{ord.tracking.trackingNumber}</span>
+                          {ord.tracking.trackingUrl && (
+                             <a href={ord.tracking.trackingUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 text-xs hover:underline mt-1">Track</a>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">Unshipped</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <select 

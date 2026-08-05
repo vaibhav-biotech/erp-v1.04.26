@@ -41,6 +41,7 @@ interface CartContextType {
   clearCart: () => void;
   toggleCartModal: () => void;
   getSubtotal: () => number;
+  shippingConfig: { shippingCost: number; freeShippingThreshold: number };
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -49,6 +50,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [shippingConfig, setShippingConfig] = useState({ shippingCost: 50, freeShippingThreshold: 60 });
   const { customer, customerToken } = useAuth();
   
   const initialFetchDone = useRef(false);
@@ -62,9 +64,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCartItems(JSON.parse(savedCart));
       }
     } catch (error) {
-      console.error('Error loading cart from localStorage:', error);
+      console.error('Error hydrating cart from localStorage:', error);
     }
     setIsHydrated(true);
+
+    // Fetch shipping config
+    fetch(buildApiUrl('/api/shipping/store-config'), { headers: getApiHeaders() })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data) {
+          setShippingConfig(data.data);
+        }
+      })
+      .catch(err => console.error('Error fetching shipping config:', err));
   }, []);
 
   // Sync from DB when user logs in
@@ -228,6 +240,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearCart,
         toggleCartModal,
         getSubtotal,
+        shippingConfig,
       }}
     >
       {children}

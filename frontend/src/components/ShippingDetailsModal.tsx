@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiX } from 'react-icons/fi';
 
 interface ShippingDetailsModalProps {
@@ -10,8 +10,9 @@ interface ShippingDetailsModalProps {
 export default function ShippingDetailsModal({ isOpen, onClose, onSubmit }: ShippingDetailsModalProps) {
   const [courierName, setCourierName] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
+  const [courierOptions, setCourierOptions] = useState<string[]>([]);
   
-  // Popular Indian/Global courier options
+  // Popular Indian/Global courier options as fallback
   const COURIER_OPTIONS = [
     'Delhivery',
     'BlueDart',
@@ -25,6 +26,25 @@ export default function ShippingDetailsModal({ isOpen, onClose, onSubmit }: Ship
     'India Post',
     'Other'
   ];
+
+  useEffect(() => {
+    if (isOpen) {
+      fetch('/api/shipping/partners')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.data && data.data.length > 0) {
+            const active = data.data.filter((p: any) => p.isActive).map((p: any) => p.name);
+            setCourierOptions([...active, 'Other']);
+          } else {
+            setCourierOptions(COURIER_OPTIONS);
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          setCourierOptions(COURIER_OPTIONS);
+        });
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -58,21 +78,20 @@ export default function ShippingDetailsModal({ isOpen, onClose, onSubmit }: Ship
                 Shipping Partner / Courier
               </label>
               <select
-                value={COURIER_OPTIONS.includes(courierName) ? courierName : (courierName ? 'Other' : '')}
+                value={courierOptions.includes(courierName) ? courierName : (courierName ? 'Other' : '')}
                 onChange={(e) => setCourierName(e.target.value === 'Other' ? '' : e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white"
                 required
               >
                 <option value="" disabled>Select Courier</option>
-                {COURIER_OPTIONS.map((opt) => (
+                {courierOptions.map((opt) => (
                   <option key={opt} value={opt}>{opt}</option>
                 ))}
-                <option value="Other">Other</option>
               </select>
             </div>
             
             {/* If 'Other' is selected or they type a custom one */}
-            {(!COURIER_OPTIONS.includes(courierName) && courierName !== '') || courierName === 'Other' ? (
+            {(!courierOptions.includes(courierName) && courierName !== '') || courierName === 'Other' ? (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Custom Courier Name

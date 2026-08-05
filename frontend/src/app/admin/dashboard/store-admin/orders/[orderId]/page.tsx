@@ -114,6 +114,7 @@ export default function StoreAdminOrderDetailsPage() {
   const [orderStatus, setOrderStatus] = useState('pending');
   const [paymentStatus, setPaymentStatus] = useState('pending');
   const [carrier, setCarrier] = useState('');
+  const [courierOptions, setCourierOptions] = useState<string[]>([]);
   const [trackingNumber, setTrackingNumber] = useState('');
   const [trackingUrl, setTrackingUrl] = useState('');
   const [estimatedDeliveryDate, setEstimatedDeliveryDate] = useState('');
@@ -164,6 +165,17 @@ export default function StoreAdminOrderDetailsPage() {
 
   useEffect(() => {
     loadOrder();
+    fetch('/api/shipping/partners')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data) {
+          const active = data.data.filter((p: any) => p.isActive).map((p: any) => p.name);
+          setCourierOptions([...active, 'Other']);
+        } else {
+          setCourierOptions(['Delhivery', 'BlueDart', 'DTDC', 'Other']);
+        }
+      })
+      .catch(() => setCourierOptions(['Delhivery', 'BlueDart', 'DTDC', 'Other']));
   }, [adminToken, orderId]);
 
   const saveOrderUpdates = async () => {
@@ -336,12 +348,22 @@ export default function StoreAdminOrderDetailsPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1 uppercase">Courier</label>
-                <input
-                  value={carrier}
-                  onChange={(e) => setCarrier(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                  placeholder="Delhivery / Blue Dart / DTDC"
-                />
+                <select
+                  value={courierOptions.includes(carrier) ? carrier : (carrier ? 'Other' : '')}
+                  onChange={(e) => setCarrier(e.target.value === 'Other' ? '' : e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-2"
+                >
+                  <option value="" disabled>Select Courier</option>
+                  {courierOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+                {(!courierOptions.includes(carrier) && carrier !== '') || carrier === 'Other' ? (
+                  <input
+                    value={carrier === 'Other' ? '' : carrier}
+                    onChange={(e) => setCarrier(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-2"
+                    placeholder="Custom Courier Name"
+                  />
+                ) : null}
               </div>
 
               <div>

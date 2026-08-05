@@ -12,6 +12,7 @@ import PurchaseOrdersPage from '@/components/pages/PurchaseOrdersPage';
 import SuppliersPage from '@/components/pages/SuppliersPage';
 import AccountsPaymentsPage from '@/components/pages/AccountsPaymentsPage';
 import AccountsShippingPage from '@/components/pages/AccountsShippingPage';
+import ShippingSettingsPage from '@/components/pages/ShippingSettingsPage';
 import AccountsStorePage from '@/components/pages/AccountsStorePage';
 
 export default function AccountsAdminPage() {
@@ -52,6 +53,8 @@ export default function AccountsAdminPage() {
         return <AccountsPaymentsPage />;
       case 'shipping-management':
         return <AccountsShippingPage />;
+      case 'shipping-settings':
+        return <ShippingSettingsPage />;
       case 'store-management':
         return <AccountsStorePage />;
       default:

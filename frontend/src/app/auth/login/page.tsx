@@ -4,12 +4,14 @@ import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
 import { Eye, EyeOff } from 'lucide-react';
 
 function AuthPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { loginCustomer, registerCustomer, customerAuthenticated } = useAuth();
+  const { shippingConfig } = useCart();
   const redirectPath = searchParams.get('redirect') || '/customer';
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [loading, setLoading] = useState(false);
@@ -159,7 +161,7 @@ function AuthPageContent() {
                 <div className="text-2xl">📦</div>
                 <div>
                   <h3 className="font-montserrat font-bold text-black mb-1">Fast Delivery</h3>
-                  <p className="text-sm">Free shipping on orders above ₹60</p>
+                  <p className="text-sm">Free shipping on orders above ₹{shippingConfig?.freeShippingThreshold || 60}</p>
                 </div>
               </div>
               <div className="flex gap-4">

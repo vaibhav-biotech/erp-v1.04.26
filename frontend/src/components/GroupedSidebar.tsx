@@ -200,6 +200,13 @@ export default function GroupedSidebar() {
       roles: ['accountant', 'super_admin'],
     },
     {
+      id: 'accounts-shipping-settings',
+      label: 'Shipping Settings',
+      icon: <FiSettings className="w-5 h-5" />,
+      route: '/accounts?page=shipping-settings',
+      roles: ['accountant', 'super_admin'],
+    },
+    {
       id: 'accounts-store',
       label: 'Store Management',
       icon: <FiSettings className="w-5 h-5" />,

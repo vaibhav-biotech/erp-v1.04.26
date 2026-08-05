@@ -22,6 +22,7 @@ const notificationsRouter = require('./routes/notifications');
 const cartRouter = require('./routes/cart'); // NEW: Cart route
 const storeRouter = require('./middleware/storeRouter'); // NEW: Store detection middleware
 const verifyAdminToken = require('./middleware/verifyAdminToken');
+const shippingRouter = require('./routes/shipping');
 
 const app = express();
 
@@ -580,6 +581,7 @@ app.use('/api/settings', settingsRouter);
 app.use('/api/payments', paymentsRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/cart', cartRouter);
+app.use('/api/shipping', shippingRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

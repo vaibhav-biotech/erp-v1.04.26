@@ -51,7 +51,7 @@ interface TaxSettings {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cartItems, getSubtotal, clearCart } = useCart();
+  const { cartItems, getSubtotal, clearCart, shippingConfig } = useCart();
   const { customer, customerToken, customerAuthenticated, refreshCustomer } = useAuth();
   const [loading, setLoading] = useState(false);
   const [taxSettings, setTaxSettings] = useState<TaxSettings>({ enabled: false, rate: 18 });
@@ -358,13 +358,13 @@ export default function CheckoutPage() {
 
   const pricing = useMemo(() => {
     const subtotal = getSubtotal();
-    const shipping = subtotal >= 60 ? 0 : 50;
+    const shipping = subtotal >= shippingConfig.freeShippingThreshold ? 0 : shippingConfig.shippingCost;
     // GST is inclusive in price, so we don't add it on top of cart total
     const appliedRate = 0; 
     const tax = 0;
     const total = subtotal + shipping + tax;
     return { subtotal, shipping, tax, total, appliedRate };
-  }, [getSubtotal, cartItems, taxSettings]);
+  }, [getSubtotal, cartItems, taxSettings, shippingConfig]);
 
   if (cartItems.length === 0) {
     return (
