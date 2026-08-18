@@ -27,6 +27,7 @@ interface Product {
   images: string[];
   status: 'active' | 'inactive' | 'draft';
   createdAt: string;
+  updatedAt?: string;
 }
 
 
@@ -463,7 +464,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[1200px] whitespace-nowrap">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="px-6 py-3 text-left">
@@ -513,6 +514,9 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                 Top Pick
               </th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                Date of Update
+              </th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
                 Actions
               </th>
             </tr>
@@ -520,13 +524,13 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={10} className="px-6 py-8 text-center text-gray-500">
                   Loading products...
                 </td>
               </tr>
             ) : sortedProducts.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={10} className="px-6 py-8 text-center text-gray-500">
                   No products found
                 </td>
               </tr>
@@ -598,6 +602,9 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                             ? 'Top Picked'
                             : 'Mark'}
                     </button>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {new Date(product.updatedAt || product.createdAt || Date.now()).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">

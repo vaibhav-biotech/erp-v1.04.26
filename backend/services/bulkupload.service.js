@@ -483,7 +483,7 @@ const getAllProducts = async (filters) => {
     const limit = filters?.limit || 50;
     const skip = filters?.skip || 0;
 
-    let products = await Product.find(query).limit(limit).skip(skip).sort({ createdAt: -1 });
+    let products = await Product.find(query).limit(limit).skip(skip).sort({ updatedAt: -1 });
     
     // Enrich products with category names from categoryName field
     // If categoryName is not available, try to extract from category field

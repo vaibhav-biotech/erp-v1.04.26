@@ -11,6 +11,10 @@ interface Product {
   stock: number;
   costPrice: number;
   images: string[];
+  isActive: boolean;
+  storeName?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export const InventoryTable: React.FC = () => {
@@ -255,7 +259,7 @@ export const InventoryTable: React.FC = () => {
         </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full min-w-[1200px] whitespace-nowrap">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Product ID</th>
@@ -263,17 +267,18 @@ export const InventoryTable: React.FC = () => {
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Cost Price</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Inventory Value</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Current Stock</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Date of Update</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Adjust Inventory</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">Loading inventory...</td>
+                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">Loading inventory...</td>
               </tr>
             ) : filteredProducts.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">No products found</td>
+                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">No products found</td>
               </tr>
             ) : (
               filteredProducts.map((product) => {
@@ -312,6 +317,9 @@ export const InventoryTable: React.FC = () => {
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${product.stock > 100 ? 'bg-green-100 text-green-800' : product.stock > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
                         {product.stock} units
                       </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {new Date(product.updatedAt || product.createdAt || Date.now()).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">

@@ -291,6 +291,7 @@ router.post('/', async (req, res) => {
       paymentMethod,
       notes,
       giftWrap,
+      preferredCourierId,
     } = req.body;
 
     // Validation
@@ -371,6 +372,7 @@ router.post('/', async (req, res) => {
       notes,
       giftWrap,
       storeName,
+      preferredCourier: preferredCourierId ? toObjectId(preferredCourierId) : null,
       orderNumber: `ORDER-${Date.now()}`,
       statusHistory: [
         {

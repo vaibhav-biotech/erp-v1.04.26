@@ -42,6 +42,7 @@ interface OrderData {
     phone: string;
   };
   paymentMethod: string;
+  preferredCourierId?: string;
 }
 
 interface TaxSettings {
@@ -60,6 +61,12 @@ export default function CheckoutPage() {
   const [placedOrderId, setPlacedOrderId] = useState('');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [saveAsDefaultAddress, setSaveAsDefaultAddress] = useState(false);
+  
+  // Shipping Partners
+  const [shippingPartners, setShippingPartners] = useState<any[]>([]);
+  const [courierPreference, setCourierPreference] = useState<'default' | 'custom'>('default');
+  const [selectedCourierId, setSelectedCourierId] = useState('');
+
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [formData, setFormData] = useState({
@@ -80,6 +87,28 @@ export default function CheckoutPage() {
       refreshCustomer();
     }
   }, [customerAuthenticated, refreshCustomer]);
+
+  // Fetch shipping partners
+  useEffect(() => {
+    const fetchPartners = async () => {
+      try {
+        const response = await fetch(buildApiUrl('/api/shipping/partners'), {
+          headers: getApiHeaders()
+        });
+        const json = await response.json();
+        if (json.success && json.data) {
+          const activePartners = json.data.filter((p: any) => p.isActive);
+          setShippingPartners(activePartners);
+          if (activePartners.length > 0) {
+            setSelectedCourierId(activePartners[0]._id);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch shipping partners', err);
+      }
+    };
+    fetchPartners();
+  }, []);
 
   // Initialize form with customer data if logged in
   useEffect(() => {
@@ -223,6 +252,7 @@ export default function CheckoutPage() {
             phone: formData.phone,
           },
           paymentMethod: formData.paymentMethod,
+          preferredCourierId: courierPreference === 'custom' ? selectedCourierId : undefined,
         };
 
         const headers = getApiHeaders(customerToken || '');
@@ -593,6 +623,65 @@ export default function CheckoutPage() {
                         </label>
                       </div>
                     )}
+                  </motion.div>
+
+                  {/* Courier Section */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 }}
+                    className="bg-white rounded-lg p-6 mb-6"
+                  >
+                    <h2 className="font-montserrat font-bold text-lg mb-4 text-black">Shipping Courier</h2>
+                    <div className="space-y-3">
+                      <label className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${courierPreference === 'default' ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                        <input
+                          type="radio"
+                          name="courierPreference"
+                          value="default"
+                          checked={courierPreference === 'default'}
+                          onChange={() => setCourierPreference('default')}
+                          className="w-4 h-4 text-black focus:ring-black"
+                        />
+                        <span className="ml-3 font-montserrat text-sm text-black">Use Default Courier</span>
+                      </label>
+
+                      <label className={`flex flex-col p-4 border rounded-lg cursor-pointer transition-colors ${courierPreference === 'custom' ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                        <div className="flex items-center">
+                          <input
+                            type="radio"
+                            name="courierPreference"
+                            value="custom"
+                            checked={courierPreference === 'custom'}
+                            onChange={() => setCourierPreference('custom')}
+                            className="w-4 h-4 text-black focus:ring-black"
+                          />
+                          <span className="ml-3 font-montserrat text-sm text-black">Choose your own preference</span>
+                        </div>
+                        
+                        {courierPreference === 'custom' && (
+                          <div className="mt-4 ml-7">
+                            {shippingPartners.length > 0 ? (
+                              <select
+                                value={selectedCourierId}
+                                onChange={(e) => setSelectedCourierId(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg font-montserrat text-sm focus:outline-none focus:border-black"
+                              >
+                                {shippingPartners.map((partner) => (
+                                  <option key={partner._id} value={partner._id}>
+                                    {partner.name}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <p className="text-sm text-red-500 font-montserrat">
+                                Add Courier Partner
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </label>
+                    </div>
                   </motion.div>
 
                   {/* Payment Section */}

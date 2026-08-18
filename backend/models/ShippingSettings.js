@@ -10,7 +10,8 @@ const ShippingSettingsSchema = new mongoose.Schema({
   type: { type: String, default: 'global', unique: true }, // Singleton pattern
   storeCosts: [StoreShippingCostSchema],
   defaultCost: { type: Number, default: 0 },
-  freeShippingThreshold: { type: Number, default: 60 }
+  freeShippingThreshold: { type: Number, default: 60 },
+  defaultCourier: { type: mongoose.Schema.Types.ObjectId, ref: 'ShippingPartner', default: null }
 }, {
   timestamps: true
 });

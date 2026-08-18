@@ -78,6 +78,11 @@ const OrderSchema = new mongoose.Schema(
     },
     shippingDetail: {
       type: String
+    },
+    preferredCourier: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ShippingPartner',
+      default: null
     }
   },
   {

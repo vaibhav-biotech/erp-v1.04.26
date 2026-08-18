@@ -62,7 +62,7 @@ router.get('/settings', async (req, res) => {
 // Update shipping settings
 router.put('/settings', async (req, res) => {
   try {
-    const { storeCosts, defaultCost, freeShippingThreshold } = req.body;
+    const { storeCosts, defaultCost, freeShippingThreshold, defaultCourier } = req.body;
     let settings = await ShippingSettings.findOne({ type: 'global' });
     if (!settings) {
       settings = new ShippingSettings({ type: 'global' });
@@ -71,6 +71,7 @@ router.put('/settings', async (req, res) => {
     if (storeCosts !== undefined) settings.storeCosts = storeCosts;
     if (defaultCost !== undefined) settings.defaultCost = defaultCost;
     if (freeShippingThreshold !== undefined) settings.freeShippingThreshold = freeShippingThreshold;
+    if (defaultCourier !== undefined) settings.defaultCourier = defaultCourier;
 
     await settings.save();
     res.json({ success: true, data: settings });
