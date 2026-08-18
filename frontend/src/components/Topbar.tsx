@@ -28,13 +28,13 @@ export default function Topbar() {
 
   return (
     <div className="w-full flex flex-row items-center justify-between">
-      <div className="flex flex-col">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">{title}</h1>
+      <div className="flex flex-col flex-1 min-w-0 mr-4">
+        <h1 className="text-lg sm:text-2xl font-bold text-gray-900 leading-tight truncate">{title}</h1>
       </div>
       
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 sm:gap-4 shrink-0">
         <NotificationBell />
-        <div className="text-xs sm:text-sm font-medium text-gray-700 bg-gray-100 px-3 py-1.5 rounded-full whitespace-nowrap">
+        <div className="hidden sm:block text-xs sm:text-sm font-medium text-gray-700 bg-gray-100 px-3 py-1.5 rounded-full whitespace-nowrap">
           🌿 Plants In Garden
         </div>
       </div>
