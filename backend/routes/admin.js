@@ -232,6 +232,18 @@ router.get('/dashboard-stats', verifyAdminToken, async (req, res) => {
     const totalOrders = orders.length;
     const totalRevenue = orders.reduce((sum, order) => sum + (order.totalAmount || order.total || 0), 0);
 
+    const dailyRevenueMap = {};
+    orders.forEach(order => {
+      const date = order.createdAt ? new Date(order.createdAt).toISOString().split('T')[0] : null;
+      if (date) {
+        const amt = order.totalAmount || order.total || 0;
+        dailyRevenueMap[date] = (dailyRevenueMap[date] || 0) + amt;
+      }
+    });
+    const dailyRevenue = Object.entries(dailyRevenueMap)
+      .map(([date, revenue]) => ({ date, revenue }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
     return res.status(200).json({
       success: true,
       data: {
@@ -241,7 +253,8 @@ router.get('/dashboard-stats', verifyAdminToken, async (req, res) => {
         totalRevenue,
         lowStock,
         totalInventoryValue,
-        totalCategories
+        totalCategories,
+        dailyRevenue
       }
     });
   } catch (error) {

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 import { FiPlus, FiRefreshCw, FiTrendingUp, FiBox, FiUsers, FiShoppingCart, FiBarChart2 } from 'react-icons/fi';
+import { ResponsiveContainer, AreaChart, XAxis, YAxis, Tooltip, Area, CartesianGrid } from 'recharts';
 
 import ProductsTable from '@/components/ProductsTable';
 import CategoriesPage from '@/components/pages/CategoriesPage';
@@ -31,6 +32,7 @@ interface DashboardStats {
   totalCustomers: number;
   totalOrders: number;
   totalRevenue: number;
+  dailyRevenue: { date: string; revenue: number }[];
 }
 
 interface StoreInfo {
@@ -51,8 +53,10 @@ export default function StoreAdminDashboard() {
     totalProducts: 0,
     totalCustomers: 0,
     totalOrders: 0,
-    totalRevenue: 0
+    totalRevenue: 0,
+    dailyRevenue: []
   });
+  const [revenueFilter, setRevenueFilter] = useState<'weekly' | 'monthly'>('weekly');
   const [recentProducts, setRecentProducts] = useState<any[]>([]);
   const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
@@ -135,7 +139,8 @@ export default function StoreAdminDashboard() {
             totalProducts: json.data.totalProducts || 0,
             totalCustomers: json.data.totalCustomers || 0,
             totalOrders: json.data.totalOrders || 0,
-            totalRevenue: json.data.totalRevenue || 0
+            totalRevenue: json.data.totalRevenue || 0,
+            dailyRevenue: json.data.dailyRevenue || []
           });
         }
       }
@@ -144,6 +149,31 @@ export default function StoreAdminDashboard() {
     } finally {
       setIsLoadingStats(false);
     }
+  };
+
+  const getGraphData = () => {
+    if (!stats.dailyRevenue || stats.dailyRevenue.length === 0) return [];
+    
+    const dataMap: Record<string, number> = {};
+    
+    stats.dailyRevenue.forEach(item => {
+      const d = new Date(item.date);
+      let key = '';
+      if (revenueFilter === 'monthly') {
+        key = d.toLocaleDateString('default', { month: 'short', year: 'numeric' });
+      } else {
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const weekStart = new Date(d.setDate(diff));
+        key = weekStart.toLocaleDateString('default', { month: 'short', day: 'numeric' });
+      }
+      dataMap[key] = (dataMap[key] || 0) + item.revenue;
+    });
+
+    return Object.keys(dataMap).map(key => ({
+      name: key,
+      revenue: dataMap[key]
+    }));
   };
 
   const fetchDashboardProducts = async () => {
@@ -253,15 +283,12 @@ export default function StoreAdminDashboard() {
       default:
         return (
           <div className="max-w-6xl mx-auto">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 mb-8 relative overflow-hidden">
-              <div className="relative z-10">
-                <h1 className="text-3xl font-playfair font-bold text-gray-900 mb-2">Welcome back, {admin?.firstName || 'Store Admin'} 👋</h1>
-                <p className="text-gray-600 text-lg">
-                  Here is what's happening at <span className="font-semibold text-green-700">{admin?.storeName || 'Your Store'}</span> today.
-                </p>
+            {/* Minimal Header */}
+            <div className="mb-6 flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Overview</h1>
+                <p className="text-gray-500 text-sm">Track your store's performance</p>
               </div>
-              {/* Decorative background element */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-green-50 rounded-full blur-3xl opacity-50 transform translate-x-1/2 -translate-y-1/2"></div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -315,6 +342,48 @@ export default function StoreAdminDashboard() {
                     {isLoadingStats ? '...' : stats.totalProducts.toLocaleString()}
                   </h3>
                 </div>
+              </div>
+            </div>
+
+            {/* Revenue Graph */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-lg font-bold text-gray-900">Revenue Trend</h2>
+                <select 
+                  value={revenueFilter} 
+                  onChange={(e) => setRevenueFilter(e.target.value as 'weekly' | 'monthly')}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                >
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+              <div className="h-72 w-full">
+                {stats.dailyRevenue && stats.dailyRevenue.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={getGraphData()} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} tickFormatter={(val) => `₹${val}`} width={60} />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        formatter={(value: any) => [`₹${Number(value).toLocaleString('en-IN')}`, 'Revenue']}
+                        labelStyle={{ color: '#374151', fontWeight: 600, marginBottom: '4px' }}
+                      />
+                      <Area type="monotone" dataKey="revenue" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm border-2 border-dashed border-gray-100 rounded-lg">
+                    {isLoadingStats ? 'Loading graph...' : 'No revenue data available yet.'}
+                  </div>
+                )}
               </div>
             </div>
             
