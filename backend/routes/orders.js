@@ -161,7 +161,8 @@ router.post('/manual', async (req, res) => {
        return res.status(400).json({ success: false, message: 'Customer ID or Customer Info required' });
     }
 
-    const storeName = req.body.customStoreName ? req.body.customStoreName : normalizeStoreName(req.storeName || 'plantsingarden');
+    const storeName = normalizeStoreName(req.storeName || 'plantsingarden');
+    const customSource = req.body.customStoreName ? `Manual - ${req.body.customStoreName}` : 'Manual';
     const taxSettings = await getStoreTaxSettings(storeName);
     const effectiveTaxRate = (applyGst && taxSettings.enabled) ? taxSettings.rate : 0;
 
@@ -221,7 +222,7 @@ router.post('/manual', async (req, res) => {
       paymentDate: paymentDate ? new Date(paymentDate) : null,
       dispatchingCenter,
       shippingDetail,
-      source: 'Manual',
+      source: customSource,
       store: storeId ? new mongoose.Types.ObjectId(storeId) : undefined,
       storeName,
       orderNumber: `ORDER-${Date.now()}`,
