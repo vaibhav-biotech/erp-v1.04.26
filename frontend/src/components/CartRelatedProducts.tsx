@@ -8,8 +8,10 @@ import { useCart } from '@/contexts/CartContext';
 interface RelatedProduct {
   _id: string;
   name: string;
-  image: string;
-  price: number;
+  image?: string;
+  images?: string[];
+  price?: number;
+  finalPrice?: number;
   category: string;
 }
 
@@ -53,7 +55,11 @@ export default function CartRelatedProducts() {
 
       {/* Horizontal Scroll */}
       <div className="flex gap-3 overflow-x-auto pb-2 snap-x">
-        {relatedProducts.map((product, index) => (
+        {relatedProducts.map((product, index) => {
+          const displayImage = product.images?.[0] || product.image || '';
+          const displayPrice = product.finalPrice || product.price || 0;
+          
+          return (
           <motion.div
             key={`${product._id}-${index}`}
             initial={{ opacity: 0, x: 20 }}
@@ -66,7 +72,7 @@ export default function CartRelatedProducts() {
               {/* Image */}
               <div className="h-32 bg-gray-100 overflow-hidden">
                 <img
-                  src={product.image}
+                  src={displayImage}
                   alt={product.name}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                 />
@@ -81,7 +87,7 @@ export default function CartRelatedProducts() {
 
                 {/* Price */}
                 <p className="font-montserrat font-semibold text-base text-green-600 mb-3">
-                  ₹{product.price?.toFixed(2) || '0.00'}
+                  ₹{displayPrice.toFixed(2)}
                 </p>
 
                 {/* Quick Add Button */}
@@ -90,19 +96,19 @@ export default function CartRelatedProducts() {
                     addToCart({
                       productId: product._id,
                       name: product.name,
-                      image: product.image,
+                      image: displayImage,
                       sizeVariant: {
                         id: 'default',
                         name: 'Standard',
-                        price: product.price * 0.6,
+                        price: displayPrice * 0.6,
                       },
                       potVariant: {
                         id: 'default',
                         name: 'Standard',
-                        price: product.price * 0.4,
+                        price: displayPrice * 0.4,
                       },
                       quantity: 1,
-                      totalPrice: product.price,
+                      totalPrice: displayPrice,
                     });
                   }}
                   className="w-full text-center py-2 bg-black text-white rounded font-montserrat text-xs font-bold hover:bg-gray-900 transition-colors"
@@ -112,7 +118,7 @@ export default function CartRelatedProducts() {
               </div>
             </div>
           </motion.div>
-        ))}
+        )})}
       </div>
 
       {/* View All Link */}

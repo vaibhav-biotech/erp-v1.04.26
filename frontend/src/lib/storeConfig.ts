@@ -209,6 +209,15 @@ export const fetchWithStore = async (
 export const getApiBaseUrl = (): string => {
   const rawUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
 
+  if (typeof window !== 'undefined') {
+    // If the frontend is hosted on the same domain as the backend, 
+    // use the current origin to avoid cross-origin CORS issues entirely.
+    const currentOrigin = window.location.origin;
+    // We assume the API is available at the same origin under /api
+    // This handles www vs non-www seamlessly
+    return currentOrigin;
+  }
+
   try {
     const parsedUrl = new URL(rawUrl);
     const normalizedPath = parsedUrl.pathname.replace(/\/+$/, '');
