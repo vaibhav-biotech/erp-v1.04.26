@@ -225,30 +225,6 @@ export default function StoreAdminDashboard() {
       case 'products':
         return (
           <>
-            <div className="mb-8">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  
-                </div>
-                <div className="flex gap-3 flex-wrap">
-                  <button
-                    onClick={handleRefresh}
-                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition font-medium"
-                    disabled={isLoadingStats}
-                  >
-                    <FiRefreshCw size={18} className={isLoadingStats ? 'animate-spin' : ''} />
-                    Refresh
-                  </button>
-                  <button
-                    onClick={() => setShowBulkUploadModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
-                  >
-                    <FiPlus size={18} />
-                    Bulk Upload
-                  </button>
-                </div>
-              </div>
-            </div>
             {(() => {
               const categoryId = searchParams.get('category');
               const categoryName = searchParams.get('categoryName');
@@ -258,6 +234,25 @@ export default function StoreAdminDashboard() {
                   categoryId={categoryId}
                   categoryName={categoryName}
                   onRefresh={handleRefresh}
+                  headerActions={
+                    <>
+                      <button
+                        onClick={handleRefresh}
+                        className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition font-medium text-sm"
+                        disabled={isLoadingStats}
+                      >
+                        <FiRefreshCw size={16} className={isLoadingStats ? 'animate-spin' : ''} />
+                        Refresh
+                      </button>
+                      <button
+                        onClick={() => setShowBulkUploadModal(true)}
+                        className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium text-sm"
+                      >
+                        <FiPlus size={16} />
+                        Bulk Upload
+                      </button>
+                    </>
+                  }
                 />
               );
             })()}

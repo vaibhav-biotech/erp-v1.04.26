@@ -257,7 +257,11 @@ router.post('/manual', async (req, res) => {
     for (const item of items) {
       if (item.productId) {
         try {
-          await Product.findByIdAndUpdate(item.productId, { $inc: { stock: -item.quantity } });
+          const product = await Product.findById(item.productId);
+          if (product) {
+            product.stock = Math.max(0, product.stock - item.quantity);
+            await product.save();
+          }
           await StockMovement.create({
             productId: item.productId,
             delta: -item.quantity,
@@ -425,9 +429,11 @@ router.post('/', async (req, res) => {
     for (const item of items) {
       if (item.productId) {
         try {
-          await Product.findByIdAndUpdate(item.productId, {
-            $inc: { stock: -item.quantity }
-          });
+          const product = await Product.findById(item.productId);
+          if (product) {
+            product.stock = Math.max(0, product.stock - item.quantity);
+            await product.save();
+          }
           
           await StockMovement.create({
             productId: item.productId,

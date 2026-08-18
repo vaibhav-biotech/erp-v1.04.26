@@ -10,7 +10,11 @@ import {
   FiChevronUp,
   FiChevronDown,
   FiSearch,
-  FiFilter
+  FiFilter,
+  FiMoreVertical,
+  FiLayers,
+  FiList,
+  FiBox
 } from 'react-icons/fi';
 
 interface Product {
@@ -37,6 +41,7 @@ interface ProductsTableProps {
   onRefresh?: () => void;
   categoryId?: string | null;
   categoryName?: string | null;
+  headerActions?: React.ReactNode;
 }
 
 type SortField = 'name' | 'category' | 'finalPrice' | 'rating' | 'createdAt';
@@ -51,6 +56,8 @@ interface ProductsTableCacheState {
   products: Product[];
   searchQuery: string;
   filterStatus: 'all' | 'active' | 'inactive' | 'draft';
+  filterStockStatus: 'all' | 'in_stock' | 'low_stock' | 'out_of_stock';
+  groupByCategory: boolean;
   sortField: SortField;
   sortOrder: SortOrder;
   pagination: {
@@ -97,6 +104,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
   onRefresh,
   categoryId,
   categoryName,
+  headerActions,
 }) => {
   const { admin } = useAuth();
   const basePath = admin?.role === 'inventory_admin' 
@@ -108,6 +116,8 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'draft'>('all');
+  const [filterStockStatus, setFilterStockStatus] = useState<'all' | 'in_stock' | 'low_stock' | 'out_of_stock'>('all');
+  const [groupByCategory, setGroupByCategory] = useState(false);
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [localSearchQuery, setLocalSearchQuery] = useState('');
@@ -151,6 +161,8 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
       setProducts(Array.isArray(parsed.products) ? parsed.products : []);
       setSearchQuery(parsed.searchQuery || '');
       setFilterStatus(parsed.filterStatus || 'all');
+      setFilterStockStatus(parsed.filterStockStatus || 'all');
+      setGroupByCategory(parsed.groupByCategory || false);
       setSortField(parsed.sortField || 'createdAt');
       setSortOrder(parsed.sortOrder || 'desc');
       setPagination(parsed.pagination || {
@@ -180,7 +192,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     }
 
     fetchProducts();
-  }, [skipInitialFetch, pagination.currentPage, pagination.pageSize, filterStatus, categoryId, categoryName, searchQuery]);
+  }, [skipInitialFetch, pagination.currentPage, pagination.pageSize, filterStatus, filterStockStatus, categoryId, categoryName, searchQuery]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -204,6 +216,10 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
 
       if (filterStatus !== 'all') {
         url += `&status=${filterStatus}`;
+      }
+      
+      if (filterStockStatus !== 'all') {
+        url += `&stockStatus=${filterStockStatus}`;
       }
 
       if (categoryId && categoryId !== 'null' && categoryId !== 'undefined') {
@@ -408,6 +424,98 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     }
   };
 
+  const renderProductRow = (product: Product) => (
+    <tr key={product._id} className={`border-b border-gray-200 transition ${selectedProductIds.includes(product._id) ? 'bg-green-50' : 'hover:bg-gray-50'}`}>
+      <td className="px-6 py-4">
+        <input
+          type="checkbox"
+          className="rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer w-4 h-4"
+          checked={selectedProductIds.includes(product._id)}
+          onChange={(e) => {
+            setSelectedProductIds(prev =>
+              e.target.checked
+                ? [...prev, product._id]
+                : prev.filter(id => id !== product._id)
+            );
+          }}
+        />
+      </td>
+      <td className="px-6 py-4">
+        <div className="flex items-center gap-3">
+          {product.images[0] && (
+            <img
+              src={product.images[0]}
+              alt={product.name}
+              className="w-10 h-10 object-cover rounded"
+            />
+          )}
+          <span className="font-medium text-gray-900 truncate">{product.name}</span>
+        </div>
+      </td>
+      <td className="px-6 py-4 text-sm text-gray-600">
+        {product.categoryName || product.category}
+      </td>
+      <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+        ₹{product.finalPrice.toLocaleString()}
+      </td>
+      <td className="px-6 py-4 text-sm text-gray-600">
+        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${product.stock > 10 ? 'bg-green-100 text-green-800' : product.stock > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+          {product.stock} units
+        </span>
+      </td>
+      <td className="px-6 py-4 text-sm">
+        <span className="text-yellow-600">⭐ {product.rating}</span>
+        <span className="text-gray-600 ml-1">({product.reviews})</span>
+      </td>
+      <td className="px-6 py-4">
+        <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(product.status)}`}>
+          {product.status}
+        </span>
+      </td>
+      <td className="px-6 py-4">
+        <button
+          onClick={() => toggleTopPick(product._id)}
+          disabled={updatingTopPickId === product._id || product.status !== 'active'}
+          className={`px-3 py-1 rounded-full text-xs font-semibold border transition ${
+            topPicksProductIds.includes(product._id)
+              ? 'bg-purple-100 text-purple-800 border-purple-300'
+              : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
+          } disabled:opacity-60`}
+          title="Toggle top pick"
+        >
+          {updatingTopPickId === product._id
+            ? 'Saving...'
+            : product.status !== 'active'
+              ? 'Inactive'
+              : topPicksProductIds.includes(product._id)
+                ? 'Top Picked'
+                : 'Mark'}
+        </button>
+      </td>
+      <td className="px-6 py-4 text-sm text-gray-600">
+        {new Date(product.updatedAt || product.createdAt || Date.now()).toLocaleDateString()}
+      </td>
+      <td className="px-6 py-4">
+        <div className="flex gap-2">
+              <Link
+                href={`${basePath}/products/${product._id}`}
+                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                title="View & Edit"
+              >
+                <FiEdit2 size={18} />
+              </Link>
+              <button
+                onClick={() => handleDelete(product._id)}
+                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                title="Delete"
+              >
+                <FiTrash2 size={18} />
+              </button>
+        </div>
+      </td>
+    </tr>
+  );
+
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden">
       {/* Header with Search & Filter */}
@@ -427,37 +535,72 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
           {/* Search */}
-          <div className="flex gap-2 md:col-span-2">
-            <div className="flex-1 relative">
-              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by product name..."
-                value={localSearchQuery}
-                onChange={(e) => setLocalSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
-              />
-            </div>
+          <div className="flex-1 w-full relative">
+            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by product name..."
+              value={localSearchQuery}
+              onChange={(e) => setLocalSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
+            />
           </div>
 
-          {/* Filter */}
-          <div className="flex items-center gap-2">
-            <FiFilter size={18} className="text-gray-600" />
-            <select
-              value={filterStatus}
-              onChange={(e) => {
-                setFilterStatus(e.target.value as any);
-                setPagination(prev => ({ ...prev, currentPage: 1 }));
-              }}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500"
+          {/* Filters */}
+          <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
+              <FiFilter size={16} className="text-gray-500" />
+              
+              <select
+                value={filterStatus}
+                onChange={(e) => {
+                  setFilterStatus(e.target.value as any);
+                  setPagination(prev => ({ ...prev, currentPage: 1 }));
+                }}
+                className="bg-transparent border-none text-sm focus:ring-0 py-1 cursor-pointer text-gray-700"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="draft">Draft</option>
+              </select>
+
+              <div className="w-px h-5 bg-gray-300 mx-1"></div>
+              
+              <select
+                value={filterStockStatus}
+                onChange={(e) => {
+                  setFilterStockStatus(e.target.value as any);
+                  setPagination(prev => ({ ...prev, currentPage: 1 }));
+                }}
+                className="bg-transparent border-none text-sm focus:ring-0 py-1 cursor-pointer text-gray-700"
+              >
+                <option value="all">All Stock</option>
+                <option value="in_stock">In Stock</option>
+                <option value="low_stock">Low Stock</option>
+                <option value="out_of_stock">Out of Stock</option>
+              </select>
+            </div>
+
+            <button
+              onClick={() => setGroupByCategory(!groupByCategory)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition ${
+                groupByCategory 
+                  ? 'bg-blue-50 border-blue-200 text-blue-700' 
+                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
             >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="draft">Draft</option>
-            </select>
+              {groupByCategory ? <FiLayers size={16} /> : <FiList size={16} />}
+              <span className="hidden sm:inline">{groupByCategory ? 'Grouped' : 'Group By Category'}</span>
+            </button>
+
+            {headerActions && (
+              <div className="flex items-center gap-3 border-l border-gray-200 pl-3 ml-1">
+                {headerActions}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -524,108 +667,47 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={10} className="px-6 py-8 text-center text-gray-500">
-                  Loading products...
+                <td colSpan={10} className="px-6 py-12 text-center">
+                  <div className="flex justify-center items-center gap-3 text-gray-500">
+                    <div className="w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                    Loading products...
+                  </div>
                 </td>
               </tr>
             ) : sortedProducts.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-6 py-8 text-center text-gray-500">
-                  No products found
+                <td colSpan={10} className="px-6 py-12 text-center text-gray-500 bg-gray-50">
+                  <FiBox size={32} className="mx-auto mb-3 text-gray-400" />
+                  <p className="text-base font-medium">No products found</p>
+                  <p className="text-sm mt-1">Try adjusting your search or filters.</p>
                 </td>
               </tr>
-            ) : (
-              sortedProducts.map((product) => (
-                <tr key={product._id} className={`border-b border-gray-200 transition ${selectedProductIds.includes(product._id) ? 'bg-green-50' : 'hover:bg-gray-50'}`}>
-                  <td className="px-6 py-4">
-                    <input
-                      type="checkbox"
-                      className="rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer w-4 h-4"
-                      checked={selectedProductIds.includes(product._id)}
-                      onChange={(e) => {
-                        setSelectedProductIds(prev =>
-                          e.target.checked
-                            ? [...prev, product._id]
-                            : prev.filter(id => id !== product._id)
-                        );
-                      }}
-                    />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      {product.images[0] && (
-                        <img
-                          src={product.images[0]}
-                          alt={product.name}
-                          className="w-10 h-10 object-cover rounded"
-                        />
-                      )}
-                      <span className="font-medium text-gray-900 truncate">{product.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {product.categoryName || product.category}
-                  </td>
-                  <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                    ₹{product.finalPrice.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${product.stock > 10 ? 'bg-green-100 text-green-800' : product.stock > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
-                      {product.stock} units
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <span className="text-yellow-600">⭐ {product.rating}</span>
-                    <span className="text-gray-600 ml-1">({product.reviews})</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(product.status)}`}>
-                      {product.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={() => toggleTopPick(product._id)}
-                      disabled={updatingTopPickId === product._id || product.status !== 'active'}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold border transition ${
-                        topPicksProductIds.includes(product._id)
-                          ? 'bg-purple-100 text-purple-800 border-purple-300'
-                          : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
-                      } disabled:opacity-60`}
-                      title="Toggle top pick"
-                    >
-                      {updatingTopPickId === product._id
-                        ? 'Saving...'
-                        : product.status !== 'active'
-                          ? 'Inactive'
-                          : topPicksProductIds.includes(product._id)
-                            ? 'Top Picked'
-                            : 'Mark'}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {new Date(product.updatedAt || product.createdAt || Date.now()).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-2">
-                          <Link
-                            href={`${basePath}/products/${product._id}`}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                            title="View & Edit"
-                          >
-                            <FiEdit2 size={18} />
-                          </Link>
-                          <button
-                            onClick={() => handleDelete(product._id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                            title="Delete"
-                          >
-                            <FiTrash2 size={18} />
-                          </button>
-                    </div>
-                  </td>
-                </tr>
+            ) : groupByCategory ? (
+              Object.entries(
+                sortedProducts.reduce((acc, product) => {
+                  const cat = product.categoryName || product.category || 'Uncategorized';
+                  if (!acc[cat]) acc[cat] = [];
+                  acc[cat].push(product);
+                  return acc;
+                }, {} as Record<string, Product[]>)
+              ).map(([category, catProducts]) => (
+                <React.Fragment key={category}>
+                  <tr className="bg-gray-100 border-b border-gray-200">
+                    <td colSpan={10} className="px-6 py-3">
+                      <div className="flex items-center gap-2">
+                        <FiLayers className="text-gray-500" />
+                        <span className="font-semibold text-gray-800 text-sm">{category}</span>
+                        <span className="bg-white px-2 py-0.5 rounded-full text-xs text-gray-500 border border-gray-200">
+                          {catProducts.length} items
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                  {catProducts.map(product => renderProductRow(product))}
+                </React.Fragment>
               ))
+            ) : (
+              sortedProducts.map((product) => renderProductRow(product))
             )}
           </tbody>
         </table>
