@@ -21,6 +21,7 @@ interface VariantForm {
 }
 
 interface ProductFormState {
+  sku?: string;
   name: string;
   category: string;
   subcategory: string;
@@ -105,11 +106,11 @@ export default function StoreAdminProductDetailsPage() {
     return categories.find((cat) => cat._id === form.category)?.subcategories || [];
   }, [categories, form.category]);
 
-  const loadData = async () => {
+  const loadData = async (showLoading = true) => {
     if (!adminToken || !productId) return;
 
     try {
-      setIsLoading(true);
+      if (showLoading) setIsLoading(true);
       setError('');
 
       const [productRes, categoriesRes] = await Promise.all([
@@ -131,6 +132,7 @@ export default function StoreAdminProductDetailsPage() {
       const product = productPayload.data || {};
 
       setForm({
+        sku: product.sku || '',
         name: product.name || '',
         category: product.category || '',
         subcategory: product.subcategory || '',
@@ -351,8 +353,8 @@ export default function StoreAdminProductDetailsPage() {
       }
 
       setMessage('Product updated successfully.');
-  setNewImageFiles([]);
-      await loadData();
+      setNewImageFiles([]);
+      await loadData(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update product');
     } finally {
@@ -371,17 +373,33 @@ export default function StoreAdminProductDetailsPage() {
           <Link href="/admin/dashboard/store-admin?page=products" className="inline-flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900">
             <FiArrowLeft /> Back to Products
           </Link>
-          
+          <div className="flex items-center gap-3 mt-1">
+            <h1 className="text-xl font-bold text-gray-900">{form.name || 'Edit Product'}</h1>
+            {form.sku && (
+              <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-mono border border-gray-200">
+                SKU: {form.sku}
+              </span>
+            )}
+          </div>
           <p className="text-sm text-gray-600 mt-1">View and edit complete product information with image preview.</p>
         </div>
 
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-black"
-        >
-          {isSaving ? 'Saving...' : 'Save Changes'}
-        </button>
+        <div className="flex gap-2">
+          <Link
+            href={`/product/${productId}`}
+            target="_blank"
+            className="px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 text-sm hover:bg-gray-50 flex items-center gap-2"
+          >
+            Preview
+          </Link>
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm hover:bg-black"
+          >
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">{error}</div>}

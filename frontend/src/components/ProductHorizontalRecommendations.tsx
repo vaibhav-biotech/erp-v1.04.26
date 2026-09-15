@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
+import { useCart } from '@/contexts/CartContext';
 
 interface ProductCard {
   _id: string;
@@ -23,6 +24,7 @@ export default function ProductHorizontalRecommendations({
   currentProductId,
   currentCategory,
 }: ProductHorizontalRecommendationsProps) {
+  const { addToCart } = useCart();
   const [items, setItems] = useState<ProductCard[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -83,32 +85,53 @@ export default function ProductHorizontalRecommendations({
               transition={{ delay: index * 0.05 }}
               className="w-48 shrink-0 snap-start"
             >
-              <Link
-                href={`/product/${item._id}`}
-                className="block border border-gray-200 rounded-lg overflow-hidden bg-white hover:shadow-md transition-shadow"
-              >
-                <div className="h-40 bg-gray-100">
-                  <img
-                    src={image}
-                    alt={item.name}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                </div>
-
-                <div className="p-3">
-                  <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[2.5rem]">
-                    {item.name}
-                  </h3>
-
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="text-sm font-bold text-green-700">₹{finalPrice.toFixed(2)}</span>
-                    {originalPrice > finalPrice && (
-                      <span className="text-xs text-gray-500 line-through">₹{originalPrice.toFixed(2)}</span>
-                    )}
+              <div className="border border-gray-200 rounded-lg overflow-hidden bg-white hover:shadow-md transition-shadow flex flex-col h-full">
+                <Link
+                  href={`/product/${item._id}`}
+                  className="block flex-1"
+                >
+                  <div className="h-40 bg-gray-100">
+                    <img
+                      src={image}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
                   </div>
+  
+                  <div className="p-3">
+                    <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[2.5rem]">
+                      {item.name}
+                    </h3>
+  
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-sm font-bold text-green-700">₹{finalPrice.toFixed(2)}</span>
+                      {originalPrice > finalPrice && (
+                        <span className="text-xs text-gray-500 line-through">₹{originalPrice.toFixed(2)}</span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+                <div className="p-3 pt-0 mt-auto">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      addToCart({
+                        productId: item._id,
+                        name: item.name,
+                        image: image,
+                        sizeVariant: { id: 'default', name: 'Standard', price: finalPrice },
+                        potVariant: { id: 'default', name: 'No Pot', price: 0 },
+                        quantity: 1,
+                        totalPrice: finalPrice,
+                      });
+                    }}
+                    className="w-full bg-black text-white text-xs font-bold py-2 rounded hover:bg-green-600 transition-colors"
+                  >
+                    ADD TO CART
+                  </button>
                 </div>
-              </Link>
+              </div>
             </motion.div>
           );
         })}

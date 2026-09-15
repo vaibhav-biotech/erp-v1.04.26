@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
-import { FiPlus, FiRefreshCw, FiTrendingUp, FiBox, FiUsers, FiShoppingCart, FiBarChart2 } from 'react-icons/fi';
+import { FiPlus, FiRefreshCw, FiTrendingUp, FiBox, FiUsers, FiShoppingCart, FiBarChart2, FiImage } from 'react-icons/fi';
 import { ResponsiveContainer, AreaChart, XAxis, YAxis, Tooltip, Area, CartesianGrid } from 'recharts';
 
 import ProductsTable from '@/components/ProductsTable';
@@ -24,6 +24,7 @@ import AccountTaxSettingsPage from '@/components/pages/AccountTaxSettingsPage';
 import OffersManager from '@/components/pages/OffersManager';
 import OfferBackgroundManager from '@/components/pages/OfferBackgroundManager';
 import AbandonedCartsPage from '@/components/pages/AbandonedCartsPage';
+import BulkImageUpdateModal from '@/components/BulkImageUpdateModal';
 
 const BulkUploadModal = dynamic(() => import('@/components/BulkUploadModal'), { ssr: false });
 
@@ -48,6 +49,7 @@ export default function StoreAdminDashboard() {
   const { admin, adminToken, adminAuthenticated, logoutAdmin } = useAuth();
   
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
+  const [showBulkImageUpdateModal, setShowBulkImageUpdateModal] = useState(false);
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null);
   const [stats, setStats] = useState<DashboardStats>({
     totalProducts: 0,
@@ -251,6 +253,13 @@ export default function StoreAdminDashboard() {
                         <FiPlus size={16} />
                         Bulk Upload
                       </button>
+                      <button
+                        onClick={() => setShowBulkImageUpdateModal(true)}
+                        className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm"
+                      >
+                        <FiImage size={16} />
+                        Bulk Image Update
+                      </button>
                     </>
                   }
                 />
@@ -260,6 +269,11 @@ export default function StoreAdminDashboard() {
               isOpen={showBulkUploadModal}
               onClose={() => setShowBulkUploadModal(false)}
               onUploadComplete={handleUploadComplete}
+            />
+            <BulkImageUpdateModal
+              isOpen={showBulkImageUpdateModal}
+              onClose={() => setShowBulkImageUpdateModal(false)}
+              onUploadComplete={handleRefresh}
             />
           </>
         );

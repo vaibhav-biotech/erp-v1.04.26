@@ -19,20 +19,13 @@ export function ProductInfo({
   const [copied, setCopied] = useState(false);
 
   const handleShare = async () => {
-    if (typeof navigator !== 'undefined') {
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: title,
-            url: window.location.href,
-          });
-        } catch (err) {
-          console.error('Error sharing:', err);
-        }
-      } else if (navigator.clipboard) {
-        navigator.clipboard.writeText(window.location.href);
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Error copying link:', err);
       }
     }
   };
@@ -46,10 +39,20 @@ export function ProductInfo({
         </h1>
         <button 
           onClick={handleShare}
-          className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-full transition-colors flex-shrink-0"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-green-700 hover:bg-green-50 border border-gray-200 hover:border-green-200 rounded-full transition-all flex-shrink-0"
           title="Share Product"
         >
-          {copied ? <FiCheck className="w-5 h-5 text-green-600" /> : <FiShare2 className="w-5 h-5" />}
+          {copied ? (
+            <>
+              <FiCheck className="w-4 h-4 text-green-600" />
+              <span className="text-green-600">Copied!</span>
+            </>
+          ) : (
+            <>
+              <FiShare2 className="w-4 h-4" />
+              <span>Share</span>
+            </>
+          )}
         </button>
       </div>
 

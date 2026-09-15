@@ -453,6 +453,7 @@ const getAllProducts = async (filters) => {
       const searchRegex = new RegExp(filters.search, 'i');
       const searchOr = [
         { name: { $regex: searchRegex } },
+        { sku: { $regex: searchRegex } },
         { categoryName: { $regex: searchRegex } },
         { tags: { $regex: searchRegex } }
       ];

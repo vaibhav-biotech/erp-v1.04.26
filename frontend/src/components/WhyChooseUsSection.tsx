@@ -20,8 +20,8 @@ const items = [
   },
   {
     icon: FiCheckCircle,
-    title: 'Quality Guarantee',
-    description: '2-Year Warranty Included',
+    title: 'Expert Support',
+    description: 'Plant Care Guides',
   },
 ];
 

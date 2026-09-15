@@ -11,6 +11,15 @@ const variantSchema = new Schema({
 
 const productSchema = new Schema(
   {
+    sku: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      uppercase: true,
+      minlength: 6,
+      maxlength: 6
+    },
     name: {
       type: String,
       required: [true, 'Product name is required'],
@@ -150,6 +159,31 @@ productSchema.index({ tags: 1 });
 productSchema.index({ status: 1 });
 productSchema.index({ storeName: 1 });
 productSchema.index({ name: 'text' });
+
+// Function to generate a random 6-character alphanumeric string
+function generateSKU() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let sku = '';
+  for (let i = 0; i < 6; i++) {
+    sku += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return sku;
+}
+
+productSchema.pre('save', async function() {
+  if (!this.sku) {
+    let isUnique = false;
+    let newSku = '';
+    while (!isUnique) {
+      newSku = generateSKU();
+      const existingProduct = await this.constructor.findOne({ sku: newSku });
+      if (!existingProduct) {
+        isUnique = true;
+      }
+    }
+    this.sku = newSku;
+  }
+});
 
 const Product = mongoose.model('Product', productSchema);
 

@@ -413,6 +413,53 @@ router.delete('/:id', async (req, res) => {
     });
   }
 });
+/**
+ * POST /api/products/bulk-image-update
+ * Update images for multiple products using SKU
+ * Body: { updates: [{ sku: '...', images: ['url1', 'url2'] }] }
+ */
+router.post('/bulk-image-update', async (req, res) => {
+  try {
+    const { updates } = req.body;
+    
+    if (!Array.isArray(updates) || updates.length === 0) {
+      return res.status(400).json({ success: false, error: 'updates array is required' });
+    }
+
+    const Product = require('../models/Product');
+    let successCount = 0;
+    let notFoundSkus = [];
+
+    for (const update of updates) {
+      const { sku, images } = update;
+      if (!sku || !Array.isArray(images) || images.length === 0) continue;
+
+      const product = await Product.findOne({ sku });
+      if (!product) {
+        notFoundSkus.push(sku);
+        continue;
+      }
+
+      // Append new images to existing ones, taking care not to exceed any limits, though there's none.
+      product.images = [...product.images, ...images];
+      await product.save({ validateBeforeSave: false }); // Skip validation just in case older products have bad data
+      successCount++;
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Successfully updated images for ${successCount} products.`,
+      notFoundSkus
+    });
+  } catch (error) {
+    console.error('Error in bulk image update:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to process bulk image updates'
+    });
+  }
+});
+
 
 /**
  * POST /api/products/bulk-delete

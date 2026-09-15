@@ -5,6 +5,7 @@ import { MessageCircle, Search, X } from 'lucide-react';
 import { useChat } from '@/contexts/ChatContext';
 import { MiniChatWindow } from './MiniChatWindow';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePathname } from 'next/navigation';
 
 export const GlobalChatWidget = () => {
   const { admin } = useAuth();
@@ -33,9 +34,19 @@ export const GlobalChatWidget = () => {
     fetchContacts(q);
   };
 
-  // RBAC: Strictly render only for valid staff/admin roles. Public users (customers) will not pass this check.
+  const pathname = usePathname();
+  
+  // Check if current path is an internal/dashboard route
+  const isInternalPath = pathname?.startsWith('/admin') || 
+                         pathname?.startsWith('/dashboard') || 
+                         pathname?.startsWith('/staff') || 
+                         pathname?.startsWith('/superadmin') || 
+                         pathname?.startsWith('/inventory') || 
+                         pathname?.startsWith('/accounts');
+
+  // RBAC: Strictly render only for valid staff/admin roles and internal paths.
   const allowedRoles = ['super_admin', 'store_admin', 'inventory_admin', 'accountant', 'staff', 'staff_admin'];
-  if (!admin || !admin.role || !allowedRoles.includes(admin.role)) return null;
+  if (!isInternalPath || !admin || !admin.role || !allowedRoles.includes(admin.role)) return null;
 
   return (
     <div className="fixed bottom-0 right-4 z-50 flex items-end">

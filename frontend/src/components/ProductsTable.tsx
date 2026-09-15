@@ -19,6 +19,7 @@ import {
 
 interface Product {
   _id: string;
+  sku?: string;
   name: string;
   category: string;
   categoryName?: string;
@@ -442,15 +443,20 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
       </td>
       <td className="px-6 py-4">
         <div className="flex items-center gap-3">
-          {product.images[0] && (
+          {product.images && product.images[0] && (
             <img
               src={product.images[0]}
               alt={product.name}
               className="w-10 h-10 object-cover rounded"
             />
           )}
-          <span className="font-medium text-gray-900 truncate">{product.name}</span>
+          <div className="flex flex-col">
+            <span className="font-medium text-gray-900 truncate max-w-[200px]" title={product.name}>{product.name}</span>
+          </div>
         </div>
+      </td>
+      <td className="px-6 py-4 text-sm font-mono text-gray-600">
+        {product.sku || '-'}
       </td>
       <td className="px-6 py-4 text-sm text-gray-600">
         {product.categoryName || product.category}
@@ -541,7 +547,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by product name..."
+              placeholder="Search by product name or SKU..."
               value={localSearchQuery}
               onChange={(e) => setLocalSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
@@ -627,6 +633,9 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                 >
                   Product Name {getSortIcon('name')}
                 </button>
+              </th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                Product ID (SKU)
               </th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
                 Category
