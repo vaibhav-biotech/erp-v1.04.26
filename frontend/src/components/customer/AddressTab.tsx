@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { buildApiUrl, getApiHeaders } from '@/lib/storeConfig';
 import { FiEdit2, FiTrash2, FiMapPin, FiCheck } from 'react-icons/fi';
@@ -10,6 +10,7 @@ export default function AddressTab() {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const isSubmitting = useRef(false);
   const [message, setMessage] = useState({ text: '', type: '' });
   
   const [formData, setFormData] = useState({
@@ -102,9 +103,11 @@ export default function AddressTab() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting.current) return;
     if (!customer?._id || !customerToken) return;
 
     try {
+      isSubmitting.current = true;
       setLoading(true);
       setMessage({ text: '', type: '' });
       
@@ -129,6 +132,7 @@ export default function AddressTab() {
       setMessage({ text: err.message || 'An error occurred', type: 'error' });
     } finally {
       setLoading(false);
+      isSubmitting.current = false;
     }
   };
 

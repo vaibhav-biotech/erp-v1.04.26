@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, X } from 'lucide-react';
@@ -18,6 +18,7 @@ export default function AuthModal({ isOpen, onClose, redirectPath = '/customer' 
   const { loginCustomer, registerCustomer } = useAuth();
   const [mode, setMode] = useState<'login' | 'signup' | 'forgot-password'>('login');
   const [loading, setLoading] = useState(false);
+  const isSubmitting = useRef(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -65,13 +66,16 @@ export default function AuthModal({ isOpen, onClose, redirectPath = '/customer' 
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting.current) return;
     setError('');
+    isSubmitting.current = true;
     setLoading(true);
 
     try {
       if (!loginForm.email || !loginForm.password) {
         setError('Email and password required');
         setLoading(false);
+        isSubmitting.current = false;
         return;
       }
 
@@ -84,36 +88,43 @@ export default function AuthModal({ isOpen, onClose, redirectPath = '/customer' 
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setLoading(false);
+      isSubmitting.current = false;
     }
   };
 
   const handleSignupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting.current) return;
     setError('');
+    isSubmitting.current = true;
     setLoading(true);
 
     try {
       if (!signupForm.firstName || !signupForm.lastName || !signupForm.email || !signupForm.phone || !signupForm.password) {
         setError('All fields required');
         setLoading(false);
+        isSubmitting.current = false;
         return;
       }
 
       if (signupForm.password !== signupForm.confirmPassword) {
         setError('Passwords do not match');
         setLoading(false);
+        isSubmitting.current = false;
         return;
       }
 
       if (signupForm.password.length < 6) {
         setError('Password must be at least 6 characters');
         setLoading(false);
+        isSubmitting.current = false;
         return;
       }
 
       if (!/^\d{10}$/.test(signupForm.phone)) {
         setError('Phone must be 10 digits');
         setLoading(false);
+        isSubmitting.current = false;
         return;
       }
 
@@ -133,19 +144,23 @@ export default function AuthModal({ isOpen, onClose, redirectPath = '/customer' 
       setError(err instanceof Error ? err.message : 'Signup failed');
     } finally {
       setLoading(false);
+      isSubmitting.current = false;
     }
   };
 
   const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting.current) return;
     setError('');
     setSuccessMsg('');
+    isSubmitting.current = true;
     setLoading(true);
 
     try {
       if (!forgotPasswordForm.email) {
         setError('Email is required');
         setLoading(false);
+        isSubmitting.current = false;
         return;
       }
 
@@ -165,6 +180,7 @@ export default function AuthModal({ isOpen, onClose, redirectPath = '/customer' 
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
+      isSubmitting.current = false;
     }
   };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -27,6 +27,7 @@ export default function CustomerSignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const isSubmitting = useRef(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -67,10 +68,12 @@ export default function CustomerSignupPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isSubmitting.current) return;
     setError(null);
 
     if (!validateForm()) return;
 
+    isSubmitting.current = true;
     setLoading(true);
     try {
       await registerCustomer({
@@ -89,6 +92,7 @@ export default function CustomerSignupPage() {
       setError(err instanceof Error ? err.message : 'Signup failed');
     } finally {
       setLoading(false);
+      isSubmitting.current = false;
     }
   };
 
