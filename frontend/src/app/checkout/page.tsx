@@ -68,6 +68,7 @@ export default function CheckoutPage() {
   const [selectedCourierId, setSelectedCourierId] = useState('');
 
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSubmitting = useRef(false);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -190,12 +191,14 @@ export default function CheckoutPage() {
   };
 
   const handlePlaceOrder = async () => {
+    if (isSubmitting.current) return;
     const validationError = validateForm();
     if (validationError) {
       setError(validationError);
       return;
     }
 
+    isSubmitting.current = true;
     setLoading(true);
     setError('');
 
@@ -204,6 +207,7 @@ export default function CheckoutPage() {
       if (!customerAuthenticated) {
         setError('Please login or signup to place an order');
         setLoading(false);
+        isSubmitting.current = false;
         return;
       }
 
@@ -289,6 +293,7 @@ export default function CheckoutPage() {
         if (!res) {
           setError('Razorpay SDK failed to load. Are you online?');
           setLoading(false);
+          isSubmitting.current = false;
           return;
         }
 
@@ -304,6 +309,7 @@ export default function CheckoutPage() {
         if (!createOrderData.success) {
           setError(createOrderData.error || 'Failed to initialize payment gateway');
           setLoading(false);
+          isSubmitting.current = false;
           return;
         }
 
@@ -311,6 +317,7 @@ export default function CheckoutPage() {
         const dbOrderId = await placeActualOrder(true);
         if (!dbOrderId) {
           setLoading(false);
+          isSubmitting.current = false;
           return; // Error handled inside placeActualOrder
         }
 
@@ -353,6 +360,7 @@ export default function CheckoutPage() {
               setError(err instanceof Error ? err.message : 'Error verifying payment');
             } finally {
               setLoading(false);
+              isSubmitting.current = false;
             }
           },
           prefill: {
@@ -366,6 +374,7 @@ export default function CheckoutPage() {
           modal: {
             ondismiss: function () {
               setLoading(false);
+              isSubmitting.current = false;
               setError('Payment was cancelled. Your order was created as Unpaid.');
               redirectTimerRef.current = setTimeout(() => {
                 router.push('/customer?tab=orders');
@@ -379,10 +388,12 @@ export default function CheckoutPage() {
       } else {
         await placeActualOrder(false);
         setLoading(false);
+        isSubmitting.current = false;
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error placing order');
       setLoading(false);
+      isSubmitting.current = false;
     }
   };
 
